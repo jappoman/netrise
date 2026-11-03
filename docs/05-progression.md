@@ -40,7 +40,7 @@ Narrative: abandon compromised identity, retain encrypted know-how.
 - Resets: credits, bots, local rigs, intel snapshots, access tokens, heat and most sector control.
 - Keeps: permanently earned **Ghost Keys**, lifetime achievements, cosmetic unlocks and account settings.
 - Unlocks: starter credit boosts, new intel tactics, more efficient bot economy and alternate approaches.
-- Proposed currency: `ghostKeysEarned = max(0, floor(sqrt(lifetimeExtractedData / 10000)) - ghostKeysAlreadyGrantedForRun)`; this is provisional and must be tested against repeated tiny resets.
+- Proposed currency: `ghostKeysEarned = floor(sqrt(runExtractedData / 10000))`; award once at reset, then set the next run's extracted-data counter to zero. This is provisional and must be tested against repeated tiny resets.
 - Only cumulative **this-run** data counts for an upcoming reset; keep lifetime and current-run counters separately to avoid inflation and exploits.
 
 ## Prestige: Corp "Restructuring"
