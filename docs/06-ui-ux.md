@@ -77,5 +77,20 @@ A player should answer at a glance: What is increasing? Why? What can I afford? 
 - Include event explanation: `Countermeasure: +20% ICE attrition`.
 - Support pause and instant skip of lore typing. All important messages persist in Archive.
 
+## Self-explanatory screens
+
+Every player-facing screen must explain itself without requiring a manual or
+prior memory of the controls. Keep a compact, persistent action rail visible
+at the bottom or beside the primary content. It should show:
+
+- the current objective or state (`NO ACTIVE BATTLE`, `FABRICATION RUNNING`);
+- the actions currently available and their keys;
+- the next useful action for a new or returning player;
+- concise reasons for locked or unaffordable actions.
+
+The rail is contextual, not a modal tutorial: it must remain visible while
+the player can still inspect the main screen. Detailed explanations belong to
+the `?` help view and must not obscure the simulation by default.
+
 ## Steam host decision record
 Later evaluate embedded terminal host (e.g. a lightweight native window with VT emulator) versus OS terminal launcher. The terminal host must launch local game executable, propagate resize/keyboard input correctly, and not run arbitrary shell instructions. Investigate Steam Overlay, achievements and close behavior on each platform separately. **Do not build host during MVP.**

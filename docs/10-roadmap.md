@@ -26,10 +26,10 @@ Prioritize **a functioning, fun vertical slice** over large amounts of generic i
 1. Generate 1 Corp opponent with 2 assets and fictional route.
 2. Implement 3 preflight choices, two defense layers, seeded battle tick and loot.
 3. Optional reinforcement/withdrawal, timeouts, idempotent resolution.
-4. First complete TUI: Overview, Target, Preflight, Battle, Result; 80x24 handling.
+4. First complete TUI: Overview, Target, Preflight, Battle, Result; 80x24 handling and contextual self-explanatory action rail.
 5. Add combat matrix test and event-driven battle playback.
 
-**Acceptance:** fresh Runner can buy bots, inspect target, launch an attack, watch counters change, win or lose fairly, recover, save/reopen with same result. Game playable solely on keyboard. Battle results independent of render speed.
+**Acceptance:** fresh Runner can buy bots, inspect target, launch an attack, watch counters change, win or lose fairly, recover, save/reopen with same result. Every screen states the next useful action and why unavailable actions are locked. Game playable solely on keyboard. Battle results independent of render speed.
 
 ## M3: Runner vertical slice
 **Tasks**

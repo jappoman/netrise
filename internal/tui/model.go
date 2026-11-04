@@ -80,8 +80,42 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nTICK %d\n%s\n\n[c] contract  [b] rig  [u] compiler  [f] bot  [a] attack  [w] withdraw  [q] quit\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.LogicalTick, battle, m.status)
+	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nTICK %d\n%s\n\n[c] contract  [b] rig  [u] compiler  [f] bot  [a] attack  [w] withdraw  [q] quit\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.LogicalTick, battle, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
+}
+
+func (m Model) nextHint() string {
+	if m.state.ActiveBattle != nil {
+		return "watch the counters; press [w] to withdraw"
+	}
+	if !hasUpgrade(m.state, "secondhand_compiler") {
+		return "collect credits, then press [u] to install the compiler (75 CR)"
+	}
+	if !hasGenerator(m.state, "salvaged_rig") {
+		return "press [b] to buy a Salvaged Rig (50 CR)"
+	}
+	if m.state.Resources.Bots == 0 {
+		return "press [f] when you have 10 compute and 2 credits"
+	}
+	return "press [a] to launch the tutorial breach with all bots"
+}
+
+func hasUpgrade(s game.State, id string) bool {
+	for _, upgrade := range s.Upgrades {
+		if upgrade == id {
+			return true
+		}
+	}
+	return false
+}
+
+func hasGenerator(s game.State, id string) bool {
+	for _, generator := range s.Generators {
+		if generator.ID == id && generator.Count > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Model) saveNow() {
