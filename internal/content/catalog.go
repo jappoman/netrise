@@ -19,10 +19,26 @@ type Upgrade struct {
 	Cost        int64  `json:"cost"`
 	Description string `json:"description"`
 }
+type Layer struct {
+	Integrity int64 `json:"integrity"`
+	ICE       int64 `json:"ice"`
+	Counter   int64 `json:"counter"`
+}
+type Target struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Corporation string  `json:"corporation"`
+	Reachable   bool    `json:"reachable"`
+	Layers      []Layer `json:"layers"`
+	LootCredits int64   `json:"loot_credits"`
+	LootData    int64   `json:"loot_data"`
+	TimeLimit   int64   `json:"time_limit"`
+}
 type Catalog struct {
 	SchemaVersion int         `json:"schema_version"`
 	Generators    []Generator `json:"generators"`
 	Upgrades      []Upgrade   `json:"upgrades"`
+	Targets       []Target    `json:"targets"`
 }
 
 func Load(r io.Reader) (Catalog, error) {
@@ -52,6 +68,18 @@ func Validate(c Catalog) error {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true
+	}
+	seen = map[string]bool{}
+	for _, t := range c.Targets {
+		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 {
+			return fmt.Errorf("content: invalid target %q", t.ID)
+		}
+		seen[t.ID] = true
+		for _, l := range t.Layers {
+			if l.Integrity <= 0 || l.ICE < 0 || l.Counter < 0 {
+				return fmt.Errorf("content: invalid layer in target %q", t.ID)
+			}
+		}
 	}
 	return nil
 }

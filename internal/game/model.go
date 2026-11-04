@@ -39,6 +39,30 @@ type State struct {
 	Generators    []Generator  `json:"generators"`
 	Upgrades      []string     `json:"upgrades"`
 	Fabrication   *Fabrication `json:"fabrication,omitempty"`
+	HeatBP        int64        `json:"heat_bp"`
+	ActiveBattle  *Battle      `json:"active_battle,omitempty"`
+}
+
+type Doctrine string
+
+const (
+	Balanced Doctrine = "balanced"
+	Stealth  Doctrine = "stealth"
+	Overload Doctrine = "overload"
+)
+
+type Battle struct {
+	TargetID         string   `json:"target_id"`
+	Doctrine         Doctrine `json:"doctrine"`
+	CommittedBots    int64    `json:"committed_bots"`
+	LiveBots         int64    `json:"live_bots"`
+	LayerIndex       int      `json:"layer_index"`
+	LayerIntegrity   int64    `json:"layer_integrity"`
+	DefenderICE      int64    `json:"defender_ice"`
+	TraceBP          int64    `json:"trace_bp"`
+	ElapsedTicks     int64    `json:"elapsed_ticks"`
+	TimeLimit        int64    `json:"time_limit"`
+	InterventionUsed bool     `json:"intervention_used"`
 }
 
 type CommandKind string
@@ -48,6 +72,10 @@ const (
 	CollectContract  CommandKind = "collect_contract"
 	BuyGenerator     CommandKind = "buy_generator"
 	QueueFabrication CommandKind = "queue_fabrication"
+	BuyUpgrade       CommandKind = "buy_upgrade"
+	StartBattle      CommandKind = "start_battle"
+	ReinforceBattle  CommandKind = "reinforce_battle"
+	WithdrawBattle   CommandKind = "withdraw_battle"
 )
 
 type Command struct {
@@ -55,6 +83,7 @@ type Command struct {
 	Ticks    int64
 	ID       string
 	Quantity int64
+	Doctrine Doctrine
 }
 
 type Event struct {
@@ -72,6 +101,11 @@ const (
 	ReasonInsufficientCompute Reason = "insufficient_compute"
 	ReasonCapacityReached     Reason = "capacity_reached"
 	ReasonDuplicatePurchase   Reason = "duplicate_purchase"
+	ReasonUpgradeLocked       Reason = "upgrade_locked"
+	ReasonInsufficientBots    Reason = "insufficient_bots"
+	ReasonTargetUnreachable   Reason = "target_unreachable"
+	ReasonBattleActive        Reason = "battle_active"
+	ReasonNoBattle            Reason = "no_battle"
 )
 
 type CommandError struct {

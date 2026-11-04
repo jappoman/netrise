@@ -24,6 +24,7 @@ Read **README.md** and **all docs/ files** before major architectural work. This
 10. Do not silently change locked design decisions. Record tradeoffs and suggest a documented amendment.
 11. Prefer local tests, race tests and benchmarks; add CI for supported OS targets. Never claim a build or test passed unless executed.
 12. Keep game copy **English by default** but make all displayed strings localizable later. Write source comments and technical identifiers in English.
+13. After each coherent implementation increment, verify it end to end (automated checks plus the relevant player-facing flow), then create a focused Git commit that records the verified progress. Sync the commit to the configured remote when possible; if sync fails, report the exact reason and keep the local commit safe.
 
 ## First implementation PR
 Produce:

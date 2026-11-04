@@ -40,8 +40,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command = game.Command{Kind: game.BuyGenerator, ID: "salvaged_rig"}
 		case "f":
 			command = game.Command{Kind: game.QueueFabrication, Quantity: 1}
+		case "u":
+			command = game.Command{Kind: game.BuyUpgrade, ID: "secondhand_compiler"}
+		case "a":
+			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: m.state.Resources.Bots, Doctrine: game.Balanced}
+		case "w":
+			command = game.Command{Kind: game.WithdrawBattle}
 		}
-		if command.Kind != "" {
+		if command.Kind != "" && !(command.Kind == game.StartBattle && command.Quantity == 0) {
 			var events []game.Event
 			var err error
 			m.state, events, err = m.engine.Apply(m.state, command)
@@ -53,7 +59,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.saveNow()
 		}
 	case tickMsg:
-		m.state = m.engine.Advance(m.state, 1)
+		var events []game.Event
+		m.state, events, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if len(events) > 0 {
+			m.status = events[len(events)-1].Message
+		}
 		m.saveCounter++
 		if m.saveCounter%10 == 0 {
 			m.saveNow()
@@ -66,7 +76,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (m Model) View() tea.View {
 	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("42")).Render("NETRISE // RUNNER TERMINAL")
-	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nTICK %d\n\n[c] contract  [b] buy rig  [f] fabricate bot  [q] quit\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.LogicalTick, m.status)
+	battle := "NO ACTIVE BATTLE"
+	if m.state.ActiveBattle != nil {
+		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
+	}
+	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nTICK %d\n%s\n\n[c] contract  [b] rig  [u] compiler  [f] bot  [a] attack  [w] withdraw  [q] quit\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.LogicalTick, battle, m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
 }
 
