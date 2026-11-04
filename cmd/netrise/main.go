@@ -7,31 +7,27 @@ import (
 	"fmt"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 	"github.com/jappoman/netrise/internal/tui"
 	"os"
+	"path/filepath"
+	"time"
 )
 
 const version = "0.1.0"
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "--data-dir" {
-		if len(os.Args) < 3 {
-			fatal(fmt.Errorf("--data-dir requires a directory"))
-		}
-		// Accepted for portable builds; interactive save wiring follows with
-		// the complete timestamp reconciliation flow.
-		os.Args = append([]string{os.Args[0]}, os.Args[3:]...)
-	}
-	if len(os.Args) > 1 && os.Args[1] == "simulate" {
-		simulate(os.Args[2:])
+	args, dataDir := extractDataDir(os.Args[1:])
+	if len(args) > 0 && args[0] == "simulate" {
+		simulate(args[1:])
 		return
 	}
-	if len(os.Args) > 1 && (os.Args[1] == "--help" || os.Args[1] == "-h") {
+	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
 		fmt.Println("netrise [--data-dir DIR]\nnetrise simulate --seed N --ticks N\n\nA deterministic fictional Runner strategy game.")
 		return
 	}
-	if len(os.Args) > 1 && os.Args[1] == "--version" {
+	if len(args) > 0 && args[0] == "--version" {
 		fmt.Println(version)
 		return
 	}
@@ -40,10 +36,58 @@ func main() {
 		fatal(err)
 	}
 	e := sim.New(c, 1)
-	p := tea.NewProgram(tui.New(sim.NewState(1), e))
+	if dataDir == "" {
+		configDir, configErr := os.UserConfigDir()
+		if configErr != nil {
+			fatal(fmt.Errorf("find user config directory: %w", configErr))
+		}
+		dataDir = filepath.Join(configDir, "netrise")
+	}
+	s := loadState(dataDir, e)
+	p := tea.NewProgram(tui.New(s, e, dataDir))
 	if _, err = p.Run(); err != nil {
 		fatal(err)
 	}
+}
+
+func extractDataDir(args []string) ([]string, string) {
+	filtered := make([]string, 0, len(args))
+	dataDir := ""
+	for i := 0; i < len(args); i++ {
+		if args[i] != "--data-dir" {
+			filtered = append(filtered, args[i])
+			continue
+		}
+		if i+1 >= len(args) || args[i+1] == "" {
+			fatal(fmt.Errorf("--data-dir requires a directory"))
+		}
+		dataDir = args[i+1]
+		i++
+	}
+	return filtered, dataDir
+}
+
+func loadState(dataDir string, e *sim.Engine) game.State {
+	s, err := save.Read(dataDir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			fatal(fmt.Errorf("load save: %w", err))
+		}
+		return sim.NewState(1)
+	}
+	if s.SavedAtUTC == "" {
+		return s
+	}
+	savedAt, err := time.Parse(time.RFC3339Nano, s.SavedAtUTC)
+	if err != nil {
+		return s
+	}
+	elapsed := int64(time.Since(savedAt).Seconds())
+	if elapsed <= 0 {
+		return s
+	}
+	reconciled, _ := e.ReconcileOffline(s, elapsed)
+	return reconciled
 }
 func simulate(args []string) {
 	fs := flag.NewFlagSet("simulate", flag.ContinueOnError)

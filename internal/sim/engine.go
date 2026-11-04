@@ -124,6 +124,21 @@ func (e *Engine) Advance(s game.State, ticks int64) game.State {
 	}
 	return s
 }
+
+// ComputeRate returns the safe passive production rate in whole compute units
+// per logical second. It is presentation data derived from state, not a second
+// source of truth.
+func (e *Engine) ComputeRate(s game.State) int64 {
+	rate := int64(2)
+	for _, g := range e.Catalog.Generators {
+		for _, owned := range s.Generators {
+			if owned.ID == g.ID {
+				rate += owned.Count * g.ComputePerSecond
+			}
+		}
+	}
+	return rate
+}
 func generatorCount(s game.State, id string) int64 {
 	for _, g := range s.Generators {
 		if g.ID == id {

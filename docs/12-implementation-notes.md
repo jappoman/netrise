@@ -6,12 +6,11 @@ production, contracts, generator purchases, bot fabrication, versioned atomic
 JSON saves, capped safe offline reconciliation, a headless report, and a
 minimal Bubble Tea v2 terminal adapter.
 
-The battle model, Corporation campaign, recon, upgrades, and save timestamp
-clock adapter remain M2/M3 work. The TUI currently uses an in-memory campaign;
-`--data-dir` is accepted for portable-build compatibility, but interactive
-load/save wiring is intentionally deferred until the complete save-resume flow
-is added. This avoids presenting an apparently persistent game that does not
-yet reconcile timestamps correctly.
+The battle model, Corporation campaign, recon, and research remain M2/M3 work.
+The TUI now exposes contract collection, Salvaged Rig purchase, one-bot
+fabrication, and persistent save/load. A save records UTC time and reconciles
+only safe production on startup, capped at eight hours. `--data-dir` overrides
+the default per-user configuration directory.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
