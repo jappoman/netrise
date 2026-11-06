@@ -618,7 +618,7 @@ func (m Model) resultView() string {
 	if r == nil {
 		return "NETRISE // RESULT\n\nNo completed battle.\n[o] overview"
 	}
-	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nREASON: %s\nDOCTRINE: %s\nBOTS: %d committed / %d survived / %d lost\nTRACE: %d%%\nHEAT: +%d%% (total %d%%)\nLOOT: %d credits / %d data\nELAPSED: %d ticks\n\nNEXT: %s\n\n[enter] overview  [t] targets", battleTargetName(m.engine, r.TargetID), r.Outcome, battleOutcomeReason(r.Outcome), r.Doctrine, r.CommittedBots, r.Survivors, r.BotsLost, r.TraceBP/100, r.HeatAddedBP/100, r.HeatAfterBP/100, r.CreditsLooted, r.DataLooted, r.ElapsedTicks, resultNextHint(r.Outcome))
+	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nREASON: %s\nDOCTRINE: %s\nBOTS: %d committed / %d survived / %d lost\nTRACE: %d%%\nHEAT: +%d%% (total %d%%)\nLOOT: %d credits / %d data\nACCESS: %s\nELAPSED: %d ticks\n\nNEXT: %s\n\n[enter] overview  [t] targets", battleTargetName(m.engine, r.TargetID), r.Outcome, battleOutcomeReason(r.Outcome), r.Doctrine, r.CommittedBots, r.Survivors, r.BotsLost, r.TraceBP/100, r.HeatAddedBP/100, r.HeatAfterBP/100, r.CreditsLooted, r.DataLooted, targetAccessLabel(m.state, r.TargetID), r.ElapsedTicks, resultNextHint(r.Outcome))
 }
 
 func battleOutcomeReason(outcome string) string {
