@@ -291,9 +291,12 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if c.Quantity <= 0 || c.Quantity > s.Resources.Bots {
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientBots, Detail: "not enough reserve bots"}
 		}
+		if !canAddUnits(s.ActiveBattle.LiveBots, c.Quantity) || !canAddUnits(s.ActiveBattle.CommittedBots, c.Quantity) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "battle bot count is at capacity"}
+		}
 		s.Resources.Bots -= c.Quantity
-		s.ActiveBattle.LiveBots += c.Quantity
-		s.ActiveBattle.CommittedBots += c.Quantity
+		s.ActiveBattle.LiveBots = AddNonNegativeSaturated(s.ActiveBattle.LiveBots, c.Quantity)
+		s.ActiveBattle.CommittedBots = AddNonNegativeSaturated(s.ActiveBattle.CommittedBots, c.Quantity)
 		s.ActiveBattle.InterventionUsed = true
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleReinforced", Message: fmt.Sprintf("%d reserve bots joined the breach.", c.Quantity)}}, nil
 	case game.WithdrawBattle:
@@ -420,7 +423,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
 		}
-		if c.Quantity <= 0 || s.Corp.ICE+c.Quantity > s.Corp.ICECapacity {
+		if !canFitUnits(s.Corp.ICE, c.Quantity, s.Corp.ICECapacity) {
 			return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "ICE capacity reached"}
 		}
 		cost, err := mathx.New(10).MulUnits(c.Quantity)
@@ -440,8 +443,11 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.ActiveBattle.InterventionUsed {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "emergency response already used"}
 		}
+		if !canAddUnits(s.ActiveBattle.DefenderICE, c.Quantity) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "battle ICE count is at capacity"}
+		}
 		s.Corp.ICE -= c.Quantity
-		s.ActiveBattle.DefenderICE += c.Quantity
+		s.ActiveBattle.DefenderICE = AddNonNegativeSaturated(s.ActiveBattle.DefenderICE, c.Quantity)
 		s.ActiveBattle.InterventionUsed = true
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ICEDeployed", Message: fmt.Sprintf("%d reserve ICE deployed.", c.Quantity)}}, nil
 	case game.CorpIsolateAsset:
@@ -478,7 +484,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= mathx.New(cost)
 		asset.Operational = false
-		asset.IsolatedUntilTick = s.LogicalTick + duration
+		asset.IsolatedUntilTick = AddNonNegativeSaturated(s.LogicalTick, duration)
 		s.ActiveBattle.InterventionUsed = true
 		s.LastBattle = battleResult(s.ActiveBattle, "isolated", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
@@ -712,7 +718,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 			}
 		}
 		if !safeOnly && s.Faction == game.Corporation && s.Corp != nil && s.ActiveBattle == nil {
-			s.Corp.AttackCounter++
+			s.Corp.AttackCounter = AddNonNegativeSaturated(s.Corp.AttackCounter, 1)
 			if s.Corp.AttackCounter >= e.incursionInterval(s) && e.incursionAvailable(s) {
 				s, events = e.startCorporationIncursion(s, events)
 			}
@@ -865,7 +871,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceStopped", Message: "Automated maintenance stopped: budget reached."})
 		} else if s.Corp.Capital >= mathx.New(10) {
 			s.Corp.Capital -= mathx.New(10)
-			s.Corp.ICE++
+			s.Corp.ICE = AddNonNegativeSaturated(s.Corp.ICE, 1)
 			s.Corp.MaintenanceSpent += 10
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceRestocked", Message: "Automated maintenance restocked one ICE unit."})
 		}
@@ -944,7 +950,7 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 		s.Corp.ICE -= deployed
 	}
 	s.Corp.AttackCounter = 0
-	s.Corp.IncursionSpent += committed
+	s.Corp.IncursionSpent = AddNonNegativeSaturated(s.Corp.IncursionSpent, committed)
 	assetID := ""
 	bestRate := int64(-1)
 	for _, asset := range s.Corp.Assets {
@@ -1038,12 +1044,12 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			b.DefenderICE = 0
 		}
 	}
-	b.ElapsedTicks++
-	b.TraceBP += heatMultiplier
+	b.ElapsedTicks = AddNonNegativeSaturated(b.ElapsedTicks, 1)
+	b.TraceBP = AddNonNegativeSaturated(b.TraceBP, heatMultiplier)
 	if b.TraceBP > 10000 {
 		b.TraceBP = 10000
 	}
-	s.HeatBP += heatMultiplier
+	s.HeatBP = AddNonNegativeSaturated(s.HeatBP, heatMultiplier)
 	if s.HeatBP > 10000 {
 		s.HeatBP = 10000
 	}
@@ -1310,10 +1316,18 @@ func hasUpgrade(s game.State, id string) bool {
 }
 
 func canFitBots(current, additional, capacity int64) bool {
+	return canFitUnits(current, additional, capacity)
+}
+
+func canFitUnits(current, additional, capacity int64) bool {
 	if additional <= 0 || current < 0 || capacity < 0 || current > capacity {
 		return false
 	}
 	return additional <= capacity-current
+}
+
+func canAddUnits(current, additional int64) bool {
+	return additional > 0 && current >= 0 && current <= math.MaxInt64-additional
 }
 
 func returnBattleBots(s *game.State, survivors int64) {

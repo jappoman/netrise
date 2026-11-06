@@ -296,6 +296,18 @@ func TestReinforceIsAtomicAndSingleUse(t *testing.T) {
 	}
 }
 
+func TestReinforcementRejectsUnitOverflowAtomically(t *testing.T) {
+	e := New(catalog(), 41)
+	s := NewState(41)
+	s.Resources.Bots = 1
+	s.ActiveBattle = &game.Battle{LiveBots: math.MaxInt64, CommittedBots: math.MaxInt64}
+	before := s
+	updated, _, err := e.Apply(s, game.Command{Kind: game.ReinforceBattle, Quantity: 1})
+	if err == nil || updated.Resources.Bots != before.Resources.Bots || updated.ActiveBattle.LiveBots != before.ActiveBattle.LiveBots || updated.ActiveBattle.CommittedBots != before.ActiveBattle.CommittedBots {
+		t.Fatalf("overflowing reinforcement was not rejected atomically: before=%#v after=%#v err=%v", before, updated, err)
+	}
+}
+
 func TestBattleTimeoutReturnsSurvivorsWithoutLoot(t *testing.T) {
 	c := catalog()
 	c.Targets[0].Layers[0].Integrity = 100000
@@ -950,6 +962,43 @@ func TestBattleArithmeticHandlesExtremeInputs(t *testing.T) {
 	ticks, heat := e.EstimateBattle(s, target, game.Overload, math.MaxInt64)
 	if ticks < 0 || ticks > target.TimeLimit || heat < 0 {
 		t.Fatalf("extreme battle estimate escaped bounds: ticks=%d heat=%d", ticks, heat)
+	}
+}
+
+func TestCorporationICECommandsRejectUnitOverflowAtomically(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 42)
+	s := NewCorporationState(42)
+	s.Corp.Capital = mathx.New(10)
+	s.Corp.ICE = math.MaxInt64
+	s.Corp.ICECapacity = math.MaxInt64
+	before := s
+	updated, _, err := e.Apply(s, game.Command{Kind: game.CorpBuyICE, Quantity: 1})
+	if err == nil || updated.Corp.ICE != before.Corp.ICE || updated.Corp.Capital != before.Corp.Capital {
+		t.Fatalf("overflowing ICE purchase was not rejected atomically: before=%#v after=%#v err=%v", before.Corp, updated.Corp, err)
+	}
+
+	s = NewCorporationState(43)
+	s.Corp.ICE = 1
+	s.ActiveBattle = &game.Battle{DefenderICE: math.MaxInt64}
+	before = s
+	updated, _, err = e.Apply(s, game.Command{Kind: game.CorpDeployICE, Quantity: 1})
+	if err == nil || updated.Corp.ICE != before.Corp.ICE || updated.ActiveBattle.DefenderICE != before.ActiveBattle.DefenderICE {
+		t.Fatalf("overflowing ICE deployment was not rejected atomically: before=%#v after=%#v err=%v", before, updated, err)
+	}
+}
+
+func TestBattleMetersSaturateAtTheirUpperBounds(t *testing.T) {
+	target := content.Target{ID: "extreme", Name: "Extreme", Reachable: true, Layers: []content.Layer{{Integrity: math.MaxInt64, ICE: 0}}, TimeLimit: math.MaxInt64}
+	e := New(content.Catalog{SchemaVersion: 1, Targets: []content.Target{target}}, 44)
+	s := NewState(44)
+	s.HeatBP = math.MaxInt64
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: 1, LiveBots: 1, LayerIntegrity: math.MaxInt64, TraceBP: math.MaxInt64, ElapsedTicks: math.MaxInt64 - 1, TimeLimit: math.MaxInt64}
+	advanced, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || advanced.LastBattle == nil {
+		t.Fatalf("extreme battle did not resolve validly: state=%#v err=%v", advanced, err)
+	}
+	if advanced.LastBattle.ElapsedTicks != math.MaxInt64 || advanced.LastBattle.TraceBP != 10000 || advanced.HeatBP != 10000 {
+		t.Fatalf("battle meters escaped bounds: elapsed=%d trace=%d heat=%d", advanced.LastBattle.ElapsedTicks, advanced.LastBattle.TraceBP, advanced.HeatBP)
 	}
 }
 

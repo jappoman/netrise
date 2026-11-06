@@ -378,3 +378,7 @@ combined with saturating arithmetic before combat or preflight multiplication.
 Runner battle withdrawals, victories and timeouts now return surviving bots with
 capacity-aware saturating arithmetic; extreme persisted balances cannot wrap and
 returned units cannot exceed the configured bot capacity.
+
+Battle elapsed time, trace and heat meters, Corporation attack counters and
+incursion totals now saturate at their valid upper bounds; extreme resumed
+states cannot wrap these counters into negative or early-reset values.
