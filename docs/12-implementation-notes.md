@@ -269,3 +269,7 @@ player-facing resolution screen.
 Corporation active-incursion saves now round-trip without importing Runner-only
 data capacity, and deterministic resume is covered through the complete battle
 resolution path.
+
+Long-run integration coverage now exercises 21,600 active ticks for both
+campaigns with automation enabled, checking six-hour-equivalent resource,
+event-log and progression invariants.

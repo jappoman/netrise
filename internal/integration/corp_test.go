@@ -198,3 +198,39 @@ func TestActiveCorporationIncursionSaveReopenResumesIdentically(t *testing.T) {
 		t.Fatalf("Corporation save/reopen changed deterministic result:\noriginal=%#v\nresumed=%#v\noriginal events=%#v\nresumed events=%#v", original, resumed, originalEvents, resumedEvents)
 	}
 }
+
+func TestCorporationSixHourSimulationRemainsSafeAndProgresses(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 402)
+	s := sim.NewCorporationState(402)
+	s.Corp.Capital = mathx.New(500)
+	s.Corp.Compute = mathx.New(100)
+	apply := func(command game.Command) {
+		var commandErr error
+		s, _, commandErr = e.Apply(s, command)
+		if commandErr != nil {
+			t.Fatal(commandErr)
+		}
+	}
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "transit_hosting"})
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"})
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "archive_server"})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "research", Quantity: 1000})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: 5})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "maintenance", Quantity: 8})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 6 * 60 * 60})
+	if s.LogicalTick != 6*60*60 || len(s.EventLog) > sim.EventLogLimit || s.Corp.Capital < 0 || s.Corp.Compute < 0 || s.Corp.Research < 0 || s.Corp.Influence < 0 || s.Corp.ICE < 0 || s.Corp.ICE > s.Corp.ICECapacity {
+		t.Fatalf("six-hour Corporation simulation violated bounds: tick=%d events=%d corp=%#v", s.LogicalTick, len(s.EventLog), s.Corp)
+	}
+	if len(s.Corp.Assets) != 4 || s.Corp.RunValuation <= 0 || len(s.Corp.CompletedResearch) == 0 {
+		t.Fatalf("six-hour Corporation simulation produced no strategic progress: corp=%#v", s.Corp)
+	}
+}

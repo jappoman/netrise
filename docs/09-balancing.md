@@ -43,6 +43,10 @@ with all three starter assets, security capacity, maintenance and automated
 R&D enabled. It asserts bounded capital/compute/research/ICE/meters, event-log
 limits and actual strategic progress rather than only survival.
 
+Both factions also have a 21,600-tick (six-hour equivalent) headless
+regression with safe automation enabled. It asserts bounded resources, capped
+event history and continued strategic progress.
+
 ## Economy experiments
 - Compare optimal and plausible novice strategies; novice should make progress without reading a wiki.
 - Sample buying one generator repeatedly, mixed purchases, saving for milestones and research allocation.

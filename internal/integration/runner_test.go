@@ -401,3 +401,36 @@ func TestRunnerTwoDistinctStrategiesCompleteFirstBreach(t *testing.T) {
 		})
 	}
 }
+
+func TestRunnerSixHourSimulationRemainsSafeAndProgresses(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 401)
+	s := sim.NewState(401)
+	s.Resources.Credits = mathx.New(1000)
+	s.Resources.Compute = mathx.New(1000)
+	s.Resources.BotCapacity = 20
+	s.Upgrades = []string{"secondhand_compiler", "street_contacts", "autodialer", "packet_scheduler", "signal_profiler"}
+	s.Automation = game.Automation{Contracts: true, Fabrication: true, ReconTargetID: "t_01"}
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartRecon, ID: "t_01"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 6 * 60 * 60})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.LogicalTick != 6*60*60 || len(s.EventLog) > sim.EventLogLimit || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Bots < 0 || s.Resources.Data < 0 {
+		t.Fatalf("six-hour Runner simulation violated bounds: tick=%d events=%d resources=%#v", s.LogicalTick, len(s.EventLog), s.Resources)
+	}
+	if s.Intel["t_01"] == 0 || s.Resources.BotCapacity < s.Resources.Bots {
+		t.Fatalf("six-hour Runner simulation produced invalid progression: intel=%v resources=%#v", s.Intel, s.Resources)
+	}
+}
