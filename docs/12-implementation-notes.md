@@ -442,9 +442,11 @@ The `corp --help` alias now follows the same clean help path and never starts a
 TUI session when a user is asking for command usage.
 
 The TUI now exposes a keyboard-accessible Settings screen (`[S]`) for both
-campaigns. It reports the active `NO_COLOR`, high-contrast and reduced-motion
-modes and explains how to configure them before relaunching, while keeping all
-simulation state and deterministic behavior in the shared engine.
+campaigns. It reports the active `NO_COLOR`, high-contrast, reduced-motion and
+ASCII fallback modes and explains how to configure them before relaunching,
+while keeping all simulation state and deterministic behavior in the shared
+engine. `NETRISE_ASCII=1` replaces non-ASCII content at the final render
+boundary for terminals without Unicode support.
 
 Offline reconciliation is now written immediately at the CLI load boundary with
 an updated UTC timestamp. Reopening a save before the first TUI autosave cannot

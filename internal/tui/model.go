@@ -377,59 +377,59 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() tea.View {
 	if m.screen == "battle" {
 		if m.compact() {
-			return tea.NewView(m.compactBattleView())
+			return terminalView(m.compactBattleView())
 		}
-		return tea.NewView(m.battleView())
+		return terminalView(m.battleView())
 	}
 	if m.compact() && m.screen == "overview" {
-		return tea.NewView(m.compactView())
+		return terminalView(m.compactView())
 	}
 	titleStyle := terminalTitleStyle()
 	title := titleStyle.Render("NETRISE // RUNNER TERMINAL")
 	if m.screen == "targets" {
-		return tea.NewView(m.targetsView())
+		return terminalView(m.targetsView())
 	}
 	if m.screen == "preflight" {
-		return tea.NewView(m.preflightView())
+		return terminalView(m.preflightView())
 	}
 	if m.screen == "result" {
-		return tea.NewView(m.resultView())
+		return terminalView(m.resultView())
 	}
 	if m.screen == "research" {
-		return tea.NewView(m.researchView())
+		return terminalView(m.researchView())
 	}
 	if m.screen == "upgrades" {
-		return tea.NewView(m.upgradesView())
+		return terminalView(m.upgradesView())
 	}
 	if m.screen == "automation" {
 		if m.state.Faction == game.Corporation {
-			return tea.NewView(m.corpMaintenanceView())
+			return terminalView(m.corpMaintenanceView())
 		}
-		return tea.NewView(m.automationView())
+		return terminalView(m.automationView())
 	}
 	if m.screen == "corp-report" {
-		return tea.NewView(m.corpReportView())
+		return terminalView(m.corpReportView())
 	}
 	if m.screen == "archive" {
-		return tea.NewView(m.archiveView())
+		return terminalView(m.archiveView())
 	}
 	if m.screen == "settings" {
-		return tea.NewView(m.settingsView())
+		return terminalView(m.settingsView())
 	}
 	if m.screen == "prestige" {
-		return tea.NewView(m.prestigeView())
+		return terminalView(m.prestigeView())
 	}
 	if m.screen == "restructure" {
-		return tea.NewView(m.restructureView())
+		return terminalView(m.restructureView())
 	}
 	if m.screen == "help" {
-		return tea.NewView(m.helpView())
+		return terminalView(m.helpView())
 	}
 	if m.screen == "tutorial" {
-		return tea.NewView(m.tutorialView())
+		return terminalView(m.tutorialView())
 	}
 	if m.state.Faction == game.Corporation {
-		return tea.NewView(m.corpOverviewView())
+		return terminalView(m.corpOverviewView())
 	}
 	battle := "NO ACTIVE BATTLE"
 	if m.state.ActiveBattle != nil {
@@ -440,7 +440,19 @@ func (m Model) View() tea.View {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
 	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nDATA %s/%d\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Data, m.state.Resources.DataCapacity, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.automationSummary(), m.offlineLine(), controls, m.nextHint(), m.status)
-	return tea.NewView(title + "\n\n" + body + "\n")
+	return terminalView(title + "\n\n" + body + "\n")
+}
+
+func terminalView(content string) tea.View {
+	if os.Getenv("NETRISE_ASCII") != "" {
+		content = strings.Map(func(r rune) rune {
+			if r > 127 {
+				return '?'
+			}
+			return r
+		}, content)
+	}
+	return tea.NewView(content)
 }
 
 func terminalTitleStyle() lipgloss.Style {
@@ -931,7 +943,7 @@ func (m Model) archiveView() string {
 }
 
 func (m Model) settingsView() string {
-	return fmt.Sprintf("NETRISE // SETTINGS\n\nACCESSIBILITY\nNO_COLOR: %s\nHIGH CONTRAST: %s\nREDUCED MOTION: %s\n\nThese display preferences are read from the environment when NETRISE starts.\nSet NO_COLOR=1, NETRISE_HIGH_CONTRAST=1, or NETRISE_REDUCED_MOTION=1 before launching.\nThe simulation remains deterministic and keyboard-only in every mode.\n\n[S/esc] overview\nNEXT: choose a display mode before relaunching, then continue from the campaign overview.", settingStatus("NO_COLOR"), settingStatus("NETRISE_HIGH_CONTRAST"), settingStatus("NETRISE_REDUCED_MOTION"))
+	return fmt.Sprintf("NETRISE // SETTINGS\n\nACCESSIBILITY\nNO_COLOR: %s\nHIGH CONTRAST: %s\nREDUCED MOTION: %s\nASCII FALLBACK: %s\n\nThese display preferences are read from the environment when NETRISE starts.\nSet NO_COLOR=1, NETRISE_HIGH_CONTRAST=1, NETRISE_REDUCED_MOTION=1, or NETRISE_ASCII=1 before launching.\nThe simulation remains deterministic and keyboard-only in every mode.\n\n[S/esc] overview\nNEXT: choose a display mode before relaunching, then continue from the campaign overview.", settingStatus("NO_COLOR"), settingStatus("NETRISE_HIGH_CONTRAST"), settingStatus("NETRISE_REDUCED_MOTION"), settingStatus("NETRISE_ASCII"))
 }
 
 func settingStatus(name string) string {

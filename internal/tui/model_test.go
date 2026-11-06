@@ -211,6 +211,21 @@ func TestSettingsScreenShowsAccessibilityModesAndReturnsToOverview(t *testing.T)
 	}
 }
 
+func TestASCIIFallbackRemovesUnicodeFromPlayerView(t *testing.T) {
+	t.Setenv("NETRISE_ASCII", "1")
+	state := sim.NewState(22)
+	e := sim.New(content.Catalog{SchemaVersion: 1, Targets: []content.Target{{ID: "target", Name: "Réseau", Reachable: true, Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 1}}}, 22)
+	m := New(state, e, "")
+	m.screen = "targets"
+	view := m.View().Content
+	if strings.IndexFunc(view, func(r rune) bool { return r > 127 }) >= 0 {
+		t.Fatalf("ASCII fallback left Unicode in player view: %s", view)
+	}
+	if !strings.Contains(view, "R?seau") {
+		t.Fatalf("ASCII fallback did not preserve a readable replacement: %s", view)
+	}
+}
+
 func TestReducedMotionResolvesBattleWithoutPlaybackFrames(t *testing.T) {
 	t.Setenv("NETRISE_REDUCED_MOTION", "1")
 	catalog := content.Catalog{SchemaVersion: 1, Targets: []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 30}}}
