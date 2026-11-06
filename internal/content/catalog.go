@@ -19,6 +19,13 @@ type Upgrade struct {
 	Cost        int64  `json:"cost"`
 	Description string `json:"description"`
 }
+type ResearchNode struct {
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	CostData      int64    `json:"cost_data"`
+	Prerequisites []string `json:"prerequisites"`
+	Description   string   `json:"description"`
+}
 type Layer struct {
 	Integrity int64 `json:"integrity"`
 	ICE       int64 `json:"ice"`
@@ -39,10 +46,11 @@ type Target struct {
 	IntelGain        int64   `json:"intel_gain"`
 }
 type Catalog struct {
-	SchemaVersion int         `json:"schema_version"`
-	Generators    []Generator `json:"generators"`
-	Upgrades      []Upgrade   `json:"upgrades"`
-	Targets       []Target    `json:"targets"`
+	SchemaVersion int            `json:"schema_version"`
+	Generators    []Generator    `json:"generators"`
+	Upgrades      []Upgrade      `json:"upgrades"`
+	Research      []ResearchNode `json:"research"`
+	Targets       []Target       `json:"targets"`
 }
 
 func Load(r io.Reader) (Catalog, error) {
@@ -72,6 +80,20 @@ func Validate(c Catalog) error {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true
+	}
+	seen = map[string]bool{}
+	for _, r := range c.Research {
+		if r.ID == "" || seen[r.ID] || r.Name == "" || r.CostData < 0 {
+			return fmt.Errorf("content: invalid research node %q", r.ID)
+		}
+		seen[r.ID] = true
+	}
+	for _, r := range c.Research {
+		for _, prerequisite := range r.Prerequisites {
+			if !seen[prerequisite] || prerequisite == r.ID {
+				return fmt.Errorf("content: research %q has invalid prerequisite %q", r.ID, prerequisite)
+			}
+		}
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {

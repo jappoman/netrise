@@ -9,7 +9,7 @@ import (
 )
 
 func catalog() content.Catalog {
-	return content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", Cost: 50, ComputePerSecond: 1}}, Upgrades: []content.Upgrade{{ID: "u", Cost: 10}, {ID: "secondhand_compiler", Name: "Compiler", Cost: 75}, {ID: "street_contacts", Name: "Contacts", Cost: 150}}, Targets: []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1, Counter: 0}, {Integrity: 15, ICE: 1, Counter: 0}}, LootCredits: 5, LootData: 2, TimeLimit: 30, ReconCost: 10, ReconTicks: 15, IntelGain: 50}}}
+	return content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", Cost: 50, ComputePerSecond: 1}}, Upgrades: []content.Upgrade{{ID: "u", Cost: 10}, {ID: "secondhand_compiler", Name: "Compiler", Cost: 75}, {ID: "street_contacts", Name: "Contacts", Cost: 150}}, Research: []content.ResearchNode{{ID: "hardware", Name: "Hardware", CostData: 10}, {ID: "intrusion", Name: "Intrusion", CostData: 20, Prerequisites: []string{"hardware"}}}, Targets: []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1, Counter: 0}, {Integrity: 15, ICE: 1, Counter: 0}}, LootCredits: 5, LootData: 2, TimeLimit: 30, ReconCost: 10, ReconTicks: 15, IntelGain: 50}}}
 }
 func TestDeterministicAdvance(t *testing.T) {
 	a := NewState(17)
@@ -322,5 +322,32 @@ func TestAutomationPoliciesRunInsideDeterministicTicks(t *testing.T) {
 	}
 	if s.Resources.Credits < 0 || s.Resources.Compute < 0 {
 		t.Fatalf("automation created negative resources: %#v", s.Resources)
+	}
+}
+
+func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
+	e := New(catalog(), 33)
+	s := NewState(33)
+	s.Resources.Data = mathx.New(20)
+	if _, _, err := e.Apply(s, game.Command{Kind: game.BuyResearch, ID: "intrusion"}); err == nil {
+		t.Fatal("research prerequisite bypassed")
+	}
+	got, _, err := e.Apply(s, game.Command{Kind: game.BuyResearch, ID: "hardware"})
+	if err != nil || got.Resources.Data != mathx.New(10) || len(got.Research) != 1 {
+		t.Fatalf("research purchase failed: %#v, %v", got, err)
+	}
+	got.RunExtractedData = 10000
+	got.Resources.Credits = mathx.New(999)
+	got.Resources.Bots = 4
+	got.Generators = []game.Generator{{ID: "rig", Count: 2}}
+	reset, _, err := e.Apply(got, game.Command{Kind: game.IdentityBurn})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reset.GhostKeys != 1 || reset.PrestigeCount != 1 || reset.RunExtractedData != 0 || reset.Resources.Bots != 0 || len(reset.Generators) != 0 || len(reset.Research) != 0 {
+		t.Fatalf("identity burn did not reset run state: %#v", reset)
+	}
+	if _, _, err := e.Apply(reset, game.Command{Kind: game.IdentityBurn}); err == nil {
+		t.Fatal("tiny reset unexpectedly granted a second reward")
 	}
 }

@@ -218,6 +218,37 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown automation policy"}
 		}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "AutomationEnabled", Message: "Automation policy enabled: " + c.ID}}, nil
+	case game.BuyResearch:
+		node, ok := e.researchNode(c.ID)
+		if !ok {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown research node"}
+		}
+		if contains(s.Research, node.ID) {
+			return s, nil, &game.CommandError{Reason: game.ReasonDuplicatePurchase, Detail: "research already completed"}
+		}
+		for _, prerequisite := range node.Prerequisites {
+			if !contains(s.Research, prerequisite) {
+				return s, nil, &game.CommandError{Reason: game.ReasonResearchLocked, Detail: "research prerequisite missing: " + prerequisite}
+			}
+		}
+		if s.Resources.Data < mathx.New(node.CostData) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientData, Detail: fmt.Sprintf("need %d data", node.CostData)}
+		}
+		s.Resources.Data -= mathx.New(node.CostData)
+		s.Research = append(s.Research, node.ID)
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "ResearchCompleted", Message: node.Name + " completed."}}, nil
+	case game.IdentityBurn:
+		reward := integerSqrt(s.RunExtractedData / 10000)
+		if reward <= 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonPrestigeLocked, Detail: "extract at least 10,000 data before Identity Burn"}
+		}
+		ghostKeys := s.GhostKeys + reward
+		newState := NewState(s.WorldSeed)
+		newState.GhostKeys = ghostKeys
+		newState.PrestigeCount = s.PrestigeCount + 1
+		newState.Resources.Credits = mathx.New(25 + ghostKeys*5)
+		newState.GameVersion = s.GameVersion
+		return newState, []game.Event{{Tick: s.LogicalTick, Type: "PrestigeCompleted", Message: fmt.Sprintf("Identity Burn complete. %d Ghost Keys retained.", ghostKeys), Amount: reward}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
@@ -354,6 +385,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			s.Resources.Bots += b.LiveBots
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
 			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
+			s.RunExtractedData += target.LootData
 			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, target.LootData, s.HeatBP)
 			if !contains(s.CompletedTargets, target.ID) {
 				s.CompletedTargets = append(s.CompletedTargets, target.ID)
@@ -391,6 +423,31 @@ func (e *Engine) target(id string) (content.Target, bool) {
 		}
 	}
 	return content.Target{}, false
+}
+
+func (e *Engine) researchNode(id string) (content.ResearchNode, bool) {
+	for _, node := range e.Catalog.Research {
+		if node.ID == id {
+			return node, true
+		}
+	}
+	return content.ResearchNode{}, false
+}
+
+func integerSqrt(value int64) int64 {
+	if value <= 0 {
+		return 0
+	}
+	var low, high int64 = 1, value
+	for low <= high {
+		mid := low + (high-low)/2
+		if mid <= value/mid {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+	return high
 }
 
 func (e *Engine) isReachable(s game.State, target content.Target) bool {

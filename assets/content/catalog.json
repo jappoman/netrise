@@ -17,6 +17,12 @@
     {"id":"signal_profiler","name":"Signal Profiler","cost":175,"description":"Unlocks safe automated recon."},
     {"id":"black_archive","name":"Black Archive","cost":250,"description":"Unlocks data research (coming next)."}
   ],
+  "research": [
+    {"id":"hardware_01","name":"Cold-Soldered Array","cost_data":10,"prerequisites":[],"description":"Improves the Runner's hardware discipline."},
+    {"id":"intrusion_01","name":"Layer Mapping","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves breach preparation."},
+    {"id":"anonymity_01","name":"Quiet Relay","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves stealth doctrine."},
+    {"id":"automation_01","name":"Routine Scripting","cost_data":30,"prerequisites":["intrusion_01"],"description":"Improves safe automation budgets."}
+  ],
   "targets": [
     {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90,"recon_cost":10,"recon_ticks":15,"intel_gain":45},
     {"id":"t_02","name":"Holloway Transit / Dispatch Vault","corporation":"Holloway Transit","reachable":false,"requires_target_id":"t_01","layers":[{"integrity":65,"ice":5,"counter":2},{"integrity":45,"ice":3,"counter":2}],"loot_credits":90,"loot_data":25,"time_limit":90,"recon_cost":20,"recon_ticks":15,"intel_gain":35},

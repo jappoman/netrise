@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 	"path/filepath"
@@ -75,12 +76,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "research" {
+			switch v.String() {
+			case "enter":
+				if id := m.nextResearchID(); id != "" {
+					m.applyCommand(game.Command{Kind: game.BuyResearch, ID: id})
+				}
+			case "esc", "o":
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if v.String() == "t" {
 			m.screen = "targets"
 			return m, nil
 		}
 		if v.String() == "o" {
 			m.screen = "overview"
+			return m, nil
+		}
+		if v.String() == "y" {
+			m.screen = "research"
 			return m, nil
 		}
 		if m.screen == "result" && v.String() == "enter" {
@@ -146,11 +162,14 @@ func (m Model) View() tea.View {
 	if m.screen == "result" {
 		return tea.NewView(m.resultView())
 	}
+	if m.screen == "research" {
+		return tea.NewView(m.researchView())
+	}
 	battle := "NO ACTIVE BATTLE"
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [C/F/I] automation [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [C/F/I] automation [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -192,6 +211,53 @@ func (m Model) resultView() string {
 		return "NETRISE // RESULT\n\nNo completed battle.\n[o] overview"
 	}
 	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nSURVIVORS: %d\nBOTS LOST: %d\nLOOT: %d credits / %d data\nELAPSED: %d ticks\n\n[enter] overview  [t] targets", r.TargetID, r.Outcome, r.Survivors, r.BotsLost, r.CreditsLooted, r.DataLooted, r.ElapsedTicks)
+}
+
+func (m Model) researchView() string {
+	lines := "NETRISE // RESEARCH\n\n"
+	for _, node := range m.engine.Catalog.Research {
+		state := "LOCKED"
+		if hasResearch(m.state, node.ID) {
+			state = "COMPLETE"
+		} else if researchPrerequisitesMet(m.state, node.Prerequisites) {
+			state = fmt.Sprintf("AVAILABLE (%d data)", node.CostData)
+		}
+		lines += fmt.Sprintf("%-22s %-18s %s\n", node.Name, node.ID, state)
+	}
+	return lines + "\n[enter] buy next available node  [esc] overview"
+}
+
+func (m Model) nextResearchID() string {
+	for _, node := range m.engine.Catalog.Research {
+		if !hasResearch(m.state, node.ID) && researchPrerequisitesMet(m.state, node.Prerequisites) && m.state.Resources.Data >= mathx.New(node.CostData) {
+			return node.ID
+		}
+	}
+	return ""
+}
+
+func hasResearch(s game.State, id string) bool { return containsString(s.Research, id) }
+
+func researchPrerequisitesMet(s game.State, prerequisites []string) bool {
+	return len(prerequisites) == 0 || allContained(s.Research, prerequisites)
+}
+
+func containsString(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func allContained(values, wanted []string) bool {
+	for _, id := range wanted {
+		if !containsString(values, id) {
+			return false
+		}
+	}
+	return true
 }
 
 func reachability(reachable bool) string {

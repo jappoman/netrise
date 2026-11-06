@@ -46,6 +46,10 @@ type State struct {
 	Recon            *ReconJob        `json:"recon,omitempty"`
 	CompletedTargets []string         `json:"completed_targets,omitempty"`
 	Automation       Automation       `json:"automation"`
+	Research         []string         `json:"research,omitempty"`
+	RunExtractedData int64            `json:"run_extracted_data"`
+	GhostKeys        int64            `json:"ghost_keys"`
+	PrestigeCount    int64            `json:"prestige_count"`
 }
 
 type Automation struct {
@@ -105,6 +109,8 @@ const (
 	WithdrawBattle   CommandKind = "withdraw_battle"
 	StartRecon       CommandKind = "start_recon"
 	EnableAutomation CommandKind = "enable_automation"
+	BuyResearch      CommandKind = "buy_research"
+	IdentityBurn     CommandKind = "identity_burn"
 )
 
 type Command struct {
@@ -129,6 +135,7 @@ const (
 	ReasonInvalidCommand      Reason = "invalid_command"
 	ReasonInsufficientCredits Reason = "insufficient_credits"
 	ReasonInsufficientCompute Reason = "insufficient_compute"
+	ReasonInsufficientData    Reason = "insufficient_data"
 	ReasonCapacityReached     Reason = "capacity_reached"
 	ReasonDuplicatePurchase   Reason = "duplicate_purchase"
 	ReasonUpgradeLocked       Reason = "upgrade_locked"
@@ -138,6 +145,8 @@ const (
 	ReasonNoBattle            Reason = "no_battle"
 	ReasonReconActive         Reason = "recon_active"
 	ReasonReconLocked         Reason = "recon_locked"
+	ReasonResearchLocked      Reason = "research_locked"
+	ReasonPrestigeLocked      Reason = "prestige_locked"
 )
 
 type CommandError struct {
