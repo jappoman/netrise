@@ -320,11 +320,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		var events []game.Event
-		ticks := m.playbackSpeed
-		if ticks < 1 {
-			ticks = 1
+		if reducedMotion() && m.state.ActiveBattle != nil {
+			remaining := m.state.ActiveBattle.TimeLimit - m.state.ActiveBattle.ElapsedTicks
+			if remaining < 1 {
+				remaining = 1
+			}
+			for step := int64(0); step < remaining && m.state.ActiveBattle != nil; step++ {
+				var stepEvents []game.Event
+				m.state, stepEvents, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+				events = append(events, stepEvents...)
+			}
+		} else {
+			ticks := m.playbackSpeed
+			if ticks < 1 {
+				ticks = 1
+			}
+			m.state, events, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: ticks})
 		}
-		m.state, events, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: ticks})
 		if len(events) > 0 {
 			m.status = events[len(events)-1].Message
 		}
@@ -526,6 +538,8 @@ func (m Model) playbackStatus() string {
 	}
 	return fmt.Sprintf("RUNNING at %dx", m.playbackSpeed)
 }
+
+func reducedMotion() bool { return os.Getenv("NETRISE_REDUCED_MOTION") != "" }
 
 func (m Model) targetsView() string {
 	lines := "NETRISE // TARGETS\n\nChoose a reachable asset, then press Enter for preflight.\n"

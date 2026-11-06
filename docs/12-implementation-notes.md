@@ -40,6 +40,8 @@ macOS builds, and Make targets expose Runner, Corporation, simulation, build,
 vet, test, and race workflows.
 `NETRISE_HIGH_CONTRAST=1` provides an explicit bold white-on-black title rail
 for low-contrast terminals, while `NO_COLOR` remains the higher-priority mode.
+`NETRISE_REDUCED_MOTION=1` resolves an active battle in one UI update while
+preserving the same one-second engine ticks and deterministic result.
 Save reads now recover a valid `.bak` snapshot when the primary JSON is
 corrupted. A simulation benchmark covers 10,000 logical ticks, and tag-based
 release automation builds Linux, Windows, and macOS artifacts with SHA-256

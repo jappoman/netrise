@@ -160,6 +160,27 @@ func TestHighContrastModeIsSelectableAndNoColorWins(t *testing.T) {
 	}
 }
 
+func TestReducedMotionResolvesBattleWithoutPlaybackFrames(t *testing.T) {
+	t.Setenv("NETRISE_REDUCED_MOTION", "1")
+	catalog := content.Catalog{SchemaVersion: 1, Targets: []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 30}}}
+	state := sim.NewState(19)
+	state.Resources.Bots = 1
+	state.Upgrades = []string{"secondhand_compiler"}
+	e := sim.New(catalog, 19)
+	var err error
+	state, _, err = e.Apply(state, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 1, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := New(state, e, "")
+	m.screen = "battle"
+	updated, _ := m.Update(tickMsg{})
+	got := updated.(Model)
+	if got.state.ActiveBattle != nil || got.state.LastBattle == nil || got.screen != "result" {
+		t.Fatalf("reduced motion left playback active: battle=%#v result=%#v screen=%q", got.state.ActiveBattle, got.state.LastBattle, got.screen)
+	}
+}
+
 func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	m.state.EventLog = []game.Event{{Tick: 9, Type: "BattleEnded", Message: "Breach successful."}}
