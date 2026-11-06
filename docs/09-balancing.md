@@ -42,7 +42,8 @@ The local `netrise balance --seed-from 1 --seed-to 100` command now produces a
 deterministic JSON matrix over all catalog targets, three doctrines, each of
 the four commitment levels and the selected seed range. It reports outcome
 counts, average duration, bot attrition and heat per commitment so catalog
-balance changes can be compared without changing simulation rules.
+balance changes can be compared without changing simulation rules. Each row
+also carries both the 25/50/75/100% preset label and its absolute bot count.
 
 The Corporation integration suite also runs a scripted 3,600-tick campaign
 with all three starter assets, security capacity, maintenance and automated

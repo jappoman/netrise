@@ -30,7 +30,7 @@ func TestRunProducesDeterministicStrategyMatrix(t *testing.T) {
 		t.Fatalf("unexpected matrix size: %#v", first)
 	}
 	for _, result := range first.Results {
-		if result.Attempts != 3 || result.Commitment <= 0 || result.Victories+result.Defeats+result.Timeouts != result.Attempts || result.AverageDurationTicks <= 0 {
+		if result.Attempts != 3 || result.Commitment <= 0 || result.CommitmentPercent <= 0 || result.Victories+result.Defeats+result.Timeouts != result.Attempts || result.AverageDurationTicks <= 0 {
 			t.Fatalf("invalid strategy summary: %#v", result)
 		}
 	}

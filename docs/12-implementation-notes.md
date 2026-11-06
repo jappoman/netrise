@@ -500,4 +500,5 @@ metrics.
 
 The headless balance report now reuses the production combat engine for a
 deterministic target/doctrine/commitment matrix, emitting outcomes, duration,
-attrition and heat per commitment for local catalog iteration.
+attrition and heat per commitment for local catalog iteration. Reports label
+each row with both the in-game percentage preset and absolute bot count.

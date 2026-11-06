@@ -13,7 +13,15 @@ const (
 	MaxSeedCount    = 1000
 )
 
-var commitments = []int64{10, 20, 30, 40}
+var commitments = []struct {
+	percent int64
+	bots    int64
+}{
+	{percent: 25, bots: 10},
+	{percent: 50, bots: 20},
+	{percent: 75, bots: 30},
+	{percent: 100, bots: 40},
+}
 var doctrines = []game.Doctrine{game.Balanced, game.Stealth, game.Overload}
 
 type Report struct {
@@ -26,6 +34,7 @@ type Report struct {
 type StrategyTargetSummary struct {
 	TargetID             string        `json:"target_id"`
 	Doctrine             game.Doctrine `json:"doctrine"`
+	CommitmentPercent    int64         `json:"commitment_percent"`
 	Commitment           int64         `json:"commitment"`
 	Attempts             int64         `json:"attempts"`
 	Victories            int64         `json:"victories"`
@@ -47,10 +56,10 @@ func Run(catalog content.Catalog, seedFrom, seedTo int64) (Report, error) {
 	report := Report{SeedFrom: seedFrom, SeedTo: seedTo}
 	for _, target := range accessible.Targets {
 		for _, doctrine := range doctrines {
-			for _, commitment := range commitments {
-				summary := StrategyTargetSummary{TargetID: target.ID, Doctrine: doctrine, Commitment: commitment}
+			for _, profile := range commitments {
+				summary := StrategyTargetSummary{TargetID: target.ID, Doctrine: doctrine, CommitmentPercent: profile.percent, Commitment: profile.bots}
 				for seed := seedFrom; ; seed++ {
-					result, err := resolve(accessible, target.ID, seed, commitment, doctrine)
+					result, err := resolve(accessible, target.ID, seed, profile.bots, doctrine)
 					if err != nil {
 						return Report{}, err
 					}
