@@ -7,6 +7,8 @@ import (
 	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -198,6 +200,50 @@ func TestReducedMotionResolvesBattleWithoutPlaybackFrames(t *testing.T) {
 	got := updated.(Model)
 	if got.state.ActiveBattle != nil || got.state.LastBattle == nil || got.screen != "result" {
 		t.Fatalf("reduced motion left playback active: battle=%#v result=%#v screen=%q", got.state.ActiveBattle, got.state.LastBattle, got.screen)
+	}
+}
+
+func TestRunnerKeyboardFlowReachesBattleResultEndToEnd(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state := sim.NewState(17)
+	state.Upgrades = []string{"secondhand_compiler"}
+	state.Resources.Bots = 10
+	m := New(state, sim.New(catalog, 17), t.TempDir())
+	key := func(text string) tea.KeyPressMsg { return tea.KeyPressMsg(tea.Key{Text: text, Code: rune(text[0])}) }
+
+	updated, _ := m.Update(key("t"))
+	m = updated.(Model)
+	if m.screen != "targets" {
+		t.Fatalf("targets screen was not opened: %q", m.screen)
+	}
+	updated, _ = m.Update(key("enter"))
+	m = updated.(Model)
+	if m.screen != "preflight" {
+		t.Fatalf("preflight screen was not opened: %q", m.screen)
+	}
+	updated, _ = m.Update(key("enter"))
+	m = updated.(Model)
+	if m.screen != "battle" || m.state.ActiveBattle == nil {
+		t.Fatalf("keyboard launch did not start battle: screen=%q state=%#v", m.screen, m.state.ActiveBattle)
+	}
+	for ticks := 0; m.state.ActiveBattle != nil && ticks <= 30; ticks++ {
+		updated, _ = m.Update(tickMsg{})
+		m = updated.(Model)
+	}
+	if m.screen != "result" || m.state.LastBattle == nil || m.state.LastBattle.Outcome != "victory" {
+		t.Fatalf("keyboard flow did not reach victory result: screen=%q result=%#v", m.screen, m.state.LastBattle)
+	}
+	if !strings.Contains(m.View().Content, "OUTCOME: victory") || !strings.Contains(m.View().Content, "NEXT:") {
+		t.Fatalf("result screen did not explain outcome and next action: %s", m.View().Content)
 	}
 }
 

@@ -255,3 +255,7 @@ deterministic battle engine.
 CI packaging checks now exercise both factions from the Linux release bundle,
 while Windows jobs also run the player-facing CLI smoke flow through both
 PowerShell's default runner and CMD.
+
+The TUI suite now includes a real keyboard-driven Runner flow on the shipped
+catalog: Overview to Targets, Preflight, Battle playback and Result, including
+the player-facing outcome and next-action rail.
