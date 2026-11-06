@@ -128,6 +128,12 @@ Operations reduces operational upkeep; completed IDs are persisted, displayed
 in the Corporation report and reset by Restructuring. Rate calculations are
 exposed by the shared engine so the TUI cannot drift from simulation rules.
 
+The Corporation overview now exposes all three initial business assets:
+`[b]` Transit Hosting, `[a]` Archive Server and `[s]` Security Desk. The
+progression guide and contextual next-step hint identify the Archive Server as
+the next expansion after security investment, while Runner's `[a]` action
+remains its tutorial breach.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

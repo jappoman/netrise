@@ -60,6 +60,21 @@ func TestCorporationOverviewRendersAtCompactSize(t *testing.T) {
 	}
 }
 
+func TestCorporationCanBuildArchiveServerFromOverview(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		CorpAssets:    []content.CorpAssetDefinition{{ID: "archive_server", Name: "Archive Server", CostCapital: 150, CapitalPerTick: 7, UpkeepPerTick: 2, Integrity: 140}},
+	}
+	state := sim.NewCorporationState(14)
+	state.Corp.Capital = mathx.New(200)
+	m := New(state, sim.New(catalog, 14), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "a", Code: 'a'}))
+	m = updated.(Model)
+	if !m.corpHasAsset("archive_server") || m.state.Corp.Capital != mathx.New(50) {
+		t.Fatalf("archive server action did not build asset atomically: state=%#v status=%s", m.state.Corp, m.status)
+	}
+}
+
 func TestNoColorOmitsANSIStyling(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")

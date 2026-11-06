@@ -273,6 +273,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "s":
 			command = game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"}
+		case "a":
+			if m.state.Faction == game.Corporation {
+				command = game.Command{Kind: game.CorpBuildAsset, ID: "archive_server"}
+			} else {
+				command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Balanced}
+			}
 		case "i":
 			command = game.Command{Kind: game.CorpBuyICE, Quantity: 1}
 		case "e":
@@ -287,8 +293,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command = game.Command{Kind: game.QueueFabrication, Quantity: 1}
 		case "u":
 			command = game.Command{Kind: game.BuyUpgrade, ID: "secondhand_compiler"}
-		case "a":
-			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Balanced}
 		case "r":
 			command = game.Command{Kind: game.ReinforceBattle, Quantity: 1}
 		case "w":
@@ -405,7 +409,7 @@ func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height 
 
 func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
-		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
+		controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [q] quit"
 		}
@@ -828,7 +832,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
@@ -864,6 +868,7 @@ func (m Model) tutorialSteps() []tutorialStep {
 		return []tutorialStep{
 			{Title: "Build a second client asset", Action: "press [b] to add Transit Hosting", Done: m.state.Corp != nil && len(m.state.Corp.Assets) >= 2},
 			{Title: "Invest in security", Action: "press [s] to install a Security Desk", Done: m.corpHasAsset("security_desk")},
+			{Title: "Expand the archive business", Action: "press [a] to build an Archive Server", Done: m.corpHasAsset("archive_server")},
 			{Title: "Fill the reserve ICE rack", Action: "press [i] until ICE reaches capacity", Done: m.state.Corp != nil && m.state.Corp.ICE >= m.state.Corp.ICECapacity},
 			{Title: "Survive an active-play incursion", Action: "advance active play and review the battle playback", Done: m.state.LastBattle != nil},
 			{Title: "Enable automated maintenance", Action: "press [M] after investing in R&D", Done: m.state.Corp != nil && m.state.Corp.MaintenanceAuto},
@@ -914,7 +919,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
+	controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
@@ -1145,7 +1150,13 @@ func (m Model) corpNextHint() string {
 		return "campaign state unavailable"
 	}
 	if len(m.state.Corp.Assets) < 2 {
-		return "build Transit Hosting, then invest in a Security Desk"
+		return "press [b] to build Transit Hosting, then invest in security"
+	}
+	if !m.corpHasAsset("security_desk") {
+		return "press [s] to install a Security Desk before expanding further"
+	}
+	if !m.corpHasAsset("archive_server") {
+		return "press [a] to build an Archive Server and grow recurring revenue"
 	}
 	if m.state.Corp.ICE < m.state.Corp.ICECapacity {
 		return "restock reserve ICE before the next emergency audit"
