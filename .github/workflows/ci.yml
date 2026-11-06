@@ -91,5 +91,9 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
-          go run ./cmd/netrise unknown-command
-          if ($LASTEXITCODE -eq 0) { throw 'unknown command unexpectedly succeeded' }
+          $previousErrorActionPreference = $ErrorActionPreference
+          $ErrorActionPreference = 'Continue'
+          go run ./cmd/netrise unknown-command 2>&1 | Out-Host
+          $unknownExitCode = $LASTEXITCODE
+          $ErrorActionPreference = $previousErrorActionPreference
+          if ($unknownExitCode -eq 0) { throw 'unknown command unexpectedly succeeded' }
