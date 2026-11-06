@@ -636,6 +636,9 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		s.RNGState ^= s.RNGState << 7
 		s.RNGState ^= s.RNGState >> 9
 		if s.Faction == game.Corporation && s.Corp != nil {
+			if s.Corp.IncursionBudget <= 0 {
+				s.Corp.IncursionBudget = e.incursionBudget(s)
+			}
 			var corporationEvents []game.Event
 			s, corporationEvents = e.advanceCorporation(s, safeOnly)
 			events = append(events, corporationEvents...)
@@ -871,6 +874,9 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 	if !ok || len(target.Layers) == 0 {
 		return s, events
 	}
+	if s.Corp.IncursionBudget <= 0 {
+		s.Corp.IncursionBudget = e.incursionBudget(s)
+	}
 	committed := e.incursionCommitment(s)
 	if committed <= 0 || !e.incursionAvailable(s) {
 		return s, events
@@ -911,6 +917,10 @@ func (e *Engine) incursionBudget(s game.State) int64 {
 	if s.Corp.IncursionBudget > 0 {
 		return s.Corp.IncursionBudget
 	}
+	return e.catalogIncursionBudget()
+}
+
+func (e *Engine) catalogIncursionBudget() int64 {
 	if e.Catalog.CorpIncursion.BotBudget > 0 {
 		return e.Catalog.CorpIncursion.BotBudget
 	}

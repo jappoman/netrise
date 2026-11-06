@@ -367,6 +367,19 @@ func TestCorporationIncursionUsesActiveBudgetOnly(t *testing.T) {
 	}
 }
 
+func TestCorporationIncursionBudgetUsesCatalogConfiguration(t *testing.T) {
+	c := catalog()
+	c.Targets[0].ID = "t_01"
+	c.CorpIncursion = content.CorpIncursion{IntervalTicks: 1, BotBudget: 12, BotCommitment: 6}
+	e := New(c, 109)
+	s := NewCorporationState(109)
+	s.Corp.IncursionBudget = 0
+	s, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Corp.IncursionBudget != 12 || s.ActiveBattle == nil || s.ActiveBattle.CommittedBots != 6 {
+		t.Fatalf("catalogued incursion budget was not applied: corp=%#v battle=%#v err=%v", s.Corp, s.ActiveBattle, err)
+	}
+}
+
 func TestOfflinePassiveAggregationMatchesTickPath(t *testing.T) {
 	e := New(catalog(), 104)
 	start := NewState(104)
