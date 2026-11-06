@@ -728,6 +728,42 @@ func (e *Engine) ComputeRate(s game.State) int64 {
 	return rate + e.researchEffects(s).ComputePerSecondBonus + e.upgradeEffects(s).ComputePerSecondBonus
 }
 
+// EstimateBattle provides a deterministic, intentionally conservative preflight
+// projection. It ignores random variation and counter losses, so the TUI labels
+// it as a baseline rather than promising an outcome.
+func (e *Engine) EstimateBattle(s game.State, target content.Target, doctrine game.Doctrine, commitment int64) (int64, int64) {
+	if commitment <= 0 || len(target.Layers) == 0 {
+		return 0, 0
+	}
+	attack := int64(100) + e.researchEffects(s).AttackBonusPercent
+	heat := int64(100)
+	upgrades := e.upgradeEffects(s)
+	switch doctrine {
+	case game.Stealth:
+		attack = 82 + e.researchEffects(s).AttackBonusPercent + upgrades.StealthAttackBonusPercent
+		heat = 55 - e.researchEffects(s).StealthHeatReductionPercent
+	case game.Overload:
+		attack = 125 + e.researchEffects(s).AttackBonusPercent
+		heat = 170
+	}
+	heat -= upgrades.HeatReductionPercent
+	if heat < 0 {
+		heat = 0
+	}
+	ticks := int64(0)
+	for _, layer := range target.Layers {
+		damage := commitment * attack / (100 + layer.ICE)
+		if damage < 1 {
+			damage = 1
+		}
+		ticks += (layer.Integrity + damage - 1) / damage
+	}
+	if ticks > target.TimeLimit {
+		ticks = target.TimeLimit
+	}
+	return ticks, ticks * heat
+}
+
 func (e *Engine) upgradeEffects(s game.State) content.UpgradeEffects {
 	var effects content.UpgradeEffects
 	for _, upgrade := range e.Catalog.Upgrades {

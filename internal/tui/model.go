@@ -26,11 +26,12 @@ type Model struct {
 	screen          string
 	selectedTarget  int
 	selectedUpgrade int
+	commitmentPct   int64
 	doctrine        game.Doctrine
 }
 
 func New(s game.State, e *sim.Engine, dataDir string) Model {
-	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced}
+	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced, commitmentPct: 75}
 }
 func (m Model) Init() tea.Cmd { return tea.Tick(1e9, func(time.Time) tea.Msg { return tickMsg{} }) }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -73,6 +74,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.screen == "preflight" {
 			switch v.String() {
+			case "+", "right":
+				m.commitmentPct = nextCommitment(m.commitmentPct)
+			case "-", "left":
+				m.commitmentPct = previousCommitment(m.commitmentPct)
 			case "1":
 				m.doctrine = game.Balanced
 			case "2":
@@ -82,7 +87,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				if len(m.engine.Catalog.Targets) > 0 {
 					target := m.engine.Catalog.Targets[m.selectedTarget]
-					m.applyCommand(game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: m.doctrine})
+					m.applyCommand(game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: commitmentBots(m.state.Resources.Bots, m.commitmentPct), Doctrine: m.doctrine})
 				}
 			case "esc", "t":
 				m.screen = "targets"
@@ -292,7 +297,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
-	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.offlineLine(), controls, m.nextHint(), m.status)
+	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.offlineLine(), controls, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
 }
 
@@ -310,7 +315,7 @@ func (m Model) compactView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // RUNNER (COMPACT)\nCREDITS %s  COMPUTE %s\nBOTS %d/%d  HEAT %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, compactBattle(m.state), m.nextHint(), controls)
+	return fmt.Sprintf("NETRISE // RUNNER (COMPACT)\nCREDITS %s  COMPUTE %s\nBOTS %d/%d  HEAT %d%%\nTICK %d\n%s\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, compactBattle(m.state), m.reconLine(), m.nextHint(), controls)
 }
 
 func compactBattle(s game.State) string {
@@ -345,7 +350,16 @@ func (m Model) preflightView() string {
 	if m.state.Intel != nil {
 		intel = m.state.Intel[target.ID]
 	}
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%%\nLAYERS: %d\nCOMMITMENT: %d bots (75%% default)\nDOCTRINE: %s\n\n[1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: ensure the commitment is affordable and review the doctrine.", target.Name, reachability(targetAvailable(m.state, target)), intel, len(target.Layers), attackCommitment(m.state.Resources.Bots), m.doctrine)
+	commitment := commitmentBots(m.state.Resources.Bots, m.commitmentPct)
+	estimatedTicks, estimatedHeat := m.engine.EstimateBattle(m.state, target, m.doctrine, commitment)
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%%\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
+}
+
+func (m Model) reconLine() string {
+	if m.state.Recon == nil {
+		return "NO ACTIVE RECON"
+	}
+	return fmt.Sprintf("RECON %s | %d ticks remaining", m.state.Recon.TargetID, m.state.Recon.RemainingTicks)
 }
 
 func (m Model) resultView() string {
@@ -609,6 +623,9 @@ func (m Model) nextHint() string {
 	if m.state.ActiveBattle != nil {
 		return "watch the counters; press [w] to withdraw"
 	}
+	if m.state.Recon != nil {
+		return "recon is running; wait for intel before opening preflight"
+	}
 	if !hasUpgrade(m.state, "secondhand_compiler") {
 		return "collect credits, then press [u] to install the compiler (75 CR)"
 	}
@@ -656,10 +673,43 @@ func hasGenerator(s game.State, id string) bool {
 }
 
 func attackCommitment(bots int64) int64 {
-	if bots <= 1 {
-		return bots
+	return commitmentBots(bots, 75)
+}
+
+func commitmentBots(bots, percent int64) int64 {
+	if bots <= 0 {
+		return 0
 	}
-	return (bots * 3) / 4
+	if percent < 25 {
+		percent = 25
+	}
+	if percent > 100 {
+		percent = 100
+	}
+	committed := bots * percent / 100
+	if committed < 1 {
+		return 1
+	}
+	return committed
+}
+
+func nextCommitment(percent int64) int64 {
+	for _, option := range []int64{25, 50, 75, 100} {
+		if option > percent {
+			return option
+		}
+	}
+	return 100
+}
+
+func previousCommitment(percent int64) int64 {
+	for i := len([]int64{25, 50, 75, 100}) - 1; i >= 0; i-- {
+		option := []int64{25, 50, 75, 100}[i]
+		if option < percent {
+			return option
+		}
+	}
+	return 25
 }
 
 func (m *Model) saveNow() {

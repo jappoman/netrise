@@ -72,5 +72,11 @@ purchase feedback, installed/affordability states, catalog descriptions and
 effect text. Secondary screens remain reachable below 80x24; only the overview
 and active battle use the compact dashboard.
 
+Runner preflight now supports 25/50/75/100% commitment selection with `+/-` or
+left/right, shows the selected bot count and a deterministic baseline duration
+and heat projection, and launches exactly the selected commitment. Active recon
+is surfaced in the overview so the next useful action is visible while intel
+is being collected.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
