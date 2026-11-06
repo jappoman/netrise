@@ -483,6 +483,10 @@ while `make smoke` exercises help, content validation, both playtests and both
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.
+The Windows developer path also includes `scripts/smoke.ps1` and
+`scripts/package-windows.ps1`: they locate a standard Go installation, verify
+the standalone executable with its bundled catalog, and record/validate an
+archive SHA-256 checksum without requiring `make`.
 
 The player-facing Bubble Tea view now opts into the terminal alternate buffer,
 so the shipped TUI is genuinely full-screen and automatically restores the
