@@ -274,6 +274,42 @@ func TestCorporationOfflineSummaryIsSafeAndNonHostile(t *testing.T) {
 	}
 }
 
+func TestOfflinePassiveAggregationMatchesTickPath(t *testing.T) {
+	e := New(catalog(), 104)
+	start := NewState(104)
+	start.Resources.Compute = mathx.New(3)
+	start.TargetCooldowns = map[string]int64{"target": 80}
+	aggregated, applied := e.ReconcileOffline(start, 600)
+	if applied != 600 {
+		t.Fatalf("unexpected offline ticks: %d", applied)
+	}
+	tickStart := start
+	tickStart.TargetCooldowns = map[string]int64{"target": 80}
+	ticked := e.Advance(tickStart, 600)
+	if aggregated.LogicalTick != ticked.LogicalTick || aggregated.Resources.Compute != ticked.Resources.Compute || aggregated.TargetCooldowns["target"] != ticked.TargetCooldowns["target"] {
+		t.Fatalf("aggregated offline state diverged: aggregated=%#v ticked=%#v", aggregated, ticked)
+	}
+	if aggregated.OfflineSummary == nil || aggregated.OfflineSummary.Ticks != 600 {
+		t.Fatalf("offline summary missing from aggregate path: %#v", aggregated.OfflineSummary)
+	}
+}
+
+func TestOfflineAggregationPreservesActiveBattle(t *testing.T) {
+	e := New(catalog(), 105)
+	s := NewState(105)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 8
+	s, _, err := e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := *s.ActiveBattle
+	got, applied := e.ReconcileOffline(s, 600)
+	if applied != 600 || got.ActiveBattle == nil || *got.ActiveBattle != before || got.RNGState != s.RNGState {
+		t.Fatalf("offline aggregation mutated hostile state: applied=%d battle=%#v before=%#v rng=%d/%d", applied, got.ActiveBattle, before, got.RNGState, s.RNGState)
+	}
+}
+
 func TestOfflineReconciliationDoesNotResolveBattle(t *testing.T) {
 	e := New(catalog(), 12)
 	s := NewState(12)

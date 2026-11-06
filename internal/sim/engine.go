@@ -26,6 +26,9 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	if elapsedTicks > OfflineCapTicks {
 		elapsedTicks = OfflineCapTicks
 	}
+	if e.canAggregateOffline(s, elapsedTicks) {
+		return e.aggregateOffline(s, elapsedTicks), elapsedTicks
+	}
 	// Offline time only resolves safe production. Preserve hostile state and
 	// the battle RNG stream so closing the game cannot decide an attack.
 	activeBattle := s.ActiveBattle
@@ -46,6 +49,78 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	}
 	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced}
 	return s, elapsedTicks
+}
+
+func (e *Engine) canAggregateOffline(s game.State, elapsedTicks int64) bool {
+	if elapsedTicks <= 0 || s.Fabrication != nil || s.Recon != nil || s.Automation.Contracts || s.Automation.Fabrication || s.Automation.ReconTargetID != "" {
+		return false
+	}
+	if s.Corp == nil {
+		return true
+	}
+	if s.Corp.MaintenanceAuto || s.Corp.ResearchAuto {
+		return false
+	}
+	for _, asset := range s.Corp.Assets {
+		if asset.IsolatedUntilTick > s.LogicalTick {
+			return false
+		}
+	}
+	upkeep := e.CorporationUpkeepRate(s)
+	if upkeep == 0 {
+		return true
+	}
+	rate := e.CorporationGrossRate(s)
+	if rate < upkeep {
+		return false
+	}
+	net := rate - upkeep
+	projected := s.Corp.Capital.Units()
+	if net > 0 && elapsedTicks > (1<<63-1-projected)/net {
+		return false
+	}
+	return projected+net*elapsedTicks >= 0
+}
+
+func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
+	beforeCompute := s.Resources.Compute
+	beforeCapital := mathx.Amount(0)
+	if s.Corp != nil {
+		beforeCapital = s.Corp.Capital
+	}
+	for id, remaining := range s.TargetCooldowns {
+		if remaining <= elapsedTicks {
+			delete(s.TargetCooldowns, id)
+		} else {
+			s.TargetCooldowns[id] = remaining - elapsedTicks
+		}
+	}
+	s.LogicalTick += elapsedTicks
+	if s.Corp == nil {
+		rate := e.ComputeRate(s)
+		gain, _ := mathx.New(rate).MulUnits(elapsedTicks)
+		s.Resources.Compute, _ = s.Resources.Compute.Add(gain)
+	} else {
+		gross := e.CorporationGrossRate(s)
+		upkeep := e.CorporationUpkeepRate(s)
+		net := gross - upkeep
+		if net > 0 {
+			gain, _ := mathx.New(net).MulUnits(elapsedTicks)
+			s.Corp.Capital, _ = s.Corp.Capital.Add(gain)
+		}
+		computeGain, _ := mathx.New(2).MulUnits(elapsedTicks)
+		s.Corp.Compute, _ = s.Corp.Compute.Add(computeGain)
+		if gross > 0 && elapsedTicks <= (1<<63-1-s.Corp.RunValuation)/gross {
+			s.Corp.RunValuation += gross * elapsedTicks
+		}
+	}
+	computeProduced, _ := s.Resources.Compute.Add(-beforeCompute)
+	capitalProduced := mathx.Amount(0)
+	if s.Corp != nil {
+		capitalProduced, _ = s.Corp.Capital.Add(-beforeCapital)
+	}
+	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced}
+	return s
 }
 
 func New(c content.Catalog, seed int64) *Engine {

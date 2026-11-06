@@ -51,6 +51,10 @@ the last valid backup.
 Offline load reconciliation now accepts an injected clock at the CLI boundary,
 so elapsed-time behavior and clock reversal handling are deterministic in tests
 while normal play continues to use the system clock.
+When no battle, timer, automation or policy job is active, offline passive
+production now aggregates directly over elapsed ticks instead of iterating each
+second; equivalence tests keep the result identical to the authoritative tick
+path, while queued safe jobs retain the detailed reconciliation path.
 The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.
