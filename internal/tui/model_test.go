@@ -430,6 +430,7 @@ func TestPreflightAdjustsCommitmentAndLaunchesSelectedAmount(t *testing.T) {
 	state := sim.NewState(2)
 	state.Upgrades = []string{"secondhand_compiler"}
 	state.Resources.Bots = 8
+	state.Access = map[string]int64{"target": 25}
 	m := New(state, sim.New(catalog, 2), "")
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "t", Code: 't'}))
 	m = updated.(Model)
@@ -437,7 +438,7 @@ func TestPreflightAdjustsCommitmentAndLaunchesSelectedAmount(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "+", Code: '+'}))
 	m = updated.(Model)
-	if !strings.Contains(m.preflightView(), "COMMITMENT: 8 bots (100%)") || !strings.Contains(m.preflightView(), "BASELINE:") {
+	if !strings.Contains(m.preflightView(), "COMMITMENT: 8 bots (100%)") || !strings.Contains(m.preflightView(), "ACCESS: access:25 ticks") || !strings.Contains(m.preflightView(), "BASELINE:") {
 		t.Fatalf("preflight did not show adjustable commitment: %s", m.preflightView())
 	}
 	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Code: tea.KeyEnter}))

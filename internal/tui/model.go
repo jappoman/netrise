@@ -573,7 +573,7 @@ func (m Model) preflightView() string {
 	}
 	commitment := commitmentBots(m.state.Resources.Bots, m.commitmentPct)
 	estimatedTicks, estimatedHeat := m.engine.EstimateBattle(m.state, target, m.doctrine, commitment)
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nCOOLDOWN: %s\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), targetCooldownLabel(m.state, target.ID), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nACCESS: %s\nCOOLDOWN: %s\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), targetAccessLabel(m.state, target.ID), targetCooldownLabel(m.state, target.ID), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
 }
 
 func (m Model) reconLine() string {
