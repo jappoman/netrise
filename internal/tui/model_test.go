@@ -55,6 +55,26 @@ func TestQuitPersistsActiveBattleForResume(t *testing.T) {
 	}
 }
 
+func TestCtrlCPersistsActiveBattleForResume(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Layers: []content.Layer{{Integrity: 30, ICE: 2}}, TimeLimit: 30}},
+	}
+	state := sim.NewState(14)
+	state.LogicalTick = 7
+	state.ActiveBattle = &game.Battle{TargetID: "target", AttackerFaction: game.Runner, Doctrine: game.Balanced, CommittedBots: 4, LiveBots: 3, LayerIntegrity: 22, DefenderICE: 1, ElapsedTicks: 2, TimeLimit: 30}
+	dir := t.TempDir()
+	m := New(state, sim.New(catalog, 14), dir)
+	updated, quit := m.Update(tea.KeyPressMsg(tea.Key{Text: "ctrl+c"}))
+	if updated == nil || quit == nil {
+		t.Fatal("Ctrl+C did not return a model and quit command")
+	}
+	got, err := save.Read(dir)
+	if err != nil || got.ActiveBattle == nil || got.ActiveBattle.LiveBots != 3 || got.LogicalTick != 7 {
+		t.Fatalf("Ctrl+C did not persist resumable battle: state=%#v err=%v", got, err)
+	}
+}
+
 func TestCorporationOverviewRendersAtCompactSize(t *testing.T) {
 	m := New(sim.NewCorporationState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
