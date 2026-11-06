@@ -79,6 +79,10 @@ func extractDataDir(args []string) ([]string, string) {
 }
 
 func loadState(dataDir string, e *sim.Engine, faction game.Faction) game.State {
+	return loadStateAt(dataDir, e, faction, time.Now)
+}
+
+func loadStateAt(dataDir string, e *sim.Engine, faction game.Faction, now func() time.Time) game.State {
 	s, err := save.ReadFaction(dataDir, faction)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -96,7 +100,7 @@ func loadState(dataDir string, e *sim.Engine, faction game.Faction) game.State {
 	if err != nil {
 		return s
 	}
-	elapsed := int64(time.Since(savedAt).Seconds())
+	elapsed := int64(now().Sub(savedAt).Seconds())
 	if elapsed <= 0 {
 		return s
 	}

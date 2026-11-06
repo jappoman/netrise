@@ -48,6 +48,9 @@ bundle containing the executable and catalog. Headless reports support both camp
 Save reads and writes also validate semantic state bounds at the persistence
 boundary; syntactically valid but impossible JSON is rejected or recovered from
 the last valid backup.
+Offline load reconciliation now accepts an injected clock at the CLI boundary,
+so elapsed-time behavior and clock reversal handling are deterministic in tests
+while normal play continues to use the system clock.
 The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.
