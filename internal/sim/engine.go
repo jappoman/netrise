@@ -14,6 +14,7 @@ type Engine struct {
 }
 
 const OfflineCapTicks int64 = 8 * 60 * 60
+const DefaultAutomationBudget int64 = 1000
 
 // ReconcileOffline advances only safe production. Hostile actions and battles
 // are intentionally not represented here, so closing the game cannot cause
@@ -229,17 +230,22 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: e.reconTicks(s, target.ReconTicks)}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ReconStarted", Message: "Recon package deployed: " + target.Name}}, nil
 	case game.EnableAutomation:
+		if c.Quantity < 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "automation budget cannot be negative"}
+		}
 		switch c.ID {
 		case "contracts":
 			if !hasUpgrade(s, "autodialer") {
 				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Autodialer first"}
 			}
 			s.Automation.Contracts = true
+			s.Automation.ContractBudget = configuredBudget(c.Quantity, s.Automation.ContractBudget)
 		case "fabrication":
 			if !hasUpgrade(s, "packet_scheduler") {
 				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Packet Scheduler first"}
 			}
 			s.Automation.Fabrication = true
+			s.Automation.FabricationBudget = configuredBudget(c.Quantity, s.Automation.FabricationBudget)
 		case "recon":
 			if !hasUpgrade(s, "signal_profiler") {
 				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Signal Profiler first"}
@@ -249,6 +255,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 				return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "recon target is not reachable"}
 			}
 			s.Automation.ReconTargetID = target.ID
+			s.Automation.ReconBudget = configuredBudget(c.Quantity, s.Automation.ReconBudget)
 		default:
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown automation policy"}
 		}
@@ -444,24 +451,71 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 }
 
 func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.State, []game.Event) {
+	normalizeAutomationBudgets(&s.Automation)
 	if s.Automation.Contracts && s.LogicalTick%e.automationInterval(s) == 0 {
-		s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(10))
-		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationProduced", Message: "Autodialer settled a safe contract.", Amount: 10})
+		remaining := s.Automation.ContractBudget - s.Automation.ContractEarned
+		if remaining <= 0 {
+			s.Automation.Contracts = false
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Autodialer stopped: contract budget reached."})
+		} else {
+			amount := minInt64(10, remaining)
+			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(amount))
+			s.Automation.ContractEarned += amount
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationProduced", Message: "Autodialer settled a safe contract.", Amount: amount})
+			if s.Automation.ContractEarned >= s.Automation.ContractBudget {
+				s.Automation.Contracts = false
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Autodialer stopped: contract budget reached."})
+			}
+		}
 	}
 	if s.Automation.Fabrication && s.Fabrication == nil && hasUpgrade(s, "secondhand_compiler") && s.Resources.Bots < s.Resources.BotCapacity && s.Resources.Compute >= mathx.New(10) && s.Resources.Credits >= mathx.New(2) {
-		s.Resources.Compute -= mathx.New(10)
-		s.Resources.Credits -= mathx.New(2)
-		s.Fabrication = &game.Fabrication{RemainingTicks: e.fabricationTicks(s), Quantity: 1}
-		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Packet Scheduler queued one bot."})
+		if s.Automation.FabricationSpent+2 > s.Automation.FabricationBudget {
+			s.Automation.Fabrication = false
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Packet Scheduler stopped: fabrication budget reached."})
+		} else {
+			s.Resources.Compute -= mathx.New(10)
+			s.Resources.Credits -= mathx.New(2)
+			s.Automation.FabricationSpent += 2
+			s.Fabrication = &game.Fabrication{RemainingTicks: e.fabricationTicks(s), Quantity: 1}
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Packet Scheduler queued one bot."})
+		}
 	}
 	if s.Automation.ReconTargetID != "" && s.Recon == nil {
 		if target, ok := e.target(s.Automation.ReconTargetID); ok && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
-			s.Resources.Credits -= mathx.New(target.ReconCost)
-			s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: e.reconTicks(s, target.ReconTicks)}
-			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Signal Profiler queued recon: " + target.Name})
+			if s.Automation.ReconSpent+target.ReconCost > s.Automation.ReconBudget {
+				s.Automation.ReconTargetID = ""
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Signal Profiler stopped: recon budget reached."})
+			} else {
+				s.Resources.Credits -= mathx.New(target.ReconCost)
+				s.Automation.ReconSpent += target.ReconCost
+				s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: e.reconTicks(s, target.ReconTicks)}
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Signal Profiler queued recon: " + target.Name})
+			}
 		}
 	}
 	return s, events
+}
+
+func configuredBudget(requested, existing int64) int64 {
+	if requested > 0 {
+		return requested
+	}
+	if existing > 0 {
+		return existing
+	}
+	return DefaultAutomationBudget
+}
+
+func normalizeAutomationBudgets(automation *game.Automation) {
+	if automation.Contracts && automation.ContractBudget <= 0 {
+		automation.ContractBudget = DefaultAutomationBudget
+	}
+	if automation.Fabrication && automation.FabricationBudget <= 0 {
+		automation.FabricationBudget = DefaultAutomationBudget
+	}
+	if automation.ReconTargetID != "" && automation.ReconBudget <= 0 {
+		automation.ReconBudget = DefaultAutomationBudget
+	}
 }
 
 func (e *Engine) advanceCorporation(s game.State) game.State {

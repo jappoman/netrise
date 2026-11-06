@@ -338,6 +338,53 @@ func TestAutomationPoliciesRunInsideDeterministicTicks(t *testing.T) {
 	}
 }
 
+func TestAutomationBudgetsStopPoliciesAtConfiguredCaps(t *testing.T) {
+	c := catalog()
+	c.Upgrades = append(c.Upgrades,
+		content.Upgrade{ID: "autodialer"},
+		content.Upgrade{ID: "packet_scheduler"},
+		content.Upgrade{ID: "signal_profiler"},
+	)
+	e := New(c, 92)
+	contracts := NewState(92)
+	contracts.Upgrades = []string{"autodialer"}
+	var err error
+	contracts, _, err = e.Apply(contracts, game.Command{Kind: game.EnableAutomation, ID: "contracts", Quantity: 25})
+	if err != nil {
+		t.Fatal(err)
+	}
+	contracts, events, err := e.Apply(contracts, game.Command{Kind: game.AdvanceTicks, Ticks: 12})
+	if err != nil || contracts.Automation.Contracts || contracts.Automation.ContractEarned != 25 || contracts.Resources.Credits != mathx.New(50) {
+		t.Fatalf("contract budget did not stop atomically: state=%#v events=%#v err=%v", contracts, events, err)
+	}
+
+	fabrication := NewState(92)
+	fabrication.Upgrades = []string{"secondhand_compiler", "packet_scheduler"}
+	fabrication.Resources.Compute = mathx.New(100)
+	fabrication.Resources.Credits = mathx.New(10)
+	fabrication.Resources.BotCapacity = 5
+	fabrication, _, err = e.Apply(fabrication, game.Command{Kind: game.EnableAutomation, ID: "fabrication", Quantity: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fabrication, _, err = e.Apply(fabrication, game.Command{Kind: game.AdvanceTicks, Ticks: 4})
+	if err != nil || fabrication.Automation.Fabrication || fabrication.Automation.FabricationSpent != 2 || fabrication.Resources.Bots != 1 {
+		t.Fatalf("fabrication budget did not stop atomically: state=%#v err=%v", fabrication, err)
+	}
+
+	recon := NewState(92)
+	recon.Upgrades = []string{"street_contacts", "signal_profiler"}
+	recon.Resources.Credits = mathx.New(20)
+	recon, _, err = e.Apply(recon, game.Command{Kind: game.EnableAutomation, ID: "recon", TargetID: "target", Quantity: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	recon, _, err = e.Apply(recon, game.Command{Kind: game.AdvanceTicks, Ticks: 16})
+	if err != nil || recon.Automation.ReconTargetID != "" || recon.Automation.ReconSpent != 10 || recon.Intel["target"] == 0 {
+		t.Fatalf("recon budget did not stop atomically: state=%#v err=%v", recon, err)
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

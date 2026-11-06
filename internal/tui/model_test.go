@@ -80,6 +80,31 @@ func TestProgressionGuideExplainsNextStepForBothFactions(t *testing.T) {
 	}
 }
 
+func TestAutomationScreenConfiguresBudgetAndPolicy(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Upgrades:      []content.Upgrade{{ID: "autodialer", Name: "Autodialer"}},
+	}
+	state := sim.NewState(6)
+	state.Upgrades = []string{"autodialer"}
+	m := New(state, sim.New(catalog, 6), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "A", Code: 'A'}))
+	m = updated.(Model)
+	if m.screen != "automation" || !strings.Contains(m.automationView(), "SELECTED BUDGET: 1000 credits") {
+		t.Fatalf("automation screen did not open with default budget: %s", m.automationView())
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "+", Code: '+'}))
+	m = updated.(Model)
+	if !strings.Contains(m.automationView(), "SELECTED BUDGET: 5000 credits") {
+		t.Fatalf("automation budget preset did not advance: %s", m.automationView())
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Code: tea.KeyEnter}))
+	m = updated.(Model)
+	if !m.state.Automation.Contracts || m.state.Automation.ContractBudget != 5000 {
+		t.Fatalf("automation policy did not persist configured budget: %#v", m.state.Automation)
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

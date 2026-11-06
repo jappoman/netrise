@@ -89,9 +89,15 @@ type OfflineSummary struct {
 }
 
 type Automation struct {
-	Contracts     bool   `json:"contracts"`
-	Fabrication   bool   `json:"fabrication"`
-	ReconTargetID string `json:"recon_target_id,omitempty"`
+	Contracts         bool   `json:"contracts"`
+	Fabrication       bool   `json:"fabrication"`
+	ReconTargetID     string `json:"recon_target_id,omitempty"`
+	ContractBudget    int64  `json:"contract_budget"`
+	ContractEarned    int64  `json:"contract_earned"`
+	FabricationBudget int64  `json:"fabrication_budget"`
+	FabricationSpent  int64  `json:"fabrication_spent"`
+	ReconBudget       int64  `json:"recon_budget"`
+	ReconSpent        int64  `json:"recon_spent"`
 }
 
 type ReconJob struct {

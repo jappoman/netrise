@@ -23,21 +23,23 @@ type tutorialStep struct {
 }
 
 type Model struct {
-	state           game.State
-	engine          *sim.Engine
-	width, height   int
-	dataDir         string
-	status          string
-	saveCounter     int64
-	screen          string
-	selectedTarget  int
-	selectedUpgrade int
-	commitmentPct   int64
-	doctrine        game.Doctrine
+	state            game.State
+	engine           *sim.Engine
+	width, height    int
+	dataDir          string
+	status           string
+	saveCounter      int64
+	screen           string
+	selectedTarget   int
+	selectedUpgrade  int
+	commitmentPct    int64
+	automationPolicy int
+	automationBudget int64
+	doctrine         game.Doctrine
 }
 
 func New(s game.State, e *sim.Engine, dataDir string) Model {
-	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced, commitmentPct: 75}
+	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced, commitmentPct: 75, automationBudget: sim.DefaultAutomationBudget}
 }
 func (m Model) Init() tea.Cmd { return tea.Tick(1e9, func(time.Time) tea.Msg { return tickMsg{} }) }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -136,6 +138,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "automation" {
+			switch v.String() {
+			case "up":
+				if m.automationPolicy > 0 {
+					m.automationPolicy--
+				}
+			case "down":
+				if m.automationPolicy < 2 {
+					m.automationPolicy++
+				}
+			case "+", "right":
+				m.automationBudget = nextAutomationBudget(m.automationBudget)
+			case "-", "left":
+				m.automationBudget = previousAutomationBudget(m.automationBudget)
+			case "enter":
+				m.enableSelectedAutomation()
+			case "esc", "o":
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if m.screen == "archive" {
 			if v.String() == "esc" || v.String() == "o" {
 				m.screen = "overview"
@@ -188,6 +211,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "h" {
 			m.screen = "tutorial"
+			return m, nil
+		}
+		if v.String() == "A" && m.state.Faction == game.Runner {
+			m.screen = "automation"
 			return m, nil
 		}
 		if v.String() == "p" {
@@ -296,6 +323,9 @@ func (m Model) View() tea.View {
 	if m.screen == "upgrades" {
 		return tea.NewView(m.upgradesView())
 	}
+	if m.screen == "automation" {
+		return tea.NewView(m.automationView())
+	}
 	if m.screen == "archive" {
 		return tea.NewView(m.archiveView())
 	}
@@ -318,11 +348,11 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [g] upgrades [y] research [h] guide [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
-	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.offlineLine(), controls, m.nextHint(), m.status)
+	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.automationSummary(), m.offlineLine(), controls, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
 }
 
@@ -336,7 +366,7 @@ func (m Model) compactView() string {
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
-	controls := "[c] contract [b] rig [t] targets [g] upgrades [y] research [h] guide [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
@@ -461,6 +491,14 @@ func (m Model) reconLine() string {
 	return fmt.Sprintf("RECON %s | %d ticks remaining", m.state.Recon.TargetID, m.state.Recon.RemainingTicks)
 }
 
+func (m Model) automationSummary() string {
+	a := m.state.Automation
+	if !a.Contracts && !a.Fabrication && a.ReconTargetID == "" && a.ContractEarned == 0 && a.FabricationSpent == 0 && a.ReconSpent == 0 {
+		return "AUTOMATION: OFF (press [A] to configure)"
+	}
+	return fmt.Sprintf("AUTOMATION: contracts %d/%d | fabrication %d/%d | recon %d/%d", a.ContractEarned, effectiveBudget(a.ContractBudget), a.FabricationSpent, effectiveBudget(a.FabricationBudget), a.ReconSpent, effectiveBudget(a.ReconBudget))
+}
+
 func (m Model) resultView() string {
 	r := m.state.LastBattle
 	if r == nil {
@@ -536,6 +574,81 @@ func (m Model) upgradesView() string {
 	return lines + "\n[up/down] select  [enter] purchase  [esc] overview\nNEXT: install only upgrades you can afford; installed upgrades cannot be repurchased."
 }
 
+func (m Model) automationView() string {
+	policies := []string{"contracts", "fabrication", "recon"}
+	lines := "NETRISE // AUTOMATION\n\nSelect a safe policy, choose a cumulative credit budget and press Enter.\n"
+	for i, policy := range policies {
+		marker := "  "
+		if i == m.automationPolicy {
+			marker = "> "
+		}
+		state, spent, budget := m.automationPolicyState(policy)
+		lines += fmt.Sprintf("%s%-14s %-10s %d/%d credits\n", marker, policy, state, spent, budget)
+	}
+	target := m.state.Automation.ReconTargetID
+	if target == "" {
+		target = "t_01"
+	}
+	return lines + fmt.Sprintf("\nSELECTED BUDGET: %d credits\nRECON TARGET: %s\n\n[up/down] policy  [+/- or left/right] budget\n[enter] enable/update  [esc] overview\nNEXT: budgets are cumulative; each policy stops automatically at its cap.", m.automationBudget, target)
+}
+
+func (m Model) automationPolicyState(policy string) (string, int64, int64) {
+	switch policy {
+	case "contracts":
+		return automationState(m.state.Automation.Contracts), m.state.Automation.ContractEarned, effectiveBudget(m.state.Automation.ContractBudget)
+	case "fabrication":
+		return automationState(m.state.Automation.Fabrication), m.state.Automation.FabricationSpent, effectiveBudget(m.state.Automation.FabricationBudget)
+	default:
+		return automationState(m.state.Automation.ReconTargetID != ""), m.state.Automation.ReconSpent, effectiveBudget(m.state.Automation.ReconBudget)
+	}
+}
+
+func (m *Model) enableSelectedAutomation() {
+	policy := []string{"contracts", "fabrication", "recon"}[m.automationPolicy]
+	targetID := ""
+	if policy == "recon" {
+		targetID = m.state.Automation.ReconTargetID
+		if targetID == "" {
+			targetID = "t_01"
+		}
+	}
+	command := game.Command{Kind: game.EnableAutomation, ID: policy, Quantity: m.automationBudget, TargetID: targetID}
+	m.applyCommand(command)
+}
+
+func automationState(enabled bool) string {
+	if enabled {
+		return "ON"
+	}
+	return "OFF"
+}
+
+func effectiveBudget(budget int64) int64 {
+	if budget <= 0 {
+		return sim.DefaultAutomationBudget
+	}
+	return budget
+}
+
+func nextAutomationBudget(budget int64) int64 {
+	for _, option := range []int64{100, 500, 1000, 5000} {
+		if option > budget {
+			return option
+		}
+	}
+	return 5000
+}
+
+func previousAutomationBudget(budget int64) int64 {
+	options := []int64{100, 500, 1000, 5000}
+	for i := len(options) - 1; i >= 0; i-- {
+		if options[i] < budget {
+			return options[i]
+		}
+	}
+	return 100
+}
+
 func researchEffectText(effects content.ResearchEffects) string {
 	var parts []string
 	if effects.ComputePerSecondBonus > 0 {
@@ -598,7 +711,7 @@ func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
 		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
-	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
 
 func (m Model) tutorialView() string {

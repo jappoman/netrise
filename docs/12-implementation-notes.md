@@ -97,5 +97,11 @@ live Runner or Corporation state. Completed steps, the current next step and
 later locked steps are shown separately, with actionable keys and no duplicate
 progress state outside the simulation/save model.
 
+Runner automation now persists cumulative credit budgets and usage counters for
+contracts, fabrication and recon. Enabling a policy with `Command.Quantity` set
+configures its cap; zero retains an existing cap or uses the 1,000-credit
+default. Reaching a cap emits `AutomationStopped` and disables only that policy.
+The TUI `[A]` screen exposes the three policies, preset budgets and spent totals.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

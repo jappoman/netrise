@@ -31,6 +31,7 @@ These are *mechanical changes*, not merely larger integer displays. Every stage 
 Automation must be explicitly purchased and configured, with resource budgets and a stop condition. Initially:
 - Runner: automatic low-risk contract collection, bot manufacturing, target intel renewal.
 - Corp: contract renewal, ICE restocking and resource allocation thresholds.
+- Runner automation uses explicit cumulative credit budgets and stops when a cap is reached; the TUI exposes policy, budget and spent totals.
 - **Never auto-spend scarce resources without a configurable budget.**
 - **No auto-raids during offline time** and no offline enemy attacks in any campaign.
 - Auto-combat on active screens can be unlocked later; avoid autoplay that removes all meaningful decisions.
