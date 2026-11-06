@@ -64,7 +64,7 @@ func NewCorporationState(seed int64) game.State {
 		Corp: &game.CorpState{
 			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5, MaintenanceReserve: 5,
 			DemandBP:     10000,
-			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, Operational: true}},
+			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, MaxIntegrity: 100, Operational: true}},
 		},
 	}
 }
@@ -317,7 +317,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= mathx.New(definition.CostCapital)
 		previousCapacity := s.Corp.ICECapacity
-		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, Operational: true, IsolationCostCapital: definition.IsolationCost, IsolationTicks: definition.IsolationTicks})
+		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, MaxIntegrity: definition.Integrity, Operational: true, IsolationCostCapital: definition.IsolationCost, IsolationTicks: definition.IsolationTicks})
 		s.Corp.ICECapacity += definition.ICECapacityBonus
 		if s.Corp.MaintenanceReserve >= previousCapacity {
 			s.Corp.MaintenanceReserve += definition.ICECapacityBonus
@@ -390,6 +390,43 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.LastBattle = battleResult(s.ActiveBattle, "isolated", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetIsolated", Message: fmt.Sprintf("%s isolated for %d ticks; %d capital committed.", asset.Name, duration, cost)}, {Tick: s.LogicalTick, Type: "BattleEnded", Message: "Incursion contained by isolating the asset."}}, nil
+	case game.CorpRepairAsset:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		if c.Quantity <= 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "repair quantity must be positive"}
+		}
+		assetIndex := -1
+		for i := range s.Corp.Assets {
+			if s.Corp.Assets[i].ID == c.ID {
+				assetIndex = i
+				break
+			}
+		}
+		if assetIndex < 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown corporation asset"}
+		}
+		asset := &s.Corp.Assets[assetIndex]
+		maxIntegrity := asset.MaxIntegrity
+		if maxIntegrity <= 0 {
+			maxIntegrity = asset.Integrity
+			asset.MaxIntegrity = maxIntegrity
+		}
+		if asset.Integrity >= maxIntegrity {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "asset integrity is already full"}
+		}
+		repair := minInt64(c.Quantity, maxIntegrity-asset.Integrity)
+		cost := mathx.New(repair)
+		if s.Corp.Capital < cost {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("repair requires %d capital", repair)}
+		}
+		s.Corp.Capital -= cost
+		asset.Integrity += repair
+		if asset.Integrity > 0 && asset.IsolatedUntilTick <= s.LogicalTick {
+			asset.Operational = true
+		}
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetRepaired", Message: fmt.Sprintf("%s repaired by %d integrity for %d capital.", asset.Name, repair, repair)}}, nil
 	case game.CorpRunResearch:
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
@@ -643,7 +680,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 		if asset.IsolatedUntilTick > s.LogicalTick {
 			continue
 		}
-		if asset.Operational || asset.UpkeepPerTick <= 0 || availableCapital < asset.UpkeepPerTick {
+		if asset.Operational || (asset.MaxIntegrity > 0 && asset.Integrity <= 0) || asset.UpkeepPerTick <= 0 || availableCapital < asset.UpkeepPerTick {
 			continue
 		}
 		asset.Operational = true
@@ -739,7 +776,15 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 		s.Corp.ICE -= deployed
 	}
 	s.Corp.AttackCounter = 0
-	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
+	assetID := ""
+	bestRate := int64(-1)
+	for _, asset := range s.Corp.Assets {
+		if asset.Operational && asset.CapitalPerTick > bestRate {
+			assetID = asset.ID
+			bestRate = asset.CapitalPerTick
+		}
+	}
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, DefenderAssetID: assetID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
 	return s, append(events, game.Event{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Emergency audit: suspicious ingress detected."})
 }
 
@@ -815,6 +860,27 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		b.LayerIndex++
 		if b.LayerIndex >= len(target.Layers) {
 			if s.Faction == game.Corporation {
+				if b.DefenderAssetID != "" && target.AssetDamage > 0 {
+					for i := range s.Corp.Assets {
+						asset := &s.Corp.Assets[i]
+						if asset.ID != b.DefenderAssetID {
+							continue
+						}
+						if asset.MaxIntegrity <= 0 {
+							asset.MaxIntegrity = asset.Integrity
+						}
+						asset.Integrity -= target.AssetDamage
+						if asset.Integrity < 0 {
+							asset.Integrity = 0
+						}
+						events = append(events, game.Event{Tick: s.LogicalTick, Type: "AssetDamaged", Message: fmt.Sprintf("%s lost %d integrity.", asset.Name, target.AssetDamage), Amount: target.AssetDamage})
+						if asset.Integrity == 0 {
+							asset.Operational = false
+							events = append(events, game.Event{Tick: s.LogicalTick, Type: "AssetDisabled", Message: asset.Name + " is offline until repaired."})
+						}
+						break
+					}
+				}
 				s.Corp.ExposureBP = minInt64(10000, s.Corp.ExposureBP+2000)
 				s.Corp.ReputationBP = maxInt64(0, s.Corp.ReputationBP-1000)
 				s.LastBattle = battleResult(b, "breach", b.LiveBots, 0, 0, s.HeatBP)

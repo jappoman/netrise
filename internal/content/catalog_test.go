@@ -68,3 +68,10 @@ func TestValidateRejectsNegativeTargetCooldown(t *testing.T) {
 		t.Fatal("negative target cooldown accepted")
 	}
 }
+
+func TestValidateRejectsNegativeAssetDamage(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"asset_damage":-1}]}`))
+	if err == nil {
+		t.Fatal("negative asset damage accepted")
+	}
+}

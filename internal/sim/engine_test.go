@@ -636,6 +636,36 @@ func TestCorporationCanIsolateAssetDuringIncursion(t *testing.T) {
 	}
 }
 
+func TestCorporationAssetDamageAndRepairUseSharedBattle(t *testing.T) {
+	c := catalog()
+	c.Targets = append(c.Targets, content.Target{ID: "t_01", Name: "Audit Target", Layers: []content.Layer{{Integrity: 1, ICE: 0, Counter: 0}}, TimeLimit: 30, AssetDamage: 100})
+	e := New(c, 102)
+	s := NewCorporationState(102)
+	s.Corp.Capital = mathx.New(500)
+	s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: "archive_server", Name: "Archive Server", CapitalPerTick: 7, Integrity: 100, MaxIntegrity: 100, Operational: true})
+	s.ActiveBattle = &game.Battle{TargetID: "t_01", DefenderAssetID: "archive_server", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: 1, TimeLimit: 30}
+	s, events, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.ActiveBattle != nil || s.Corp.Assets[1].Integrity != 0 || s.Corp.Assets[1].Operational {
+		t.Fatalf("breach did not damage/disable asset: state=%#v events=%#v err=%v", s, events, err)
+	}
+	if !hasEvent(events, "AssetDamaged") || !hasEvent(events, "AssetDisabled") {
+		t.Fatalf("asset damage events missing: %#v", events)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.CorpRepairAsset, ID: "archive_server", Quantity: 40})
+	if err != nil || s.Corp.Assets[1].Integrity != 40 || !s.Corp.Assets[1].Operational || !hasEvent(events, "AssetRepaired") {
+		t.Fatalf("asset repair failed: state=%#v events=%#v err=%v", s.Corp.Assets[1], events, err)
+	}
+}
+
+func hasEvent(events []game.Event, eventType string) bool {
+	for _, event := range events {
+		if event.Type == eventType {
+			return true
+		}
+	}
+	return false
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

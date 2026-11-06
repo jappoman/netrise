@@ -175,6 +175,9 @@ Corporation incursions now support the second specified emergency response:
 for its data-driven catalog duration, capital is charged atomically, the
 incursion ends as `isolated`, and an `AssetIsolationEnded` event marks automatic
 recovery. Reserve ICE and isolation share the single intervention budget.
+Incursions also apply catalog `asset_damage` to that selected asset; zero
+integrity disables it and `[r]` repairs a chosen damaged asset at one capital
+per integrity, restoring a recoverable Corporation security loop.
 
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It

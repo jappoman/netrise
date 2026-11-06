@@ -30,6 +30,7 @@ type CorpAsset struct {
 	CapitalPerTick       int64  `json:"capital_per_tick"`
 	UpkeepPerTick        int64  `json:"upkeep_per_tick"`
 	Integrity            int64  `json:"integrity"`
+	MaxIntegrity         int64  `json:"max_integrity,omitempty"`
 	Operational          bool   `json:"operational"`
 	IsolationCostCapital int64  `json:"isolation_cost_capital,omitempty"`
 	IsolationTicks       int64  `json:"isolation_ticks,omitempty"`
@@ -143,6 +144,7 @@ const (
 
 type Battle struct {
 	TargetID         string   `json:"target_id"`
+	DefenderAssetID  string   `json:"defender_asset_id,omitempty"`
 	AttackerFaction  Faction  `json:"attacker_faction"`
 	Doctrine         Doctrine `json:"doctrine"`
 	CommittedBots    int64    `json:"committed_bots"`
@@ -176,6 +178,7 @@ const (
 	CorpBuyICE            CommandKind = "corp_buy_ice"
 	CorpDeployICE         CommandKind = "corp_deploy_ice"
 	CorpIsolateAsset      CommandKind = "corp_isolate_asset"
+	CorpRepairAsset       CommandKind = "corp_repair_asset"
 	CorpRunResearch       CommandKind = "corp_run_research"
 	CorpExpandMarket      CommandKind = "corp_expand_market"
 	CorpEnableMaintenance CommandKind = "corp_enable_maintenance"

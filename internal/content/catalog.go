@@ -84,6 +84,7 @@ type Target struct {
 	ReconCost        int64   `json:"recon_cost"`
 	ReconTicks       int64   `json:"recon_ticks"`
 	IntelGain        int64   `json:"intel_gain"`
+	AssetDamage      int64   `json:"asset_damage"`
 }
 type Catalog struct {
 	SchemaVersion int                   `json:"schema_version"`
@@ -185,7 +186,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {
-		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.CooldownTicks < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 {
+		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.CooldownTicks < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 || t.AssetDamage < 0 {
 			return fmt.Errorf("content: invalid target %q", t.ID)
 		}
 		seen[t.ID] = true
