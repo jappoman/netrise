@@ -286,3 +286,7 @@ player can always return to an actionable campaign state without guessing.
 Offline reconciliation now persists whether the eight-hour safety cap was
 applied, and Runner/Corporation overviews show that cap warning alongside the
 safe production digest.
+
+The Runner integration suite now walks all five catalog targets in order,
+using each victory's temporary access token to reach the next route and
+verifying the final target without bypassing engine reachability checks.

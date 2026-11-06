@@ -434,3 +434,45 @@ func TestRunnerSixHourSimulationRemainsSafeAndProgresses(t *testing.T) {
 		t.Fatalf("six-hour Runner simulation produced invalid progression: intel=%v resources=%#v", s.Intel, s.Resources)
 	}
 }
+
+func TestRunnerProgressesThroughEveryCatalogRouteWithTemporaryAccess(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 509)
+	s := sim.NewState(509)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 500
+	s.Resources.BotCapacity = 500
+	for routeIndex, target := range catalog.Targets {
+		var commandErr error
+		s, _, commandErr = e.Apply(s, game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: 100, Doctrine: game.Balanced})
+		if commandErr != nil {
+			t.Fatalf("could not launch route %s: %v", target.ID, commandErr)
+		}
+		for ticks := int64(0); s.ActiveBattle != nil && ticks <= target.TimeLimit; ticks++ {
+			s, _, commandErr = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+			if commandErr != nil {
+				t.Fatalf("route %s tick failed: %v", target.ID, commandErr)
+			}
+		}
+		if s.ActiveBattle != nil || s.LastBattle == nil || s.LastBattle.Outcome != "victory" {
+			t.Fatalf("route %s did not resolve as a victory: battle=%#v result=%#v", target.ID, s.ActiveBattle, s.LastBattle)
+		}
+		if len(s.CompletedTargets) != routeIndex+1 || s.CompletedTargets[len(s.CompletedTargets)-1] != target.ID {
+			t.Fatalf("route progression order changed after %s: %v", target.ID, s.CompletedTargets)
+		}
+		if s.Access[target.ID] <= 0 && target.AccessTicks > 0 {
+			t.Fatalf("route %s did not grant temporary access: %v", target.ID, s.Access)
+		}
+	}
+	if len(s.CompletedTargets) != len(catalog.Targets) || s.CompletedTargets[len(s.CompletedTargets)-1] != "t_05" {
+		t.Fatalf("Runner did not reach final catalog route: %v", s.CompletedTargets)
+	}
+}
