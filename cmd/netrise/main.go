@@ -137,11 +137,32 @@ func simulate(args []string) {
 	fmt.Println(string(b))
 }
 func loadCatalog() (content.Catalog, error) {
-	f, err := os.Open("assets/content/catalog.json")
-	if err != nil {
-		return content.Catalog{}, fmt.Errorf("open content: %w", err)
+	paths := []string{"assets/content/catalog.json"}
+	if executable, err := os.Executable(); err == nil {
+		paths = append(paths, catalogBundlePaths(executable)...)
 	}
-	defer f.Close()
-	return content.Load(f)
+	var lastErr error
+	for _, path := range paths {
+		f, err := os.Open(path)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		catalog, loadErr := content.Load(f)
+		_ = f.Close()
+		if loadErr != nil {
+			return content.Catalog{}, fmt.Errorf("load content %s: %w", path, loadErr)
+		}
+		return catalog, nil
+	}
+	return content.Catalog{}, fmt.Errorf("open content catalog from working directory or executable bundle: %w", lastErr)
+}
+
+func catalogBundlePaths(executable string) []string {
+	executableDir := filepath.Dir(executable)
+	return []string{
+		filepath.Join(executableDir, "assets", "content", "catalog.json"),
+		filepath.Join(executableDir, "catalog.json"),
+	}
 }
 func fatal(err error) { fmt.Fprintln(os.Stderr, "netrise:", err); os.Exit(1) }

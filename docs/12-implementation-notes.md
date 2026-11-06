@@ -41,8 +41,12 @@ vet, test, and race workflows.
 Save reads now recover a valid `.bak` snapshot when the primary JSON is
 corrupted. A simulation benchmark covers 10,000 logical ticks, and tag-based
 release automation builds Linux, Windows, and macOS artifacts with SHA-256
-checksums. Headless reports support both campaigns through
+checksums. Each release artifact is a self-contained `.zip` or `.tar.gz`
+bundle containing the executable and catalog. Headless reports support both campaigns through
 `simulate --faction runner|corp`, with deterministic output verified for each.
+The catalog loader first checks the working directory and then the executable
+bundle, so packaged binaries can run from any current directory. Release
+artifacts include `assets/content/catalog.json` beside the binary.
 Player-facing events are retained in a bounded 200-entry archive, persisted in
 saves and available from the TUI with `[l] archive`.
 The content validator rejects missing links and cyclic research prerequisites;

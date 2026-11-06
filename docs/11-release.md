@@ -35,5 +35,10 @@ No account, telemetry or server needed in the MVP. Local save data only. Steam C
 - Correct screenshots showing actual gameplay.
 - Automated builds, tests, checksums and release notes.
 
+Release packages must be self-contained: each platform archive includes the
+NETRISE executable and the validated `assets/content/catalog.json`. Checksums
+are generated for the archive, not for a binary that would be unusable without
+its external catalog.
+
 ## Future possibilities, not MVP
 Multiplayer asymmetry, asynchronous competitions, user-authored networks, modding, achievements, Steam Cloud, soundtrack, full localization, controller mode, richer city simulation and advanced Corp espionage. Each must justify additional complexity and preserve offline-first gameplay.

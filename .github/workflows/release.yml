@@ -40,8 +40,17 @@ jobs:
           suffix=""
           if [ "$GOOS" = "windows" ]; then suffix=".exe"; fi
           name="netrise-${GOOS}-${GOARCH}${suffix}"
-          go build -trimpath -ldflags="-s -w" -o "dist/${name}" ./cmd/netrise
-          sha256sum "dist/${name}" > "dist/${name}.sha256"
+          bundle="${name}-bundle"
+          mkdir -p "dist/${bundle}/assets/content"
+          go build -trimpath -ldflags="-s -w" -o "dist/${bundle}/${name}" ./cmd/netrise
+          cp assets/content/catalog.json "dist/${bundle}/assets/content/catalog.json"
+          if [ "$GOOS" = "windows" ]; then
+            (cd dist && zip -qr "${bundle}.zip" "${bundle}")
+            sha256sum "dist/${bundle}.zip" > "dist/${bundle}.zip.sha256"
+          else
+            tar -C dist -czf "dist/${bundle}.tar.gz" "${bundle}"
+            sha256sum "dist/${bundle}.tar.gz" > "dist/${bundle}.tar.gz.sha256"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: netrise-${{ matrix.goos }}-${{ matrix.goarch }}
@@ -57,4 +66,7 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*.sha256
