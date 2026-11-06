@@ -155,6 +155,11 @@ campaign with all starter assets, security, maintenance and automated R&D. It
 checks resource and meter bounds, event archive limits and research progress,
 giving the Corporation loop the same long-run regression coverage as Runner.
 
+Corporation gross revenue now derives from demand, reputation and exposure in
+the shared engine. Reputation below 50% and exposure above zero apply bounded
+integer penalties, so the Economic Report and active production expose the same
+operating-risk tradeoff without floating-point accountancy.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

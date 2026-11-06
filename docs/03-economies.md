@@ -86,6 +86,8 @@ already reserving the previous full rack, the reserve expands with the asset.
 If upkeep throttles an asset, the engine reactivates it automatically once
 available capital can cover the operational costs again; the recovery is
 recorded as an event and surfaced in the Corporation overview.
+Low reputation and high exposure reduce effective service revenue with bounded
+integer multipliers; healthy operations recover the full demand-adjusted rate.
 
 ## Anti-exploit rules
 - No negative balances; spending is validated and atomic.

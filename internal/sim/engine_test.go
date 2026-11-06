@@ -571,6 +571,25 @@ func TestCorporationResearchCompletesDataDrivenTechnology(t *testing.T) {
 	}
 }
 
+func TestCorporationReputationAndExposureBoundRevenue(t *testing.T) {
+	e := New(catalog(), 100)
+	healthy := NewCorporationState(100)
+	base := e.CorporationGrossRate(healthy)
+	lowReputation := NewCorporationState(100)
+	lowReputation.Corp.ReputationBP = 4000
+	exposed := NewCorporationState(100)
+	exposed.Corp.ExposureBP = 10000
+	crisis := NewCorporationState(100)
+	crisis.Corp.ReputationBP = 4000
+	crisis.Corp.ExposureBP = 10000
+	if base <= e.CorporationGrossRate(lowReputation) || base <= e.CorporationGrossRate(exposed) || e.CorporationGrossRate(lowReputation) <= e.CorporationGrossRate(crisis) || e.CorporationGrossRate(exposed) <= e.CorporationGrossRate(crisis) {
+		t.Fatalf("reputation/exposure did not produce monotonic bounded revenue: healthy=%d low_rep=%d exposed=%d crisis=%d", base, e.CorporationGrossRate(lowReputation), e.CorporationGrossRate(exposed), e.CorporationGrossRate(crisis))
+	}
+	if e.CorporationGrossRate(crisis) < 1 {
+		t.Fatalf("reputation/exposure penalty created a dead economy: %d", e.CorporationGrossRate(crisis))
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

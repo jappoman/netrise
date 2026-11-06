@@ -950,7 +950,17 @@ func (e *Engine) CorporationGrossRate(s game.State) int64 {
 	if demand <= 0 {
 		demand = 10000
 	}
-	return rate * demand / 10000
+	rate = rate * demand / 10000
+	reputationFactor := int64(10000)
+	if s.Corp.ReputationBP < 5000 {
+		reputationFactor = 5000 + maxInt64(0, s.Corp.ReputationBP)
+	}
+	exposureFactor := 10000 - s.Corp.ExposureBP/2
+	if exposureFactor < 5000 {
+		exposureFactor = 5000
+	}
+	rate = rate * reputationFactor / 10000
+	return rate * exposureFactor / 10000
 }
 
 // CorporationUpkeepRate returns current operational upkeep after completed
