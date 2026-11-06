@@ -206,8 +206,8 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Resources.Credits -= mathx.New(cost)
 		upsertGenerator(&s, c.ID)
-		s.Resources.BotCapacity += g.BotCapacity
-		s.Resources.DataCapacity += g.DataCapacity
+		s.Resources.BotCapacity = AddNonNegativeSaturated(s.Resources.BotCapacity, g.BotCapacity)
+		s.Resources.DataCapacity = AddNonNegativeSaturated(s.Resources.DataCapacity, g.DataCapacity)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "GeneratorPurchased", Message: g.Name + " online."}}, nil
 	case game.QueueFabrication:
 		if !hasUpgrade(s, "secondhand_compiler") {
@@ -252,7 +252,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Resources.Credits -= mathx.New(upgrade.Cost)
 		s.Upgrades = append(s.Upgrades, c.ID)
-		s.Resources.BotCapacity += upgrade.Effects.BotCapacityBonus
+		s.Resources.BotCapacity = AddNonNegativeSaturated(s.Resources.BotCapacity, upgrade.Effects.BotCapacityBonus)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "UpgradePurchased", Message: upgrade.Name + " installed."}}, nil
 	case game.StartBattle:
 		if s.ActiveBattle != nil {
@@ -411,9 +411,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Corp.Capital -= mathx.New(definition.CostCapital)
 		previousCapacity := s.Corp.ICECapacity
 		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, MaxIntegrity: definition.Integrity, Operational: true, IsolationCostCapital: definition.IsolationCost, IsolationTicks: definition.IsolationTicks})
-		s.Corp.ICECapacity += definition.ICECapacityBonus
+		s.Corp.ICECapacity = AddNonNegativeSaturated(s.Corp.ICECapacity, definition.ICECapacityBonus)
 		if s.Corp.MaintenanceReserve >= previousCapacity {
-			s.Corp.MaintenanceReserve += definition.ICECapacityBonus
+			s.Corp.MaintenanceReserve = minInt64(s.Corp.ICECapacity, AddNonNegativeSaturated(s.Corp.MaintenanceReserve, definition.ICECapacityBonus))
 		}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetBuilt", Message: definition.Name + " commissioned."}}, nil
 	case game.CorpBuyICE:
@@ -953,7 +953,7 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 			bestRate = asset.CapitalPerTick
 		}
 	}
-	s.ActiveBattle = &game.Battle{TargetID: target.ID, DefenderAssetID: assetID, AttackerFaction: game.Runner, CommittedBots: committed, LiveBots: committed, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, DefenderAssetID: assetID, AttackerFaction: game.Runner, CommittedBots: committed, LiveBots: committed, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: AddNonNegativeSaturated(target.Layers[0].ICE, deployed), TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
 	return s, append(events, game.Event{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Emergency audit: suspicious ingress detected."})
 }
 

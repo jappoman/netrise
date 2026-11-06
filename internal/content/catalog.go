@@ -131,14 +131,14 @@ func Validate(c Catalog) error {
 	}
 	seen := map[string]bool{}
 	for _, g := range c.Generators {
-		if g.ID == "" || seen[g.ID] || !fitsAmount(g.Cost) || g.ComputePerSecond < 0 || g.BotCapacity < 0 || g.DataCapacity < 0 {
+		if g.ID == "" || seen[g.ID] || !fitsAmount(g.Cost) || !fitsAmount(g.ComputePerSecond) || !fitsAmount(g.BotCapacity) || !fitsAmount(g.DataCapacity) {
 			return fmt.Errorf("content: invalid generator %q", g.ID)
 		}
 		seen[g.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, u := range c.Upgrades {
-		if u.ID == "" || seen[u.ID] || !fitsAmount(u.Cost) || u.Effects.ComputePerSecondBonus < 0 || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || u.Effects.BotCapacityBonus < 0 || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
+		if u.ID == "" || seen[u.ID] || !fitsAmount(u.Cost) || !fitsAmount(u.Effects.ComputePerSecondBonus) || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || !fitsAmount(u.Effects.BotCapacityBonus) || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true
@@ -201,7 +201,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, a := range c.CorpAssets {
-		if a.ID == "" || seen[a.ID] || a.Name == "" || !fitsAmount(a.CostCapital) || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 || a.ICECapacityBonus < 0 || a.IsolationCost < 0 || a.IsolationTicks < 0 {
+		if a.ID == "" || seen[a.ID] || a.Name == "" || !fitsAmount(a.CostCapital) || !fitsAmount(a.CapitalPerTick) || !fitsAmount(a.UpkeepPerTick) || !fitsAmount(a.Integrity) || !fitsAmount(a.ICECapacityBonus) || a.IsolationCost < 0 || a.IsolationTicks < 0 {
 			return fmt.Errorf("content: invalid corporation asset %q", a.ID)
 		}
 		seen[a.ID] = true

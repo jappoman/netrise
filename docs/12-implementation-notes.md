@@ -367,3 +367,7 @@ without an overflow-prone `reserve + 1` expression.
 Research and Upgrade panels now show the current data/capacity or credit
 balance above their catalog rows, making affordability visible before a
 purchase attempt.
+
+Catalog validation now bounds generator, upgrade and Corporation asset
+capacity values to the fixed-point range; capacity mutations and incursion ICE
+composition use saturating additions at runtime as well.

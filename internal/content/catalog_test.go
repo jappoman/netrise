@@ -131,6 +131,21 @@ func TestValidateRejectsNegativeDataCapacity(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnrepresentableCapacityValues(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"generators":[{"id":"rig","bot_capacity":9223372036854775807}]}`))
+	if err == nil {
+		t.Fatal("generator bot capacity beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"upgrades":[{"id":"u","effects":{"bot_capacity_bonus":9223372036854775807}}]}`))
+	if err == nil {
+		t.Fatal("upgrade bot capacity beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_assets":[{"id":"security","name":"Security","integrity":100,"ice_capacity_bonus":9223372036854775807}]}`))
+	if err == nil {
+		t.Fatal("Corporation ICE capacity beyond fixed-point range accepted")
+	}
+}
+
 func TestValidateRejectsNegativeAccessDuration(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"access_ticks":-1}]}`))
 	if err == nil {
