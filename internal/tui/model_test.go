@@ -7,6 +7,7 @@ import (
 	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -579,6 +580,21 @@ func TestCorporationIncursionBudgetIsVisibleAcrossViews(t *testing.T) {
 	}
 	if !strings.Contains(m.helpView(), "finite NPC incursion budget") {
 		t.Fatal("Corporation help omitted incursion budget explanation")
+	}
+}
+
+func TestCorporationReportSaturatesExtremeProjection(t *testing.T) {
+	state := sim.NewCorporationState(14)
+	state.Corp.Capital = mathx.Amount(math.MaxInt64)
+	state.Corp.Compute = mathx.Amount(math.MaxInt64)
+	state.Corp.Assets = []game.CorpAsset{{ID: "extreme", Name: "Extreme", CapitalPerTick: math.MaxInt64, Operational: true}}
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 14), "")
+	report := m.corpReportView()
+	if !strings.Contains(report, "CAPITAL: "+state.Corp.Capital.String()) || !strings.Contains(report, "CAPITAL: 9223372036854775") {
+		t.Fatalf("extreme capital projection was not rendered safely: %s", report)
+	}
+	if !strings.Contains(report, "COMPUTE: 9223372036854775") {
+		t.Fatalf("extreme compute projection was not rendered safely: %s", report)
 	}
 }
 

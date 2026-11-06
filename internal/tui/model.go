@@ -1030,20 +1030,34 @@ func (m Model) corpReportView() string {
 	if net < 0 {
 		net = 0
 	}
-	projectedCapital := corp.Capital.Units() + gross - upkeep
-	projectedCompute := corp.Compute.Units() + 2
+	projectedCapital := sim.AddNonNegativeSaturated(corp.Capital.Units(), gross)
+	projectedCapital = subtractNonNegative(projectedCapital, upkeep)
+	projectedCompute := sim.AddNonNegativeSaturated(corp.Compute.Units(), 2)
 	projectedRND := "off"
 	if corp.ResearchAuto && !sim.BudgetWouldExceed(corp.ResearchSpent, 200, effectiveBudget(corp.ResearchBudget)) && corp.Capital >= mathx.New(200) && corp.Compute.Units() > corp.ComputeReserve {
-		projectedCapital -= 200
-		projectedCompute--
+		projectedCapital = subtractNonNegative(projectedCapital, 200)
+		projectedCompute = subtractNonNegative(projectedCompute, 1)
 		projectedRND = "-200 capital / -1 compute"
 	}
 	projectedMaintenance := "off"
-	if corp.MaintenanceAuto && corp.ICE < corp.MaintenanceReserve && corp.MaintenanceSpent+10 <= effectiveBudget(corp.MaintenanceBudget) && corp.Capital >= mathx.New(10) {
-		projectedCapital -= 10
+	if corp.MaintenanceAuto && corp.ICE < corp.MaintenanceReserve && !sim.BudgetWouldExceed(corp.MaintenanceSpent, 10, effectiveBudget(corp.MaintenanceBudget)) && corp.Capital >= mathx.New(10) {
+		projectedCapital = subtractNonNegative(projectedCapital, 10)
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
 	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n%s\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration\nNEXT: review the projection, then return to the overview or adjust [A] policy.", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, m.corpIncursionSummary(), projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+}
+
+func subtractNonNegative(value, decrement int64) int64 {
+	if value <= 0 || decrement <= 0 {
+		if value < 0 {
+			return 0
+		}
+		return value
+	}
+	if decrement >= value {
+		return 0
+	}
+	return value - decrement
 }
 
 func (m Model) offlineLine() string {

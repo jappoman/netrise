@@ -393,3 +393,7 @@ arithmetic paths.
 
 Generator purchases now reject a saturated generator count before charging the
 player, preventing progression-counter wraparound and preserving command atomicity.
+
+The Corporation Economic Report now uses saturating projections for capital and
+compute, and overflow-safe budget deductions, so extreme but valid state values
+remain readable in the player-facing TUI.
