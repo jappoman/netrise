@@ -347,3 +347,7 @@ invariants when resuming unusually large but structurally valid state.
 The Runner research panel now names missing prerequisite IDs beside locked
 nodes, keeping progression choices self-explanatory without requiring players
 to infer the research graph.
+
+Research nodes with satisfied prerequisites now distinguish affordable data
+costs from `NEED N DATA`, so an unavailable purchase explains its resource
+shortfall before the player presses Enter.

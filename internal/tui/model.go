@@ -678,7 +678,11 @@ func (m Model) researchView() string {
 		if hasResearch(m.state, node.ID) {
 			state = "COMPLETE"
 		} else if researchPrerequisitesMet(m.state, node.Prerequisites) {
-			state = fmt.Sprintf("AVAILABLE (%d data)", cost)
+			if m.state.Resources.Data.Units() >= cost {
+				state = fmt.Sprintf("AVAILABLE (%d data)", cost)
+			} else {
+				state = fmt.Sprintf("NEED %d DATA", cost-m.state.Resources.Data.Units())
+			}
 		} else if missing := missingResearchPrerequisites(m.state, node.Prerequisites); missing != "" {
 			state = "LOCKED (requires " + missing + ")"
 		}

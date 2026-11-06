@@ -350,6 +350,19 @@ func TestResearchScreenExplainsMissingPrerequisites(t *testing.T) {
 	}
 }
 
+func TestResearchScreenExplainsInsufficientData(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Research:      []content.ResearchNode{{ID: "hardware", Name: "Hardware", CostData: 10}},
+	}
+	state := sim.NewState(410)
+	state.Resources.Data = mathx.New(3)
+	m := New(state, sim.New(catalog, 410), "")
+	if !strings.Contains(m.researchView(), "NEED 7 DATA") {
+		t.Fatalf("research screen hid insufficient data reason: %s", m.researchView())
+	}
+}
+
 func TestEmptyPlayerScreensExplainTheirNextAction(t *testing.T) {
 	runner := New(sim.NewState(410), sim.New(content.Catalog{SchemaVersion: 1}, 410), "")
 	for name, view := range map[string]string{
