@@ -145,3 +145,20 @@ func TestBattlePlaybackShowsCountersAndRecentEvents(t *testing.T) {
 		}
 	}
 }
+
+func TestBattleResultShowsReasonAndEconomySummary(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay"}},
+	}
+	state := sim.NewState(4)
+	state.LastBattle = &game.BattleResult{TargetID: "target", Doctrine: game.Balanced, Outcome: "victory", CommittedBots: 8, Survivors: 6, BotsLost: 2, TraceBP: 1200, HeatAddedBP: 700, HeatAfterBP: 1900, CreditsLooted: 40, DataLooted: 10, ElapsedTicks: 12}
+	m := New(state, sim.New(catalog, 4), "")
+	m.screen = "result"
+	view := m.View().Content
+	for _, expected := range []string{"OUTCOME: victory", "REASON: all security layers breached", "BOTS: 8 committed / 6 survived / 2 lost", "HEAT: +7% (total 19%)", "LOOT: 40 credits / 10 data", "review the archive"} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("result view omitted %q: %s", expected, view)
+		}
+	}
+}

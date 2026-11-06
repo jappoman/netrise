@@ -100,14 +100,19 @@ type ReconJob struct {
 }
 
 type BattleResult struct {
-	TargetID      string `json:"target_id"`
-	Outcome       string `json:"outcome"`
-	Survivors     int64  `json:"survivors"`
-	BotsLost      int64  `json:"bots_lost"`
-	CreditsLooted int64  `json:"credits_looted"`
-	DataLooted    int64  `json:"data_looted"`
-	HeatAddedBP   int64  `json:"heat_added_bp"`
-	ElapsedTicks  int64  `json:"elapsed_ticks"`
+	TargetID      string   `json:"target_id"`
+	Doctrine      Doctrine `json:"doctrine"`
+	Outcome       string   `json:"outcome"`
+	CommittedBots int64    `json:"committed_bots"`
+	Survivors     int64    `json:"survivors"`
+	BotsLost      int64    `json:"bots_lost"`
+	CreditsLooted int64    `json:"credits_looted"`
+	DataLooted    int64    `json:"data_looted"`
+	TraceBP       int64    `json:"trace_bp"`
+	HeatBeforeBP  int64    `json:"heat_before_bp"`
+	HeatAfterBP   int64    `json:"heat_after_bp"`
+	HeatAddedBP   int64    `json:"heat_added_bp"`
+	ElapsedTicks  int64    `json:"elapsed_ticks"`
 }
 
 type Doctrine string
@@ -131,6 +136,7 @@ type Battle struct {
 	ElapsedTicks     int64    `json:"elapsed_ticks"`
 	TimeLimit        int64    `json:"time_limit"`
 	InterventionUsed bool     `json:"intervention_used"`
+	StartingHeatBP   int64    `json:"starting_heat_bp"`
 }
 
 type CommandKind string

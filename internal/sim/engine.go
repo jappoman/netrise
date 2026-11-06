@@ -183,7 +183,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Resources.Bots -= c.Quantity
 		s.LastBattle = nil
-		s.ActiveBattle = &game.Battle{TargetID: c.ID, Doctrine: c.Doctrine, CommittedBots: c.Quantity, LiveBots: c.Quantity, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE, TimeLimit: target.TimeLimit}
+		s.ActiveBattle = &game.Battle{TargetID: c.ID, Doctrine: c.Doctrine, CommittedBots: c.Quantity, LiveBots: c.Quantity, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Breach underway: " + target.Name}}, nil
 	case game.ReinforceBattle:
 		if s.ActiveBattle == nil {
@@ -503,7 +503,7 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 		s.Corp.ICE -= deployed
 	}
 	s.Corp.AttackCounter = 0
-	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit}
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
 	return s, append(events, game.Event{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Emergency audit: suspicious ingress detected."})
 }
 
@@ -619,10 +619,16 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 }
 
 func battleResult(b *game.Battle, outcome string, survivors, credits, data, heatBP int64) *game.BattleResult {
+	addedHeat := heatBP - b.StartingHeatBP
+	if addedHeat < 0 {
+		addedHeat = 0
+	}
 	return &game.BattleResult{
-		TargetID: b.TargetID, Outcome: outcome, Survivors: survivors,
+		TargetID: b.TargetID, Doctrine: b.Doctrine, Outcome: outcome,
+		CommittedBots: b.CommittedBots, Survivors: survivors,
 		BotsLost: b.CommittedBots - survivors, CreditsLooted: credits,
-		DataLooted: data, HeatAddedBP: heatBP, ElapsedTicks: b.ElapsedTicks,
+		DataLooted: data, TraceBP: b.TraceBP, HeatBeforeBP: b.StartingHeatBP,
+		HeatAfterBP: heatBP, HeatAddedBP: addedHeat, ElapsedTicks: b.ElapsedTicks,
 	}
 }
 

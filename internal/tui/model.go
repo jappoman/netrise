@@ -445,7 +445,33 @@ func (m Model) resultView() string {
 	if r == nil {
 		return "NETRISE // RESULT\n\nNo completed battle.\n[o] overview"
 	}
-	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nSURVIVORS: %d\nBOTS LOST: %d\nLOOT: %d credits / %d data\nELAPSED: %d ticks\n\n[enter] overview  [t] targets", r.TargetID, r.Outcome, r.Survivors, r.BotsLost, r.CreditsLooted, r.DataLooted, r.ElapsedTicks)
+	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nREASON: %s\nDOCTRINE: %s\nBOTS: %d committed / %d survived / %d lost\nTRACE: %d%%\nHEAT: +%d%% (total %d%%)\nLOOT: %d credits / %d data\nELAPSED: %d ticks\n\nNEXT: %s\n\n[enter] overview  [t] targets", battleTargetName(m.engine, r.TargetID), r.Outcome, battleOutcomeReason(r.Outcome), r.Doctrine, r.CommittedBots, r.Survivors, r.BotsLost, r.TraceBP/100, r.HeatAddedBP/100, r.HeatAfterBP/100, r.CreditsLooted, r.DataLooted, r.ElapsedTicks, resultNextHint(r.Outcome))
+}
+
+func battleOutcomeReason(outcome string) string {
+	switch outcome {
+	case "victory":
+		return "all security layers breached and loot extracted"
+	case "defeat":
+		return "countermeasures eliminated the committed bots"
+	case "withdrawn":
+		return "the Runner withdrew before final resolution"
+	case "timeout":
+		return "the time limit expired; surviving bots returned"
+	case "defended":
+		return "the Corporation kept the asset secured"
+	case "breach":
+		return "the Corporation asset was exposed"
+	default:
+		return "battle resolution completed"
+	}
+}
+
+func resultNextHint(outcome string) string {
+	if outcome == "victory" {
+		return "review the archive, then inspect the next reachable target"
+	}
+	return "review the result, recover resources and prepare the next attempt"
 }
 
 func (m Model) researchView() string {
