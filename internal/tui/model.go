@@ -559,7 +559,17 @@ func (m Model) targetsView() string {
 		recon := targetReconStatus(m.state, target)
 		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | %s | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), recon, targetAccessLabel(m.state, target.ID))
 	}
-	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview\nNEXT: unlock a route, then run recon to replace uncertainty with intel before launch."
+	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview\nNEXT: " + m.targetsNextHint()
+}
+
+func (m Model) targetsNextHint() string {
+	if containsID(m.state.CompletedTargets, "t_01") && !containsID(m.state.CompletedTargets, "t_02") {
+		if m.state.Access["t_01"] > 0 {
+			return "launch t_02 before temporary access expires."
+		}
+		return "access expired; replay t_01 to reopen the adjacent route."
+	}
+	return "unlock a route, then run recon to replace uncertainty with intel before launch."
 }
 
 func (m Model) preflightView() string {

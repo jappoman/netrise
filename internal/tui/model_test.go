@@ -223,6 +223,21 @@ func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	}
 }
 
+func TestTargetScreenNextHintTracksAccessWindow(t *testing.T) {
+	state := sim.NewState(21)
+	state.CompletedTargets = []string{"t_01"}
+	state.Access = map[string]int64{"t_01": 12}
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 21), "")
+	if !strings.Contains(m.targetsNextHint(), "launch t_02 before temporary access expires") {
+		t.Fatalf("target rail omitted active access action: %s", m.targetsNextHint())
+	}
+	state.Access["t_01"] = 0
+	m.state = state
+	if !strings.Contains(m.targetsNextHint(), "replay t_01") {
+		t.Fatalf("target rail omitted expired access recovery: %s", m.targetsNextHint())
+	}
+}
+
 func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	m.state.EventLog = []game.Event{{Tick: 9, Type: "BattleEnded", Message: "Breach successful."}}
