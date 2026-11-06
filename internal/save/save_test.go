@@ -26,12 +26,12 @@ func TestRoundTripAndCorruption(t *testing.T) {
 
 func TestRoundTripPreservesProgressionState(t *testing.T) {
 	d := t.TempDir()
-	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, Research: []string{"hardware_01"}, RunExtractedData: 120, GhostKeys: 2, Automation: game.Automation{Contracts: true}, Intel: map[string]int64{"t_01": 45}}
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, Research: []string{"hardware_01"}, RunExtractedData: 120, GhostKeys: 2, Automation: game.Automation{Contracts: true}, Intel: map[string]int64{"t_01": 45}, EventLog: []game.Event{{Tick: 4, Type: "ResourceProduced", Message: "saved"}}}
 	if err := Write(d, s); err != nil {
 		t.Fatal(err)
 	}
 	got, err := Read(d)
-	if err != nil || got.RunExtractedData != 120 || got.GhostKeys != 2 || !got.Automation.Contracts || got.Intel["t_01"] != 45 || len(got.Research) != 1 {
+	if err != nil || got.RunExtractedData != 120 || got.GhostKeys != 2 || !got.Automation.Contracts || got.Intel["t_01"] != 45 || len(got.Research) != 1 || len(got.EventLog) != 1 {
 		t.Fatalf("progression state was not preserved: %#v, %v", got, err)
 	}
 }

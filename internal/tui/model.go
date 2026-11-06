@@ -88,6 +88,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "archive" {
+			if v.String() == "esc" || v.String() == "o" {
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if m.screen == "prestige" {
 			switch v.String() {
 			case "enter":
@@ -122,6 +128,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "y" {
 			m.screen = "research"
+			return m, nil
+		}
+		if v.String() == "l" {
+			m.screen = "archive"
 			return m, nil
 		}
 		if v.String() == "p" {
@@ -221,6 +231,9 @@ func (m Model) View() tea.View {
 	if m.screen == "research" {
 		return tea.NewView(m.researchView())
 	}
+	if m.screen == "archive" {
+		return tea.NewView(m.archiveView())
+	}
 	if m.screen == "prestige" {
 		return tea.NewView(m.prestigeView())
 	}
@@ -234,7 +247,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -246,13 +259,13 @@ func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height 
 
 func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
-		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [p] restructure [q] quit"
+		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [l] archive [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [q] quit"
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
-	controls := "[c] contract [b] rig [t] targets [y] research [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [t] targets [y] research [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
@@ -316,6 +329,21 @@ func (m Model) researchView() string {
 	return lines + "\n[enter] buy next available node  [esc] overview"
 }
 
+func (m Model) archiveView() string {
+	lines := "NETRISE // EVENT ARCHIVE\n\n"
+	start := 0
+	if len(m.state.EventLog) > 12 {
+		start = len(m.state.EventLog) - 12
+	}
+	for _, event := range m.state.EventLog[start:] {
+		lines += fmt.Sprintf("[t+%d] %s: %s\n", event.Tick, event.Type, event.Message)
+	}
+	if len(m.state.EventLog) == 0 {
+		lines += "No events recorded yet.\n"
+	}
+	return lines + "\n[esc] overview"
+}
+
 func (m Model) prestigeView() string {
 	reward := m.engine.IdentityBurnReward(m.state)
 	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, m.status)
@@ -330,7 +358,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [p] restructure [q] quit"
+	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [l] archive [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}

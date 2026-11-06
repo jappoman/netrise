@@ -351,3 +351,25 @@ func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 		t.Fatal("tiny reset unexpectedly granted a second reward")
 	}
 }
+
+func TestEventArchiveIsBoundedAndRejectsFailedCommands(t *testing.T) {
+	e := New(catalog(), 44)
+	s := NewState(44)
+	for i := 0; i < EventLogLimit+25; i++ {
+		var err error
+		s, _, err = e.Apply(s, game.Command{Kind: game.CollectContract})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(s.EventLog) != EventLogLimit || s.EventLog[len(s.EventLog)-1].Type != "ResourceProduced" {
+		t.Fatalf("event archive bound failed: len=%d last=%#v", len(s.EventLog), s.EventLog[len(s.EventLog)-1])
+	}
+	before := len(s.EventLog)
+	if _, _, err := e.Apply(s, game.Command{Kind: game.BuyGenerator, ID: "missing"}); err == nil {
+		t.Fatal("invalid command accepted")
+	}
+	if len(s.EventLog) != before {
+		t.Fatal("failed command changed event archive")
+	}
+}

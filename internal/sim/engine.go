@@ -57,7 +57,17 @@ func NewCorporationState(seed int64) game.State {
 	}
 }
 
+const EventLogLimit = 200
+
 func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, error) {
+	next, events, err := e.apply(s, c)
+	if err == nil && len(events) > 0 {
+		next.EventLog = appendEventLog(next.EventLog, events...)
+	}
+	return next, events, err
+}
+
+func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, error) {
 	if c.Kind == game.AdvanceTicks {
 		if c.Ticks < 0 {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "ticks cannot be negative"}
@@ -355,6 +365,14 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
+}
+
+func appendEventLog(log []game.Event, events ...game.Event) []game.Event {
+	log = append(log, events...)
+	if len(log) > EventLogLimit {
+		log = log[len(log)-EventLogLimit:]
+	}
+	return log
 }
 func (e *Engine) Advance(s game.State, ticks int64) game.State {
 	advanced, _ := e.advanceEvents(s, ticks, false)

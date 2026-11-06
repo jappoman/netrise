@@ -50,6 +50,9 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	if s.LastBattle == nil || (s.LastBattle.Outcome != "defended" && s.LastBattle.Outcome != "breach") {
 		t.Fatalf("invalid Corporation battle result: %#v", s.LastBattle)
 	}
+	if len(s.EventLog) == 0 {
+		t.Fatal("Corporation E2E produced no event archive")
+	}
 	if s.Corp.Capital < 0 || s.Corp.ReputationBP < 0 || s.Corp.ReputationBP > 10000 || s.Corp.ExposureBP < 0 || s.Corp.ExposureBP > 10000 {
 		t.Fatalf("corporation meter invariant failed: %#v", s.Corp)
 	}

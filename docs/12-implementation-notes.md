@@ -43,6 +43,8 @@ corrupted. A simulation benchmark covers 10,000 logical ticks, and tag-based
 release automation builds Linux, Windows, and macOS artifacts with SHA-256
 checksums. Headless reports support both campaigns through
 `simulate --faction runner|corp`, with deterministic output verified for each.
+Player-facing events are retained in a bounded 200-entry archive, persisted in
+saves and available from the TUI with `[l] archive`.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

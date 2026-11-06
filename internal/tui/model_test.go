@@ -3,6 +3,7 @@ package tui
 import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/jappoman/netrise/internal/content"
+	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/sim"
 	"strings"
 	"testing"
@@ -38,5 +39,14 @@ func TestNoColorOmitsANSIStyling(t *testing.T) {
 	view := updated.(Model).View()
 	if strings.Contains(view.Content, "\x1b[") {
 		t.Fatal("NO_COLOR view contains ANSI escape")
+	}
+}
+
+func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
+	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	m.state.EventLog = []game.Event{{Tick: 9, Type: "BattleEnded", Message: "Breach successful."}}
+	view := m.archiveView()
+	if !strings.Contains(view, "Breach successful") || !strings.Contains(view, "BattleEnded") {
+		t.Fatalf("archive view omitted persisted event: %s", view)
 	}
 }

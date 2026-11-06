@@ -78,6 +78,7 @@ type State struct {
 	GhostKeys        int64            `json:"ghost_keys"`
 	PrestigeCount    int64            `json:"prestige_count"`
 	Corp             *CorpState       `json:"corp,omitempty"`
+	EventLog         []Event          `json:"event_log,omitempty"`
 }
 
 type Automation struct {

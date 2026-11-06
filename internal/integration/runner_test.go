@@ -65,6 +65,9 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 	if s.LastBattle == nil || s.LastBattle.Outcome != "victory" {
 		t.Fatalf("fresh runner did not complete first breach: %#v", s.LastBattle)
 	}
+	if len(s.EventLog) == 0 {
+		t.Fatal("runner E2E produced no event archive")
+	}
 	if len(s.CompletedTargets) != 1 || s.CompletedTargets[0] != "t_01" {
 		t.Fatalf("first route did not unlock: %v", s.CompletedTargets)
 	}
