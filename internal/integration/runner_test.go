@@ -134,6 +134,73 @@ func TestCombatCommitmentMatrixDoesNotRewardLessPower(t *testing.T) {
 	}
 }
 
+func TestBattleBalanceSweepResolvesEveryTargetAndDoctrine(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Route progression is covered by the vertical-slice tests. This sweep
+	// isolates combat balance by making every catalog target reachable.
+	for i := range catalog.Targets {
+		catalog.Targets[i].Reachable = true
+	}
+
+	doctrines := []game.Doctrine{game.Balanced, game.Stealth, game.Overload}
+	commitments := []int64{10, 20, 30, 40}
+	for _, target := range catalog.Targets {
+		for _, doctrine := range doctrines {
+			for _, commitment := range commitments {
+				for seed := int64(1); seed <= 10; seed++ {
+					e := sim.New(catalog, seed)
+					s := sim.NewState(seed)
+					s.Upgrades = []string{"secondhand_compiler"}
+					s.Resources.Bots = commitment
+					s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: commitment, Doctrine: doctrine})
+					if err != nil {
+						t.Fatalf("start %s/%s/%d/seed%d: %v", target.ID, doctrine, commitment, seed, err)
+					}
+					for ticks := int64(0); s.ActiveBattle != nil && ticks <= target.TimeLimit; ticks++ {
+						s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+						if err != nil {
+							t.Fatalf("advance %s/%s/%d/seed%d: %v", target.ID, doctrine, commitment, seed, err)
+						}
+					}
+					if s.ActiveBattle != nil {
+						t.Fatalf("battle exceeded time limit: target=%s doctrine=%s commitment=%d seed=%d active=%#v", target.ID, doctrine, commitment, seed, s.ActiveBattle)
+					}
+					if s.LastBattle == nil {
+						t.Fatalf("missing result: target=%s doctrine=%s commitment=%d seed=%d", target.ID, doctrine, commitment, seed)
+					}
+					result := s.LastBattle
+					if result.TargetID != target.ID || result.Doctrine != doctrine || result.CommittedBots != commitment {
+						t.Fatalf("result identity mismatch: target=%s doctrine=%s commitment=%d seed=%d result=%#v", target.ID, doctrine, commitment, seed, result)
+					}
+					if result.Outcome != "victory" && result.Outcome != "defeat" && result.Outcome != "timeout" {
+						t.Fatalf("invalid runner outcome: target=%s doctrine=%s commitment=%d seed=%d outcome=%q", target.ID, doctrine, commitment, seed, result.Outcome)
+					}
+					if result.ElapsedTicks < 1 || result.ElapsedTicks > target.TimeLimit {
+						t.Fatalf("invalid battle duration: target=%s doctrine=%s commitment=%d seed=%d ticks=%d limit=%d", target.ID, doctrine, commitment, seed, result.ElapsedTicks, target.TimeLimit)
+					}
+					if result.Survivors < 0 || result.BotsLost < 0 || result.Survivors+result.BotsLost != result.CommittedBots {
+						t.Fatalf("bot accounting mismatch: target=%s doctrine=%s commitment=%d seed=%d result=%#v", target.ID, doctrine, commitment, seed, result)
+					}
+					if result.HeatBeforeBP < 0 || result.HeatAfterBP < result.HeatBeforeBP || result.HeatAfterBP > 10000 || result.HeatAddedBP < 0 {
+						t.Fatalf("heat invariant violated: target=%s doctrine=%s commitment=%d seed=%d result=%#v", target.ID, doctrine, commitment, seed, result)
+					}
+					if s.Resources.Bots < 0 || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Data < 0 {
+						t.Fatalf("negative resource after battle: target=%s doctrine=%s commitment=%d seed=%d resources=%#v", target.ID, doctrine, commitment, seed, s.Resources)
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestRunnerSixtyMinuteScriptedProgressionRemainsBounded(t *testing.T) {
 	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
 	if err != nil {

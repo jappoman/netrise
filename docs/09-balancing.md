@@ -31,6 +31,13 @@ Sweep seed [1..100], attacker commitment levels 25/50/75/100%, doctrines [balanc
 
 **Warning:** a simple attrition formula can create runaway collapse (bots die so damage falls, extending fight). Use automated tests to detect impossible or oppressive low-level battles and adjust layer health, damage, ICE attack or early bot income.
 
+The integration suite includes a deterministic smoke sweep over all five catalog
+targets, all three doctrines, four commitment levels and seeds 1..10. It makes
+targets reachable only inside the test, then asserts that every battle resolves
+within its time limit, records a valid Runner outcome, preserves bot/heat
+accounting and never produces negative resources. The broader seed 1..100 and
+intel/tech matrix remains a playtest expansion rather than a release gate.
+
 ## Economy experiments
 - Compare optimal and plausible novice strategies; novice should make progress without reading a wiki.
 - Sample buying one generator repeatedly, mixed purchases, saving for milestones and research allocation.

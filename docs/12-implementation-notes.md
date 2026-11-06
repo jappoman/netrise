@@ -119,5 +119,10 @@ gross revenue, active upkeep, operating margin, compute flow, policy states,
 reserve ICE and next-tick capital/compute projections. It stores no duplicate
 economy values and is available only through the shared state/TUI read path.
 
+The integration suite now runs a deterministic combat-balance smoke sweep across
+all five targets, three doctrines, four commitment levels and seeds 1..10. It
+checks time-limit resolution, valid outcomes, bot/heat accounting and
+non-negative resources for every case without bypassing the production engine.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
