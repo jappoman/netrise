@@ -491,3 +491,6 @@ standard 80x24 size the Upgrades screen keeps the selection, action rail and
 `NEXT:` guidance visible while `[up/down]` moves through the complete catalog.
 Overview action rails also wrap at a safe terminal width, keeping all
 faction-specific keyboard actions visible instead of clipping the right side.
+The final terminal rendering boundary also wraps long target estimates, help,
+settings and progression guidance, so secondary screens remain readable at
+80 columns without changing their underlying state or command flow.

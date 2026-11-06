@@ -72,6 +72,54 @@ func TestOverviewActionRailsFitStandardTerminalWidth(t *testing.T) {
 	}
 }
 
+func TestPlayerScreensFitStandardTerminalWidth(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 10}}, TimeLimit: 30}},
+		Research:      []content.ResearchNode{{ID: "research", Name: "Research", Description: "A catalogued research option."}},
+		Upgrades:      []content.Upgrade{{ID: "upgrade", Name: "Upgrade", Description: "A catalogued upgrade option.", Cost: 1}},
+	}
+	tests := []struct {
+		name   string
+		state  game.State
+		screen string
+	}{
+		{name: "runner overview", state: sim.NewState(5), screen: "overview"},
+		{name: "runner targets", state: sim.NewState(5), screen: "targets"},
+		{name: "runner preflight", state: sim.NewState(5), screen: "preflight"},
+		{name: "runner research", state: sim.NewState(5), screen: "research"},
+		{name: "runner upgrades", state: sim.NewState(5), screen: "upgrades"},
+		{name: "runner automation", state: sim.NewState(5), screen: "automation"},
+		{name: "runner archive", state: sim.NewState(5), screen: "archive"},
+		{name: "runner settings", state: sim.NewState(5), screen: "settings"},
+		{name: "runner help", state: sim.NewState(5), screen: "help"},
+		{name: "runner guide", state: sim.NewState(5), screen: "tutorial"},
+		{name: "runner prestige", state: sim.NewState(5), screen: "prestige"},
+		{name: "corporation overview", state: sim.NewCorporationState(5), screen: "overview"},
+		{name: "corporation policy", state: sim.NewCorporationState(5), screen: "automation"},
+		{name: "corporation report", state: sim.NewCorporationState(5), screen: "corp-report"},
+		{name: "corporation archive", state: sim.NewCorporationState(5), screen: "archive"},
+		{name: "corporation settings", state: sim.NewCorporationState(5), screen: "settings"},
+		{name: "corporation help", state: sim.NewCorporationState(5), screen: "help"},
+		{name: "corporation guide", state: sim.NewCorporationState(5), screen: "tutorial"},
+		{name: "corporation restructure", state: sim.NewCorporationState(5), screen: "restructure"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			m := New(tc.state, sim.New(catalog, 5), "")
+			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+			m = updated.(Model)
+			m.screen = tc.screen
+			for _, line := range strings.Split(m.View().Content, "\n") {
+				if len(line) > 80 {
+					t.Fatalf("line exceeds 80 columns (%d): %q", len(line), line)
+				}
+			}
+		})
+	}
+}
+
 func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
 	state := sim.NewState(20)
 	state.Resources.Data = mathx.New(7)

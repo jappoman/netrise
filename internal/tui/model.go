@@ -453,9 +453,42 @@ func terminalView(content string) tea.View {
 			return r
 		}, content)
 	}
+	content = wrapTerminalContent(content, 76)
 	view := tea.NewView(content)
 	view.AltScreen = true
 	return view
+}
+
+func wrapTerminalContent(content string, width int) string {
+	if width <= 0 {
+		return content
+	}
+	input := strings.Split(content, "\n")
+	output := make([]string, 0, len(input))
+	for _, line := range input {
+		if line == "" || strings.Contains(line, "\x1b[") || lipgloss.Width(line) <= width {
+			output = append(output, line)
+			continue
+		}
+		words := strings.Fields(line)
+		current := ""
+		for _, word := range words {
+			candidate := word
+			if current != "" {
+				candidate = current + " " + word
+			}
+			if current != "" && lipgloss.Width(candidate) > width {
+				output = append(output, current)
+				current = word
+				continue
+			}
+			current = candidate
+		}
+		if current != "" {
+			output = append(output, current)
+		}
+	}
+	return strings.Join(output, "\n")
 }
 
 func terminalTitleStyle() lipgloss.Style {
