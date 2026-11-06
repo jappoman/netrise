@@ -488,6 +488,9 @@ The Windows developer path also includes `scripts/smoke.ps1` and
 the standalone executable with its bundled catalog, and record/validate an
 archive SHA-256 checksum without requiring `make`. The Windows CI job runs the
 same package verifier against its temporary release directory.
+Unix development now has the matching `scripts/package-unix.sh` helper; Linux
+and macOS CI execute the extracted host-native bundle and verify its catalog
+and checksum before continuing.
 
 The player-facing Bubble Tea view now opts into the terminal alternate buffer,
 so the shipped TUI is genuinely full-screen and automatically restores the

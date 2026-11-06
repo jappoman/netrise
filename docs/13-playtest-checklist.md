@@ -15,6 +15,7 @@ go run ./cmd/netrise playtest --faction corp --seed 17
 make smoke SEED=17 TICKS=600
 ./scripts/smoke.ps1 -Seed 17 -Ticks 600
 ./scripts/package-windows.ps1 -OutputDirectory ./tmp/package-output
+bash ./scripts/package-unix.sh ./tmp/package-output
 go run ./cmd/netrise --data-dir ./tmp/playtest-runner
 go run ./cmd/netrise corp --data-dir ./tmp/playtest-corp
 ```

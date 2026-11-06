@@ -53,6 +53,10 @@ jobs:
           "$bundle/$exe" simulate --faction runner --seed 17 --ticks 600
           "$bundle/$exe" simulate --faction corp --seed 17 --ticks 600
           if "$bundle/$exe" unknown-command; then exit 1; fi
+      - name: Unix release package flow
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash ./scripts/package-unix.sh "$RUNNER_TEMP/netrise-package"
       - name: CLI smoke flow
         run: |
           go run ./cmd/netrise --version
