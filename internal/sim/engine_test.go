@@ -189,10 +189,14 @@ func TestBattleResultIsPersistedOnce(t *testing.T) {
 	s.Resources.Bots = 10
 	var err error
 	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	for s.ActiveBattle != nil {
 		s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	if s.LastBattle == nil || s.LastBattle.Outcome != "victory" || s.LastBattle.CreditsLooted != 5 {
 		t.Fatalf("missing or invalid result: %#v", s.LastBattle)
@@ -224,7 +228,9 @@ func TestOfflineReconciliationDoesNotResolveBattle(t *testing.T) {
 	s.Resources.Bots = 10
 	var err error
 	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	before := *s.ActiveBattle
 	rngBefore := s.RNGState
 	got, applied := e.ReconcileOffline(s, 600)
