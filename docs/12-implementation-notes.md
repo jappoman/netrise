@@ -192,6 +192,12 @@ atomically when the next tier is unaffordable or the catalog is exhausted.
 Overview, compact mode, report and next-step hints show the next market name,
 costs and demand gain.
 
+Prestige confirmation screens now expose their lock reason before confirmation:
+Runner Identity Burn states the 10,000-data threshold, while Corporation
+Restructuring states the 1,000-valuation threshold and the resulting Patent
+Shares. Once ready, the same screen shows an explicit confirmation status and
+the Corporation overview points to `[p]` as the next useful action.
+
 Corporation incursions now support the second specified emergency response:
 `[x] isolate asset`. The selected highest-value operational asset is suspended
 for its data-driven catalog duration, capital is charged atomically, the

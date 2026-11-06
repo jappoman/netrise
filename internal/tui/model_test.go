@@ -286,6 +286,31 @@ func TestCorporationMarketStatusAndNextActionAreVisible(t *testing.T) {
 	}
 }
 
+func TestPrestigeScreensExplainLockedAndReadyStates(t *testing.T) {
+	corp := New(sim.NewCorporationState(11), sim.New(content.Catalog{SchemaVersion: 1}, 11), "")
+	updated, _ := corp.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
+	corp = updated.(Model)
+	if !strings.Contains(corp.View().Content, "STATUS: LOCKED // reach 1,000 valuation") {
+		t.Fatalf("locked Corporation prestige state was not explained: %s", corp.View().Content)
+	}
+	corp.state.Corp.RunValuation = 1000
+	corp.state.Corp.Assets = append(corp.state.Corp.Assets,
+		game.CorpAsset{ID: "security_desk", Name: "Security Desk", Operational: true, Integrity: 100, MaxIntegrity: 100},
+		game.CorpAsset{ID: "archive_server", Name: "Archive Server", Operational: true, Integrity: 100, MaxIntegrity: 100},
+	)
+	corp.state.Corp.ICE = corp.state.Corp.ICECapacity
+	if !strings.Contains(corp.restructureView(), "STATUS: READY // [enter] confirms Restructuring") || !strings.Contains(corp.corpNextHint(), "[p] to Restructure") {
+		t.Fatalf("ready Corporation prestige state was not explained: view=%s hint=%s", corp.restructureView(), corp.corpNextHint())
+	}
+
+	runner := New(sim.NewState(12), sim.New(content.Catalog{SchemaVersion: 1}, 12), "")
+	updated, _ = runner.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
+	runner = updated.(Model)
+	if !strings.Contains(runner.View().Content, "STATUS: LOCKED // extract at least 10,000 data") {
+		t.Fatalf("locked Runner prestige state was not explained: %s", runner.View().Content)
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

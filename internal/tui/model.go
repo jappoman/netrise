@@ -931,7 +931,11 @@ func containsID(values []string, wanted string) bool {
 
 func (m Model) prestigeView() string {
 	reward := m.engine.IdentityBurnReward(m.state)
-	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, m.status)
+	status := "LOCKED // extract at least 10,000 data"
+	if reward > 0 {
+		status = "READY // [enter] confirms Identity Burn"
+	}
+	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\nSTATUS: %s\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, status, m.status)
 }
 
 func (m Model) corpOverviewView() string {
@@ -997,7 +1001,11 @@ func (m Model) restructureView() string {
 	if m.state.Corp != nil {
 		patents = m.state.Corp.PatentShares
 	}
-	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\n%s", corpValuation(m.state), reward, patents, m.status)
+	status := "LOCKED // reach 1,000 valuation"
+	if reward > 0 {
+		status = "READY // [enter] confirms Restructuring"
+	}
+	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\nSTATUS: %s\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\n%s", corpValuation(m.state), reward, patents, status, m.status)
 }
 
 func corpValuation(s game.State) int64 {
@@ -1225,6 +1233,9 @@ func (m Model) corpNextHint() string {
 			return fmt.Sprintf("press [m] to secure %s for %d capital and %d influence", market.Name, market.CostCapital, market.InfluenceCost)
 		}
 		return fmt.Sprintf("press [m] to secure %s for %d capital", market.Name, market.CostCapital)
+	}
+	if reward := integerSqrtPreview(m.state.Corp.RunValuation / 1000); reward > 0 {
+		return fmt.Sprintf("press [p] to Restructure and retain %d Patent Shares", reward)
 	}
 	return "maintain capital and watch the next active-play intrusion"
 }
