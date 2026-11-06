@@ -5,6 +5,7 @@ import (
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
+	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 	"strings"
 	"testing"
@@ -15,6 +16,32 @@ func TestCompactResizeDoesNotPanic(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
 	if updated == nil {
 		t.Fatal("nil model")
+	}
+}
+
+func TestQuitPersistsActiveBattleForResume(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Layers: []content.Layer{{Integrity: 30, ICE: 2}}, TimeLimit: 30}},
+	}
+	state := sim.NewState(13)
+	state.LogicalTick = 42
+	state.ActiveBattle = &game.Battle{TargetID: "target", AttackerFaction: game.Runner, Doctrine: game.Stealth, CommittedBots: 8, LiveBots: 6, LayerIntegrity: 18, DefenderICE: 1, ElapsedTicks: 4, TimeLimit: 30}
+	dir := t.TempDir()
+	m := New(state, sim.New(catalog, 13), dir)
+	updated, quit := m.Update(tea.KeyPressMsg(tea.Key{Text: "q", Code: 'q'}))
+	if updated == nil || quit == nil {
+		t.Fatal("quit did not return a model and quit command")
+	}
+	got, err := save.Read(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.LogicalTick != 42 || got.ActiveBattle == nil || got.ActiveBattle.TargetID != "target" || got.ActiveBattle.LiveBots != 6 {
+		t.Fatalf("quit did not persist resumable battle: %#v", got)
+	}
+	if got.SavedAtUTC == "" {
+		t.Fatal("quit save did not record save time")
 	}
 }
 
