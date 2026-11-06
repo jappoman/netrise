@@ -257,7 +257,7 @@ func TestCorporationReportShowsCompletedTechnology(t *testing.T) {
 	m := New(state, sim.New(catalog, 9), "")
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "v", Code: 'v'}))
 	view := updated.(Model).View().Content
-	for _, expected := range []string{"RESEARCH: 20", "TECHNOLOGIES: Network Efficiency"} {
+	for _, expected := range []string{"RESEARCH: 20", "TECHNOLOGIES: Network Efficiency", "ASSET STATUS: Starter Client 100/100 ON"} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("Corporation report omitted %q: %s", expected, view)
 		}
