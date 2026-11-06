@@ -522,6 +522,9 @@ func (m Model) targetsView() string {
 		if targetAvailable(m.state, target) {
 			reach = "REACHABLE"
 		}
+		if targetCooldown(m.state, target.ID) > 0 {
+			reach = "COOLDOWN"
+		}
 		intel := targetIntel(m.state, target.ID)
 		recon := targetReconStatus(m.state, target)
 		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), recon)
@@ -540,7 +543,7 @@ func (m Model) preflightView() string {
 	}
 	commitment := commitmentBots(m.state.Resources.Bots, m.commitmentPct)
 	estimatedTicks, estimatedHeat := m.engine.EstimateBattle(m.state, target, m.doctrine, commitment)
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nCOOLDOWN: %s\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), targetCooldownLabel(m.state, target.ID), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
 }
 
 func (m Model) reconLine() string {
@@ -1089,6 +1092,9 @@ func intelConfidence(intel int64) string {
 }
 
 func targetReconStatus(s game.State, target content.Target) string {
+	if remaining := targetCooldown(s, target.ID); remaining > 0 {
+		return fmt.Sprintf("cooldown active: %d ticks", remaining)
+	}
 	intel := targetIntel(s, target.ID)
 	if !targetAvailable(s, target) {
 		if target.RequiresTargetID != "" {
@@ -1106,6 +1112,17 @@ func targetReconStatus(s game.State, target content.Target) string {
 		return "recon occupied"
 	}
 	return fmt.Sprintf("recon ready: %d CR / %d ticks [i]", target.ReconCost, target.ReconTicks)
+}
+
+func targetCooldown(s game.State, id string) int64 {
+	return s.TargetCooldowns[id]
+}
+
+func targetCooldownLabel(s game.State, id string) string {
+	if remaining := targetCooldown(s, id); remaining > 0 {
+		return fmt.Sprintf("%d ticks", remaining)
+	}
+	return "ready"
 }
 
 func (m *Model) applyCommand(command game.Command) {

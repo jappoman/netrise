@@ -91,6 +91,40 @@ func TestCompilerUnlockAndBattleResolution(t *testing.T) {
 	}
 }
 
+func TestTargetCooldownPreventsRepeatedLootUntilElapsed(t *testing.T) {
+	c := catalog()
+	c.Targets = []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 1, ICE: 0}}, LootCredits: 5, TimeLimit: 10, CooldownTicks: 3}}
+	e := New(c, 99)
+	s := NewState(99)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 8
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.LastBattle == nil || s.LastBattle.Outcome != "victory" || s.TargetCooldowns["target"] != 3 {
+		t.Fatalf("victory did not establish cooldown: state=%#v err=%v", s, err)
+	}
+	credits := s.Resources.Credits
+	bots := s.Resources.Bots
+	_, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 1, Doctrine: game.Balanced})
+	if err == nil || err.(*game.CommandError).Reason != game.ReasonTargetCooldown {
+		t.Fatalf("cooldown raid was not rejected: err=%v", err)
+	}
+	if s.Resources.Credits != credits || s.Resources.Bots != bots {
+		t.Fatal("cooldown rejection partially changed resources")
+	}
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
+	if err != nil || len(s.TargetCooldowns) != 0 {
+		t.Fatalf("cooldown did not expire: cooldowns=%v err=%v", s.TargetCooldowns, err)
+	}
+	if _, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 1, Doctrine: game.Balanced}); err != nil {
+		t.Fatalf("target remained blocked after cooldown: %v", err)
+	}
+}
+
 func TestWithdrawReturnsSurvivors(t *testing.T) {
 	e := New(catalog(), 1)
 	s := NewState(1)

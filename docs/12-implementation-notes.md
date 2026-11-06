@@ -141,6 +141,12 @@ Upkeep-throttled Corporation assets now recover automatically once accumulated
 capital can cover the active costs; `AssetReactivated` is archived and the TUI
 shows the operational asset ratio plus a recovery hint.
 
+Runner target loot now respects catalog-defined cooldowns. A resolved raid
+stores the target cooldown before returning loot, a repeated launch is rejected
+atomically with `target_cooldown`, and logical ticks expire the lock. Targets
+and preflight display the remaining cooldown so the next useful action is
+explicit rather than an unexplained failed command.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

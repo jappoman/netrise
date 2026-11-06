@@ -80,6 +80,7 @@ type State struct {
 	Intel            map[string]int64 `json:"intel,omitempty"`
 	Recon            *ReconJob        `json:"recon,omitempty"`
 	CompletedTargets []string         `json:"completed_targets,omitempty"`
+	TargetCooldowns  map[string]int64 `json:"target_cooldowns,omitempty"`
 	Automation       Automation       `json:"automation"`
 	Research         []string         `json:"research,omitempty"`
 	RunExtractedData int64            `json:"run_extracted_data"`
@@ -206,6 +207,7 @@ const (
 	ReasonUpgradeLocked       Reason = "upgrade_locked"
 	ReasonInsufficientBots    Reason = "insufficient_bots"
 	ReasonTargetUnreachable   Reason = "target_unreachable"
+	ReasonTargetCooldown      Reason = "target_cooldown"
 	ReasonBattleActive        Reason = "battle_active"
 	ReasonNoBattle            Reason = "no_battle"
 	ReasonReconActive         Reason = "recon_active"

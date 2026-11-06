@@ -71,6 +71,9 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 	if len(s.CompletedTargets) != 1 || s.CompletedTargets[0] != "t_01" {
 		t.Fatalf("first route did not unlock: %v", s.CompletedTargets)
 	}
+	if s.TargetCooldowns["t_01"] != 60 {
+		t.Fatalf("first target cooldown was not persisted: %v", s.TargetCooldowns)
+	}
 	apply(game.Command{Kind: game.BuyResearch, ID: "hardware_01"})
 	if len(s.Research) != 1 || s.Research[0] != "hardware_01" {
 		t.Fatalf("first research node was not completed: %v", s.Research)

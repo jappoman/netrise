@@ -176,6 +176,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if !ok {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown target"}
 		}
+		if remaining := s.TargetCooldowns[target.ID]; remaining > 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonTargetCooldown, Detail: fmt.Sprintf("target is cooling down for %d ticks", remaining)}
+		}
 		if !e.isReachable(s, target) {
 			return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "target route is not reachable"}
 		}
@@ -206,6 +209,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonNoBattle, Detail: "no active battle"}
 		}
 		s.Resources.Bots += s.ActiveBattle.LiveBots
+		if target, ok := e.target(s.ActiveBattle.TargetID); ok {
+			setTargetCooldown(&s, target)
+		}
 		s.LastBattle = battleResult(s.ActiveBattle, "withdrawn", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Withdrawal complete. Surviving bots returned."}}, nil
@@ -440,6 +446,13 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 	var events []game.Event
 	for i := int64(0); i < ticks; i++ {
 		s.LogicalTick++
+		for id, remaining := range s.TargetCooldowns {
+			if remaining <= 1 {
+				delete(s.TargetCooldowns, id)
+			} else {
+				s.TargetCooldowns[id] = remaining - 1
+			}
+		}
 		s.RNGState ^= s.RNGState << 7
 		s.RNGState ^= s.RNGState >> 9
 		if s.Faction == game.Corporation && s.Corp != nil {
@@ -733,6 +746,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BotsLost", Message: "Countermeasure destroyed one bot."})
 	}
 	if b.LiveBots <= 0 {
+		setTargetCooldown(&s, target)
 		if s.Faction == game.Corporation {
 			s.Corp.ReputationBP = minInt64(10000, s.Corp.ReputationBP+500)
 			s.LastBattle = battleResult(b, "defended", 0, 0, 0, s.HeatBP)
@@ -759,6 +773,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
 			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
 			s.RunExtractedData += target.LootData
+			setTargetCooldown(&s, target)
 			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, target.LootData, s.HeatBP)
 			if !contains(s.CompletedTargets, target.ID) {
 				s.CompletedTargets = append(s.CompletedTargets, target.ID)
@@ -779,6 +794,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			return s, events
 		}
 		s.Resources.Bots += b.LiveBots
+		setTargetCooldown(&s, target)
 		s.LastBattle = battleResult(b, "timeout", b.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach timed out. Surviving bots returned."})
@@ -786,6 +802,16 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	}
 	s.ActiveBattle = b
 	return s, events
+}
+
+func setTargetCooldown(s *game.State, target content.Target) {
+	if s.Faction != game.Runner || target.CooldownTicks <= 0 {
+		return
+	}
+	if s.TargetCooldowns == nil {
+		s.TargetCooldowns = make(map[string]int64)
+	}
+	s.TargetCooldowns[target.ID] = target.CooldownTicks
 }
 
 func battleResult(b *game.Battle, outcome string, survivors, credits, data, heatBP int64) *game.BattleResult {

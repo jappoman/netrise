@@ -61,7 +61,7 @@ At most **one optional intervention** per fight in MVP:
 A Corp player can later `DeployReserveICE(n)` or `IsolateAsset`; these have shared costed action rules. No repeated rapid-click buffs.
 
 ## Reward logic
-A victory earns credits and data bounded by the target's actual **loot pool**. Repeated raids cannot conjure unlimited cash: each target pool refills at a documented rate and may temporarily lock down. Win unlocks time-limited access to adjacent assets. High-tier corp archives may give unique data once per run. Failure loses destroyed bots, increases heat, advances a small cooldown. Recovery always remains possible.
+A victory earns credits and data bounded by the target's actual **loot pool**. Repeated raids cannot conjure unlimited cash: each target has a data-driven cooldown/refill window and temporarily locks down after a resolution. Win unlocks time-limited access to adjacent assets. High-tier corp archives may give unique data once per run. Failure loses destroyed bots, increases heat, advances the same bounded cooldown. Recovery always remains possible.
 
 ## Corp defense mechanics
 Defenders choose protection budgets and deploy ICE on 1–3 layers, hiding actual placement from poorly informed attackers. Layers may have different countermeasures (high integrity, bot attrition, trace gain) and an upkeep cost. Stationary ICE consumed in battle must be restocked from real corp resources; passive upgrades do not produce infinite armor.

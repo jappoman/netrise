@@ -292,6 +292,11 @@ func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 	if m.state.Recon == nil || !strings.Contains(m.targetsView(), "recon active: 5 ticks") {
 		t.Fatalf("target screen did not start recon: state=%#v view=%s", m.state, m.targetsView())
 	}
+	m.state.Recon = nil
+	m.state.TargetCooldowns = map[string]int64{"target": 7}
+	if !strings.Contains(m.targetsView(), "COOLDOWN") || !strings.Contains(m.targetsView(), "cooldown active: 7 ticks") {
+		t.Fatalf("target screen omitted cooldown guidance: %s", m.targetsView())
+	}
 }
 
 func TestBattlePlaybackShowsCountersAndRecentEvents(t *testing.T) {

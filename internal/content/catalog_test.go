@@ -50,3 +50,10 @@ func TestValidateRejectsNegativeSecurityCapacityBonus(t *testing.T) {
 		t.Fatal("negative ICE capacity bonus accepted")
 	}
 }
+
+func TestValidateRejectsNegativeTargetCooldown(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"cooldown_ticks":-1}]}`))
+	if err == nil {
+		t.Fatal("negative target cooldown accepted")
+	}
+}

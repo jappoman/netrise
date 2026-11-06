@@ -23,7 +23,7 @@ Rainfall megacity **Vesper City**, neon logistics, night-shift analysts, pneumat
 | t_04 | Meridian | after access | high trace pressure | 4 | stealth tradeoff |
 | t_05 | Obsidian | research gate | thick ICE/3 layers | 5 | commitment planning |
 
-Each target needs: layer integrity, defense resist, starting/max ICE, trace modifier, loot pool, regeneration, route constraints, description and reveal thresholds. Tutorial target should be forgiving but not free of losses.
+Each target needs: layer integrity, defense resist, starting/max ICE, trace modifier, loot pool, regeneration, route constraints, description, reveal thresholds and a validated `cooldown_ticks` refill window. Tutorial target should be forgiving but not free of losses.
 
 ## Starting upgrades (10 Runner examples)
 | ID | Name | Function |

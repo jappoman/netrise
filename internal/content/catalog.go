@@ -77,6 +77,7 @@ type Target struct {
 	LootCredits      int64   `json:"loot_credits"`
 	LootData         int64   `json:"loot_data"`
 	TimeLimit        int64   `json:"time_limit"`
+	CooldownTicks    int64   `json:"cooldown_ticks"`
 	RequiresTargetID string  `json:"requires_target_id,omitempty"`
 	ReconCost        int64   `json:"recon_cost"`
 	ReconTicks       int64   `json:"recon_ticks"`
@@ -182,7 +183,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {
-		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 {
+		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.CooldownTicks < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 {
 			return fmt.Errorf("content: invalid target %q", t.ID)
 		}
 		seen[t.ID] = true
