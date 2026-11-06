@@ -296,6 +296,25 @@ func TestCorporationMarketStatusAndNextActionAreVisible(t *testing.T) {
 	}
 }
 
+func TestCorporationIncursionBudgetIsVisibleAcrossViews(t *testing.T) {
+	state := sim.NewCorporationState(13)
+	state.Corp.IncursionSpent = 8
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 13), "")
+	overview := m.corpOverviewView()
+	if !strings.Contains(overview, "NPC INCURSION BUDGET: 16/24 bot commitment remaining") {
+		t.Fatalf("Corporation overview hid incursion budget: %s", overview)
+	}
+	m.width = 79
+	m.height = 23
+	compact := m.compactView()
+	if !strings.Contains(compact, "NPC INCURSION BUDGET: 16/24 bot commitment remaining") {
+		t.Fatalf("compact Corporation view hid incursion budget: %s", compact)
+	}
+	if !strings.Contains(m.helpView(), "finite NPC incursion budget") {
+		t.Fatal("Corporation help omitted incursion budget explanation")
+	}
+}
+
 func TestPrestigeScreensExplainLockedAndReadyStates(t *testing.T) {
 	corp := New(sim.NewCorporationState(11), sim.New(content.Catalog{SchemaVersion: 1}, 11), "")
 	updated, _ := corp.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
