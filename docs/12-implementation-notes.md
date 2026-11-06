@@ -497,3 +497,7 @@ settings and progression guidance, so secondary screens remain readable at
 The Corporation Report uses a concise market tier label at 80x24 so its
 projection and `NEXT:` rail remain visible together with the full economic
 metrics.
+
+The headless balance report now reuses the production combat engine for a
+deterministic target/doctrine/commitment matrix, emitting aggregate outcomes,
+duration, attrition and heat metrics for local catalog iteration.

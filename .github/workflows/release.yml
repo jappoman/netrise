@@ -51,6 +51,7 @@ jobs:
             (cd "dist/${bundle}" && "./${name}" simulate --help)
             (cd "dist/${bundle}" && "./${name}" playtest --faction runner --seed 17 >/dev/null)
             (cd "dist/${bundle}" && "./${name}" playtest --faction corp --seed 17 >/dev/null)
+            (cd "dist/${bundle}" && "./${name}" balance --seed-from 1 --seed-to 5 >/dev/null)
             (cd "dist/${bundle}" && "./${name}" validate-content)
             (cd "dist/${bundle}" && "./${name}" simulate --faction runner --seed 17 --ticks 600 >/dev/null)
             (cd "dist/${bundle}" && "./${name}" simulate --faction corp --seed 17 --ticks 600 >/dev/null)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/jappoman/netrise/internal/balance"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/playtest"
@@ -29,6 +30,10 @@ func main() {
 	}
 	if len(args) > 0 && args[0] == "playtest" {
 		playtestCommand(args[1:])
+		return
+	}
+	if len(args) > 0 && args[0] == "balance" {
+		balanceCommand(args[1:])
 		return
 	}
 	if len(args) > 0 && args[0] == "validate-content" {
@@ -75,7 +80,7 @@ func main() {
 }
 
 func topLevelUsage() string {
-	return "netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise playtest --faction runner|corp --seed N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game."
+	return "netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise playtest --faction runner|corp --seed N\nnetrise balance --seed-from N --seed-to N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game."
 }
 
 func validateTopLevelArgs(args []string) error {
@@ -83,7 +88,7 @@ func validateTopLevelArgs(args []string) error {
 		return nil
 	}
 	switch args[0] {
-	case "simulate", "playtest":
+	case "simulate", "playtest", "balance":
 		return nil
 	case "corp":
 		if len(args) > 1 && args[1] != "--help" && args[1] != "-h" {
@@ -228,6 +233,35 @@ func playtestCommand(args []string) {
 		fatal(err)
 	}
 	report, err := playtest.Run(catalog, selected, *seed)
+	if err != nil {
+		fatal(err)
+	}
+	b, err := json.Marshal(report)
+	if err != nil {
+		fatal(err)
+	}
+	fmt.Println(string(b))
+}
+
+func balanceCommand(args []string) {
+	fs := flag.NewFlagSet("balance", flag.ContinueOnError)
+	fs.SetOutput(os.Stdout)
+	seedFrom := fs.Int64("seed-from", balance.DefaultSeedFrom, "first seed in the balance matrix")
+	seedTo := fs.Int64("seed-to", balance.DefaultSeedTo, "last seed in the balance matrix")
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
+		fatal(err)
+	}
+	if err := rejectTrailingArgs("balance", fs.Args()); err != nil {
+		fatal(err)
+	}
+	catalog, err := loadCatalog()
+	if err != nil {
+		fatal(err)
+	}
+	report, err := balance.Run(catalog, *seedFrom, *seedTo)
 	if err != nil {
 		fatal(err)
 	}

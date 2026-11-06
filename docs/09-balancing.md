@@ -38,6 +38,12 @@ within its time limit, records a valid Runner outcome, preserves bot/heat
 accounting and never produces negative resources. The broader intel/tech matrix
 remains a playtest expansion rather than a release gate.
 
+The local `netrise balance --seed-from 1 --seed-to 100` command now produces a
+deterministic JSON matrix over all catalog targets, three doctrines, four
+commitment levels and the selected seed range. It reports outcome counts,
+average duration, bot attrition and heat so catalog balance changes can be
+compared without changing simulation rules.
+
 The Corporation integration suite also runs a scripted 3,600-tick campaign
 with all three starter assets, security capacity, maintenance and automated
 R&D enabled. It asserts bounded capital/compute/research/ICE/meters, event-log
