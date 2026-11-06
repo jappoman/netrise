@@ -12,9 +12,13 @@ recon, route unlocking after victories, and a tested economy-to-recon-to-battle
 vertical slice. The first safe automation policies are now available through
 the Autodialer, Packet Scheduler, and Signal Profiler upgrades; they run on
 fixed ticks with bounded resource checks and no hostile offline actions.
+The progression slice also includes four validated research nodes with
+prerequisites, a data-funded research command and TUI panel, plus the
+transactional Runner `Identity Burn` prestige reset with Ghost Keys and
+run-scoped extracted-data accounting.
 
-The Corporation campaign, research tree, and prestige remain later work. The
-TUI now
+The Corporation campaign, broader research effects, and richer prestige
+confirmation remain later work. The TUI now
 exposes contract collection, Salvaged Rig purchase, one-bot fabrication,
 three attack doctrines, a 75% default commitment, one reserve-bot
 reinforcement, and persistent save/load. A save records UTC time and
