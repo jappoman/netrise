@@ -52,6 +52,38 @@ func TestRunnerDataLootRespectsCapacityAndCacheExpansion(t *testing.T) {
 		t.Fatalf("data cache did not expand capacity: resources=%#v err=%v", s.Resources, err)
 	}
 }
+
+func TestVictoryGrantsTemporaryAccessAndOfflineKeepsItSafe(t *testing.T) {
+	c := catalog()
+	c.Targets = []content.Target{
+		{ID: "t_01", Name: "Relay", Reachable: true, AccessTicks: 3, Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 10},
+		{ID: "t_02", Name: "Vault", RequiresTargetID: "t_01", Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 10},
+	}
+	e := New(c, 108)
+	s := NewState(108)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 2
+	s, events, err := e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: 1, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Access["t_01"] != 3 || !hasEvent(events, "AccessGranted") {
+		t.Fatalf("victory did not grant access: state=%#v events=%#v err=%v", s, events, err)
+	}
+	offline, _ := e.ReconcileOffline(s, 100)
+	if offline.Access["t_01"] != 3 {
+		t.Fatalf("offline reconciliation consumed temporary access: %#v", offline.Access)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
+	if err != nil || len(s.Access) != 0 || !hasEvent(events, "AccessExpired") {
+		t.Fatalf("active ticks did not expire access: state=%#v events=%#v err=%v", s.Access, events, err)
+	}
+	if _, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Balanced}); err == nil {
+		t.Fatal("expired access still allowed the adjacent target")
+	}
+}
+
 func TestPurchaseAtomicAndCostScaling(t *testing.T) {
 	e := New(catalog(), 1)
 	s := NewState(1)

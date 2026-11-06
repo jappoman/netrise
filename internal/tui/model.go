@@ -543,7 +543,7 @@ func (m Model) targetsView() string {
 		}
 		intel := targetIntel(m.state, target.ID)
 		recon := targetReconStatus(m.state, target)
-		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), recon)
+		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | %s | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), recon, targetAccessLabel(m.state, target.ID))
 	}
 	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview\nNEXT: unlock a route, then run recon to replace uncertainty with intel before launch."
 }
@@ -1107,12 +1107,22 @@ func targetAvailable(s game.State, target content.Target) bool {
 	if target.Reachable {
 		return true
 	}
+	if s.Access != nil {
+		return s.Access[target.RequiresTargetID] > 0
+	}
 	for _, id := range s.CompletedTargets {
 		if id == target.RequiresTargetID {
 			return true
 		}
 	}
 	return false
+}
+
+func targetAccessLabel(s game.State, id string) string {
+	if remaining := s.Access[id]; remaining > 0 {
+		return fmt.Sprintf("access:%d ticks", remaining)
+	}
+	return "access:none"
 }
 
 func targetIntel(s game.State, id string) int64 {

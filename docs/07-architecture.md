@@ -42,7 +42,7 @@ Use stable IDs, typed enums and explicit versioning, not ad-hoc dynamic maps for
 
 ## Commands and events
 Commands (examples): `CollectContract`, `BuyGenerator`, `QueueFabrication`, `StartRecon`, `StartBattle`, `ReinforceBattle`, `WithdrawBattle`, `SetAutomationPolicy`, `AllocateCompute`, `Prestige`, `AdvanceTicks`.
-Events: `ResourceProduced`, `ResourceSpent`, `UpgradePurchased`, `ReconCompleted`, `BattleStarted`, `LayerBreached`, `BotsLost`, `BattleEnded`, `AutomationProduced`, `AutomationQueued`, `AutomationStopped`, `MaintenanceRestocked`, `MaintenanceStopped`, `AssetReactivated`, `CorpPolicyConfigured`, `CorpResearch`, `CorpResearchAutomated`, `CorpResearchStopped`, `CorpTechnologyCompleted`, `AccessGranted`, `PrestigeCompleted`, `OfflineReconciled`. Target cooldowns are persisted state, decremented by logical ticks and checked before resource commitment.
+Events: `ResourceProduced`, `ResourceSpent`, `UpgradePurchased`, `ReconCompleted`, `BattleStarted`, `LayerBreached`, `BotsLost`, `BattleEnded`, `AutomationProduced`, `AutomationQueued`, `AutomationStopped`, `MaintenanceRestocked`, `MaintenanceStopped`, `AssetReactivated`, `CorpPolicyConfigured`, `CorpResearch`, `CorpResearchAutomated`, `CorpResearchStopped`, `CorpTechnologyCompleted`, `AccessGranted`, `AccessExpired`, `PrestigeCompleted`, `OfflineReconciled`. Target cooldowns and temporary access are persisted state; cooldowns advance on logical ticks and access expires only during active play.
 Each command validates before mutation; return typed error/reason, e.g. `ErrInsufficientBots`, `ErrTargetUnreachable`.
 
 ## Tick order and RNG

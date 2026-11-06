@@ -623,6 +623,16 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 				s.TargetCooldowns[id] = remaining - 1
 			}
 		}
+		if !safeOnly {
+			for id, remaining := range s.Access {
+				if remaining <= 1 {
+					delete(s.Access, id)
+					events = append(events, game.Event{Tick: s.LogicalTick, Type: "AccessExpired", Message: "Temporary access expired: " + id})
+				} else {
+					s.Access[id] = remaining - 1
+				}
+			}
+		}
 		s.RNGState ^= s.RNGState << 7
 		s.RNGState ^= s.RNGState >> 9
 		if s.Faction == game.Corporation && s.Corp != nil {
@@ -1044,6 +1054,13 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			if !contains(s.CompletedTargets, target.ID) {
 				s.CompletedTargets = append(s.CompletedTargets, target.ID)
 			}
+			if target.AccessTicks > 0 {
+				if s.Access == nil {
+					s.Access = map[string]int64{}
+				}
+				s.Access[target.ID] = target.AccessTicks
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AccessGranted", Message: fmt.Sprintf("Temporary access granted to %s for %d ticks.", target.Name, target.AccessTicks)})
+			}
 			s.ActiveBattle = nil
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach successful. Loot extracted."})
 			return s, events
@@ -1146,7 +1163,13 @@ func (e *Engine) isReachable(s game.State, target content.Target) bool {
 	if target.Reachable {
 		return true
 	}
-	return target.RequiresTargetID != "" && contains(s.CompletedTargets, target.RequiresTargetID)
+	if target.RequiresTargetID == "" {
+		return false
+	}
+	if s.Access != nil {
+		return s.Access[target.RequiresTargetID] > 0
+	}
+	return contains(s.CompletedTargets, target.RequiresTargetID)
 }
 
 func contains(values []string, wanted string) bool {

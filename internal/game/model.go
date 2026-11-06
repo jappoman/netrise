@@ -88,6 +88,7 @@ type State struct {
 	Intel            map[string]int64 `json:"intel,omitempty"`
 	Recon            *ReconJob        `json:"recon,omitempty"`
 	CompletedTargets []string         `json:"completed_targets,omitempty"`
+	Access           map[string]int64 `json:"access,omitempty"`
 	TargetCooldowns  map[string]int64 `json:"target_cooldowns,omitempty"`
 	Automation       Automation       `json:"automation"`
 	Research         []string         `json:"research,omitempty"`

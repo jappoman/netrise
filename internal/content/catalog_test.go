@@ -109,6 +109,13 @@ func TestValidateRejectsNegativeDataCapacity(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsNegativeAccessDuration(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"access_ticks":-1}]}`))
+	if err == nil {
+		t.Fatal("negative access duration accepted")
+	}
+}
+
 func TestValidateRejectsInvalidCorporationIncursion(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_incursion":{"interval_ticks":0,"bot_budget":8,"bot_commitment":9}}`))
 	if err == nil {

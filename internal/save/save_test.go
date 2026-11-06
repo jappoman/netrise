@@ -106,6 +106,24 @@ func TestSemanticallyInvalidSaveIsRejected(t *testing.T) {
 	}
 }
 
+func TestTemporaryAccessRoundTripsAndInvalidAccessIsRejected(t *testing.T) {
+	d := t.TempDir()
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, Access: map[string]int64{"t_01": 120}}
+	if err := Write(d, s); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(d)
+	if err != nil || got.Access["t_01"] != 120 {
+		t.Fatalf("temporary access did not round-trip: %#v, %v", got.Access, err)
+	}
+	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","access":{"t_01":-1}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("negative temporary access was accepted: %v", err)
+	}
+}
+
 func TestRoundTripPreservesActiveBattleForResume(t *testing.T) {
 	d := t.TempDir()
 	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 17, ActiveBattle: &game.Battle{TargetID: "t_01", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 6, LayerIndex: 1, LayerIntegrity: 12, DefenderICE: 3, TraceBP: 900, ElapsedTicks: 4, TimeLimit: 90}}

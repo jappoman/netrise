@@ -126,6 +126,11 @@ func validateState(s game.State) error {
 			return errors.New("target cooldown bounds exceeded")
 		}
 	}
+	for id, access := range s.Access {
+		if id == "" || access < 0 {
+			return errors.New("access bounds exceeded")
+		}
+	}
 	if s.Recon != nil && (s.Recon.TargetID == "" || s.Recon.RemainingTicks < 0) {
 		return errors.New("invalid recon job")
 	}
