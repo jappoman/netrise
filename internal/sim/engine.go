@@ -138,9 +138,8 @@ func NewCorporationState(seed int64) game.State {
 		RNGState: uint64(seed) + 0x9e3779b97f4a7c15,
 		Corp: &game.CorpState{
 			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5, MaintenanceReserve: 5,
-			IncursionBudget: 24,
-			DemandBP:        10000,
-			ReputationBP:    8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, MaxIntegrity: 100, Operational: true}},
+			DemandBP:     10000,
+			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, MaxIntegrity: 100, Operational: true}},
 		},
 	}
 }

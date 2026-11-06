@@ -373,7 +373,9 @@ func TestCorporationIncursionBudgetUsesCatalogConfiguration(t *testing.T) {
 	c.CorpIncursion = content.CorpIncursion{IntervalTicks: 1, BotBudget: 12, BotCommitment: 6}
 	e := New(c, 109)
 	s := NewCorporationState(109)
-	s.Corp.IncursionBudget = 0
+	if s.Corp.IncursionBudget != 0 {
+		t.Fatalf("new Corporation state still hardcodes an incursion budget: %d", s.Corp.IncursionBudget)
+	}
 	s, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
 	if err != nil || s.Corp.IncursionBudget != 12 || s.ActiveBattle == nil || s.ActiveBattle.CommittedBots != 6 {
 		t.Fatalf("catalogued incursion budget was not applied: corp=%#v battle=%#v err=%v", s.Corp, s.ActiveBattle, err)
