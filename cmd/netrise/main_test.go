@@ -36,7 +36,7 @@ func TestValidateTopLevelArgsRejectsUnknownCommands(t *testing.T) {
 	if err := validateTopLevelArgs([]string{"corp", "--unexpected"}); err == nil {
 		t.Fatal("Corporation command accepted an unexpected argument")
 	}
-	for _, args := range [][]string{{}, {"corp"}, {"simulate", "--help"}, {"validate-content"}, {"--help"}} {
+	for _, args := range [][]string{{}, {"corp"}, {"simulate", "--help"}, {"playtest", "--help"}, {"validate-content"}, {"--help"}} {
 		if err := validateTopLevelArgs(args); err != nil {
 			t.Fatalf("valid top-level args rejected: %v: %v", args, err)
 		}

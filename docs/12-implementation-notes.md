@@ -467,6 +467,12 @@ saves remain available; the lock is released when the TUI exits. The save test
 suite also holds a lock in a separate helper process to verify the OS-level
 exclusion rather than only same-process handles.
 
+The headless `playtest` command now runs the deterministic first-loop script
+for either faction and emits a compact JSON baseline (progress tick, battle
+outcome, events and faction-specific progression). It reuses the production
+engine and catalog, giving balance iterations a repeatable comparison point
+without adding telemetry or a second gameplay implementation.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.

@@ -70,7 +70,7 @@ Currency/resource stocks: integer fixed point with a documented scale, checked a
 - No secrets or user-specific personal data collected.
 
 ## Execution modes
-`netrise`: normal TUI; `netrise simulate --seed 17 --ticks 600`: headless deterministic report for tests/balance; `netrise --version`; `netrise --help`. Optional `netrise validate-content`.
+`netrise`: normal TUI; `netrise simulate --seed 17 --ticks 600`: headless deterministic report for tests/balance; `netrise playtest --faction runner|corp --seed 17`: deterministic first-loop balance baseline; `netrise --version`; `netrise --help`. Optional `netrise validate-content`.
 Production build should work without requiring Python/Node, shell scripting, runtime network access or an external DB.
 
 ## CI and quality

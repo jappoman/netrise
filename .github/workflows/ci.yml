@@ -46,6 +46,8 @@ jobs:
           "$bundle/$exe" --help
           "$bundle/$exe" corp --help
           "$bundle/$exe" simulate --help
+          "$bundle/$exe" playtest --faction runner --seed 17
+          "$bundle/$exe" playtest --faction corp --seed 17
           "$bundle/$exe" validate-content
           "$bundle/$exe" simulate --faction runner --seed 17 --ticks 600
           "$bundle/$exe" simulate --faction corp --seed 17 --ticks 600
@@ -56,6 +58,8 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise playtest --faction runner --seed 17
+          go run ./cmd/netrise playtest --faction corp --seed 17
       - name: Install Fish
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y fish
@@ -67,6 +71,8 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise playtest --faction runner --seed 17
+          go run ./cmd/netrise playtest --faction corp --seed 17
           if go run ./cmd/netrise unknown-command
             exit 1
           end
@@ -78,6 +84,8 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise playtest --faction runner --seed 17
+          go run ./cmd/netrise playtest --faction corp --seed 17
           go run ./cmd/netrise unknown-command
           if %ERRORLEVEL% EQU 0 exit /b 1
       - name: PowerShell smoke flow
@@ -91,6 +99,8 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise playtest --faction runner --seed 17
+          go run ./cmd/netrise playtest --faction corp --seed 17
           $previousErrorActionPreference = $ErrorActionPreference
           $ErrorActionPreference = 'Continue'
           go run ./cmd/netrise unknown-command 2>&1 | Out-Host

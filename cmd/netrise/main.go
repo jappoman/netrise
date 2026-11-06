@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/playtest"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 	"github.com/jappoman/netrise/internal/tui"
@@ -24,6 +25,10 @@ func main() {
 	}
 	if len(args) > 0 && args[0] == "simulate" {
 		simulate(args[1:])
+		return
+	}
+	if len(args) > 0 && args[0] == "playtest" {
+		playtestCommand(args[1:])
 		return
 	}
 	if len(args) > 0 && args[0] == "validate-content" {
@@ -70,7 +75,7 @@ func main() {
 }
 
 func topLevelUsage() string {
-	return "netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game."
+	return "netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise playtest --faction runner|corp --seed N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game."
 }
 
 func validateTopLevelArgs(args []string) error {
@@ -78,7 +83,7 @@ func validateTopLevelArgs(args []string) error {
 		return nil
 	}
 	switch args[0] {
-	case "simulate":
+	case "simulate", "playtest":
 		return nil
 	case "corp":
 		if len(args) > 1 && args[1] != "--help" && args[1] != "-h" {
@@ -189,6 +194,41 @@ func simulate(args []string) {
 		State game.State `json:"state"`
 	}{*seed, *ticks, s}
 	b, _ := json.Marshal(out)
+	fmt.Println(string(b))
+}
+
+func playtestCommand(args []string) {
+	fs := flag.NewFlagSet("playtest", flag.ContinueOnError)
+	fs.SetOutput(os.Stdout)
+	seed := fs.Int64("seed", 17, "world seed")
+	faction := fs.String("faction", "runner", "campaign faction: runner or corp")
+	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
+		fatal(err)
+	}
+	var selected game.Faction
+	switch *faction {
+	case "runner":
+		selected = game.Runner
+	case "corp", "corporation":
+		selected = game.Corporation
+	default:
+		fatal(fmt.Errorf("unknown faction %q (use runner or corp)", *faction))
+	}
+	catalog, err := loadCatalog()
+	if err != nil {
+		fatal(err)
+	}
+	report, err := playtest.Run(catalog, selected, *seed)
+	if err != nil {
+		fatal(err)
+	}
+	b, err := json.Marshal(report)
+	if err != nil {
+		fatal(err)
+	}
 	fmt.Println(string(b))
 }
 func loadCatalog() (content.Catalog, error) {
