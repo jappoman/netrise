@@ -358,8 +358,17 @@ func TestResearchScreenExplainsInsufficientData(t *testing.T) {
 	state := sim.NewState(410)
 	state.Resources.Data = mathx.New(3)
 	m := New(state, sim.New(catalog, 410), "")
-	if !strings.Contains(m.researchView(), "NEED 7 DATA") {
+	if !strings.Contains(m.researchView(), "DATA: 3 / 100 capacity") || !strings.Contains(m.researchView(), "NEED 7 DATA") {
 		t.Fatalf("research screen hid insufficient data reason: %s", m.researchView())
+	}
+}
+
+func TestUpgradeScreenShowsCurrentCredits(t *testing.T) {
+	state := sim.NewState(411)
+	state.Resources.Credits = mathx.New(42)
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1, Upgrades: []content.Upgrade{{ID: "u", Name: "Upgrade", Cost: 50}}}, 411), "")
+	if !strings.Contains(m.upgradesView(), "CREDITS: 42") {
+		t.Fatalf("upgrade screen hid current credits: %s", m.upgradesView())
 	}
 }
 

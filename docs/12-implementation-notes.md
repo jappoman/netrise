@@ -363,3 +363,7 @@ configured cap.
 Corporation compute-reserve policy values are bounded to the fixed-point range,
 and automated R&D compares available compute directly against the reserve
 without an overflow-prone `reserve + 1` expression.
+
+Research and Upgrade panels now show the current data/capacity or credit
+balance above their catalog rows, making affordability visible before a
+purchase attempt.

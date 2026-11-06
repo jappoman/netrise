@@ -671,7 +671,7 @@ func resultNextHint(outcome string) string {
 }
 
 func (m Model) researchView() string {
-	lines := "NETRISE // RESEARCH\n\n"
+	lines := fmt.Sprintf("NETRISE // RESEARCH\n\nDATA: %s / %d capacity\n\n", m.state.Resources.Data, m.state.Resources.DataCapacity)
 	for _, node := range m.engine.Catalog.Research {
 		state := "LOCKED"
 		cost := m.engine.ResearchCost(m.state, node.CostData)
@@ -706,7 +706,7 @@ func missingResearchPrerequisites(s game.State, prerequisites []string) string {
 }
 
 func (m Model) upgradesView() string {
-	lines := "NETRISE // UPGRADES\n\nSelect an upgrade, review its effect and press Enter to purchase.\n"
+	lines := fmt.Sprintf("NETRISE // UPGRADES\n\nCREDITS: %s\nSelect an upgrade, review its effect and press Enter to purchase.\n", m.state.Resources.Credits)
 	for i, upgrade := range m.engine.Catalog.Upgrades {
 		marker := "  "
 		if i == m.selectedUpgrade {
