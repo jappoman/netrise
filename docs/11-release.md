@@ -35,6 +35,10 @@ No account, telemetry or server needed in the MVP. Local save data only. Steam C
 - Correct screenshots showing actual gameplay.
 - Automated builds, tests, checksums and release notes.
 
+The current development release notes are maintained in
+[CHANGELOG.md](../CHANGELOG.md); they describe verified capabilities without
+turning provisional balance, names or legal review into release claims.
+
 Release packages must be self-contained: each platform archive includes the
 NETRISE executable and the validated `assets/content/catalog.json`. Checksums
 are generated for the archive, not for a binary that would be unusable without

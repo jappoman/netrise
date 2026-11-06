@@ -47,6 +47,8 @@ The game runs as a **native terminal user interface (TUI)** on real terminals (B
 | [docs/10-roadmap.md](docs/10-roadmap.md) | Milestones, ticket-ready tasks, acceptance criteria |
 | [docs/11-release.md](docs/11-release.md) | Steam and standalone distribution, safety and IP |
 | [docs/13-playtest-checklist.md](docs/13-playtest-checklist.md) | Reproducible local Runner/Corporation playtesting |
+| [CHANGELOG.md](CHANGELOG.md) | Development milestone and release verification notes |
+| [docs/14-handoff.md](docs/14-handoff.md) | Current verified state and resume instructions |
 
 ## Implementation posture
 
