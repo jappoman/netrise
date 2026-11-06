@@ -124,7 +124,7 @@ func validateState(s game.State) error {
 	if s.LogicalTick < 0 || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Data < 0 || s.Resources.ComputeRemainder < 0 || int64(s.Resources.ComputeRemainder) >= mathx.Scale {
 		return errors.New("negative tick/resource or invalid compute remainder")
 	}
-	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.Resources.Bots > s.Resources.BotCapacity || s.Resources.DataCapacity < 0 || s.Resources.Data.Units() > s.Resources.DataCapacity || s.HeatBP < 0 || s.HeatBP > 10000 {
+	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.Resources.Bots > s.Resources.BotCapacity || s.Resources.DataCapacity < 0 || s.Resources.DataCapacity > mathx.MaxUnits || s.Resources.Data.Units() > s.Resources.DataCapacity || s.HeatBP < 0 || s.HeatBP > 10000 {
 		return errors.New("resource, capacity, or heat bounds exceeded")
 	}
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
@@ -170,7 +170,7 @@ func validateState(s game.State) error {
 			return errors.New("corporation bounds exceeded")
 		}
 		for _, asset := range c.Assets {
-			if asset.ID == "" || asset.Integrity < 0 || asset.MaxIntegrity < 0 || (asset.MaxIntegrity > 0 && asset.Integrity > asset.MaxIntegrity) || (asset.MaxIntegrity > 0 && asset.Integrity == 0 && asset.Operational) || asset.CapitalPerTick < 0 || asset.UpkeepPerTick < 0 || asset.IsolationCostCapital < 0 || asset.IsolationTicks < 0 || asset.IsolatedUntilTick < 0 {
+			if asset.ID == "" || asset.Integrity < 0 || asset.Integrity > mathx.MaxUnits || asset.MaxIntegrity < 0 || asset.MaxIntegrity > mathx.MaxUnits || (asset.MaxIntegrity > 0 && asset.Integrity > asset.MaxIntegrity) || (asset.MaxIntegrity > 0 && asset.Integrity == 0 && asset.Operational) || asset.CapitalPerTick < 0 || asset.CapitalPerTick > mathx.MaxUnits || asset.UpkeepPerTick < 0 || asset.UpkeepPerTick > mathx.MaxUnits || asset.IsolationCostCapital < 0 || asset.IsolationCostCapital > mathx.MaxUnits || asset.IsolationTicks < 0 || asset.IsolatedUntilTick < 0 {
 				return errors.New("invalid corporation asset")
 			}
 		}

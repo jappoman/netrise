@@ -121,6 +121,17 @@ func TestSaveRejectsBotsAboveCapacity(t *testing.T) {
 	}
 }
 
+func TestSaveRejectsUnrepresentableFixedPointAssetValues(t *testing.T) {
+	d := t.TempDir()
+	payload := `{"schema_version":1,"faction":"corporation","corp":{"assets":[{"id":"asset","upkeep_per_tick":9223372036854775807}]}}`
+	if err := os.WriteFile(PathForFaction(d, game.Corporation), []byte(payload), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadFaction(d, game.Corporation); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("unrepresentable asset value was accepted: %v", err)
+	}
+}
+
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {
