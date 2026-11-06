@@ -96,6 +96,37 @@ func TestCorporationOverviewShowsAssetIntegrity(t *testing.T) {
 	}
 }
 
+func TestCorporationEmergencyIsolationOpensResultImmediately(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "t_01", Name: "Audit", Layers: []content.Layer{{Integrity: 30, ICE: 0}}, TimeLimit: 30}},
+	}
+	state := sim.NewCorporationState(17)
+	state.Corp.Capital = mathx.New(100)
+	state.Corp.Assets = append(state.Corp.Assets, game.CorpAsset{ID: "archive", Name: "Archive", CapitalPerTick: 7, Integrity: 100, MaxIntegrity: 100, Operational: true, IsolationCostCapital: 10, IsolationTicks: 5})
+	state.ActiveBattle = &game.Battle{TargetID: "t_01", DefenderAssetID: "archive", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: 30, TimeLimit: 30}
+	m := New(state, sim.New(catalog, 17), "")
+	m.screen = "battle"
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "x", Code: 'x'}))
+	m = updated.(Model)
+	if m.screen != "result" || m.state.ActiveBattle != nil || m.state.LastBattle == nil || m.state.LastBattle.Outcome != "isolated" {
+		t.Fatalf("isolation did not transition to result: screen=%q state=%#v", m.screen, m.state)
+	}
+}
+
+func TestCorporationRepairKeyUsesEngineCommand(t *testing.T) {
+	state := sim.NewCorporationState(18)
+	state.Corp.Capital = mathx.New(50)
+	state.Corp.Assets[0].Integrity = 60
+	state.Corp.Assets[0].MaxIntegrity = 100
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 18), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "r", Code: 'r'}))
+	m = updated.(Model)
+	if m.state.Corp.Assets[0].Integrity != 70 || m.state.Corp.Capital != mathx.New(40) || !strings.Contains(m.status, "repaired") {
+		t.Fatalf("repair key did not use atomic engine command: state=%#v status=%q", m.state.Corp, m.status)
+	}
+}
+
 func TestNoColorOmitsANSIStyling(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")

@@ -1142,6 +1142,7 @@ func targetCooldownLabel(s game.State, id string) string {
 }
 
 func (m *Model) applyCommand(command game.Command) {
+	hadBattle := m.state.ActiveBattle != nil
 	var events []game.Event
 	var err error
 	m.state, events, err = m.engine.Apply(m.state, command)
@@ -1152,6 +1153,8 @@ func (m *Model) applyCommand(command game.Command) {
 	}
 	if m.state.ActiveBattle != nil {
 		m.screen = "battle"
+	} else if hadBattle && m.state.LastBattle != nil {
+		m.screen = "result"
 	}
 	m.saveNow()
 }
