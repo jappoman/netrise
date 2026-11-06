@@ -87,6 +87,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "prestige" {
+			switch v.String() {
+			case "enter":
+				m.applyCommand(game.Command{Kind: game.IdentityBurn})
+				if m.state.PrestigeCount > 0 {
+					m.screen = "overview"
+				}
+			case "esc", "o":
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if v.String() == "t" {
 			m.screen = "targets"
 			return m, nil
@@ -97,6 +109,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "y" {
 			m.screen = "research"
+			return m, nil
+		}
+		if v.String() == "p" {
+			m.screen = "prestige"
 			return m, nil
 		}
 		if m.screen == "result" && v.String() == "enter" {
@@ -165,11 +181,14 @@ func (m Model) View() tea.View {
 	if m.screen == "research" {
 		return tea.NewView(m.researchView())
 	}
+	if m.screen == "prestige" {
+		return tea.NewView(m.prestigeView())
+	}
 	battle := "NO ACTIVE BATTLE"
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [C/F/I] automation [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -225,6 +244,11 @@ func (m Model) researchView() string {
 		lines += fmt.Sprintf("%-22s %-18s %s\n", node.Name, node.ID, state)
 	}
 	return lines + "\n[enter] buy next available node  [esc] overview"
+}
+
+func (m Model) prestigeView() string {
+	reward := m.engine.IdentityBurnReward(m.state)
+	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, m.status)
 }
 
 func (m Model) nextResearchID() string {

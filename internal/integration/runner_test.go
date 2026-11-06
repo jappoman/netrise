@@ -7,6 +7,7 @@ import (
 
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/sim"
 )
 
@@ -71,7 +72,17 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 	if len(s.Research) != 1 || s.Research[0] != "hardware_01" {
 		t.Fatalf("first research node was not completed: %v", s.Research)
 	}
-	if _, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Stealth}); err != nil {
-		t.Fatalf("unlocked second target rejected: %v", err)
+	s.RunExtractedData = 10000
+	apply(game.Command{Kind: game.IdentityBurn})
+	if s.PrestigeCount != 1 || s.GhostKeys != 1 || s.RunExtractedData != 0 || len(s.CompletedTargets) != 0 || len(s.Research) != 0 {
+		t.Fatalf("identity burn did not reset the run atomically: %#v", s)
+	}
+	if s.Resources.Credits != mathx.New(30) {
+		t.Fatalf("identity burn starter boost incorrect: %s", s.Resources.Credits)
+	}
+	if _, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Stealth}); err == nil {
+		// The reset intentionally removes route access; the target must be
+		// rediscovered in the new run rather than remaining unlocked for free.
+		t.Fatal("identity burn retained route access")
 	}
 }

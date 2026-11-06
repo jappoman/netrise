@@ -450,6 +450,11 @@ func integerSqrt(value int64) int64 {
 	return high
 }
 
+// IdentityBurnReward exposes the deterministic preview used by the TUI.
+func (e *Engine) IdentityBurnReward(s game.State) int64 {
+	return integerSqrt(s.RunExtractedData / 10000)
+}
+
 func (e *Engine) isReachable(s game.State, target content.Target) bool {
 	if target.Reachable {
 		return true
