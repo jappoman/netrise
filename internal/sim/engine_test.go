@@ -943,14 +943,24 @@ func TestCorporationRatesSaturateExtremeAssets(t *testing.T) {
 }
 
 func TestAutomationBudgetChecksDoNotOverflow(t *testing.T) {
-	if !budgetWouldExceed(math.MaxInt64-1, 2, math.MaxInt64) {
+	if !BudgetWouldExceed(math.MaxInt64-1, 2, math.MaxInt64) {
 		t.Fatal("fabrication budget check allowed an overflowing spend")
 	}
-	if !budgetWouldExceed(math.MaxInt64-199, 200, math.MaxInt64) {
+	if !BudgetWouldExceed(math.MaxInt64-199, 200, math.MaxInt64) {
 		t.Fatal("research budget check allowed an overflowing spend")
 	}
-	if budgetWouldExceed(10, 2, math.MaxInt64) {
+	if BudgetWouldExceed(10, 2, math.MaxInt64) {
 		t.Fatal("valid budget spend was rejected")
+	}
+}
+
+func TestComputeReserveRejectsUnrepresentableValues(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 39)
+	s := NewCorporationState(39)
+	before := s
+	updated, _, err := e.Apply(s, game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: math.MaxInt64})
+	if err == nil || updated.Corp == nil || updated.Corp.ComputeReserve != before.Corp.ComputeReserve {
+		t.Fatalf("unrepresentable compute reserve was accepted: state=%#v err=%v", updated.Corp, err)
 	}
 }
 

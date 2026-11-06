@@ -592,6 +592,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 			s.Corp.ResearchAuto = true
 			s.Corp.ResearchBudget = configuredBudget(c.Quantity, s.Corp.ResearchBudget)
 		case "compute_reserve":
+			if c.Quantity > mathx.MaxUnits {
+				return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "compute reserve exceeds representable capacity"}
+			}
 			s.Corp.ComputeReserve = c.Quantity
 		default:
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown corporation policy"}
@@ -746,7 +749,7 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 		}
 	}
 	if s.Automation.Fabrication && s.Fabrication == nil && hasUpgrade(s, "secondhand_compiler") && s.Resources.Bots < s.Resources.BotCapacity && s.Resources.Compute >= mathx.New(10) && s.Resources.Credits >= mathx.New(2) {
-		if budgetWouldExceed(s.Automation.FabricationSpent, 2, s.Automation.FabricationBudget) {
+		if BudgetWouldExceed(s.Automation.FabricationSpent, 2, s.Automation.FabricationBudget) {
 			s.Automation.Fabrication = false
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Packet Scheduler stopped: fabrication budget reached."})
 		} else {
@@ -759,7 +762,7 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 	}
 	if s.Automation.ReconTargetID != "" && s.Recon == nil {
 		if target, ok := e.target(s.Automation.ReconTargetID); ok && s.TargetCooldowns[target.ID] <= 0 && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
-			if budgetWouldExceed(s.Automation.ReconSpent, target.ReconCost, s.Automation.ReconBudget) {
+			if BudgetWouldExceed(s.Automation.ReconSpent, target.ReconCost, s.Automation.ReconBudget) {
 				s.Automation.ReconTargetID = ""
 				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Signal Profiler stopped: recon budget reached."})
 			} else {
@@ -783,7 +786,9 @@ func configuredBudget(requested, existing int64) int64 {
 	return DefaultAutomationBudget
 }
 
-func budgetWouldExceed(spent, cost, budget int64) bool {
+// BudgetWouldExceed reports whether spending cost would pass budget without
+// performing an overflow-prone spent+cost calculation.
+func BudgetWouldExceed(spent, cost, budget int64) bool {
 	if cost < 0 || budget < 0 {
 		return true
 	}
@@ -855,7 +860,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	}
 	s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, rate)
 	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.MaintenanceReserve {
-		if budgetWouldExceed(s.Corp.MaintenanceSpent, 10, s.Corp.MaintenanceBudget) {
+		if BudgetWouldExceed(s.Corp.MaintenanceSpent, 10, s.Corp.MaintenanceBudget) {
 			s.Corp.MaintenanceAuto = false
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceStopped", Message: "Automated maintenance stopped: budget reached."})
 		} else if s.Corp.Capital >= mathx.New(10) {
@@ -866,10 +871,10 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 		}
 	}
 	if s.Corp.ResearchAuto && !safeOnly {
-		if budgetWouldExceed(s.Corp.ResearchSpent, 200, s.Corp.ResearchBudget) {
+		if BudgetWouldExceed(s.Corp.ResearchSpent, 200, s.Corp.ResearchBudget) {
 			s.Corp.ResearchAuto = false
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchStopped", Message: "Automated R&D stopped: budget reached."})
-		} else if s.Corp.Capital >= mathx.New(200) && s.Corp.Compute >= mathx.New(s.Corp.ComputeReserve+1) {
+		} else if s.Corp.Capital >= mathx.New(200) && s.Corp.Compute.Units() > s.Corp.ComputeReserve {
 			s.Corp.Capital -= mathx.New(200)
 			s.Corp.Compute -= mathx.New(1)
 			s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))

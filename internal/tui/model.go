@@ -1033,7 +1033,7 @@ func (m Model) corpReportView() string {
 	projectedCapital := corp.Capital.Units() + gross - upkeep
 	projectedCompute := corp.Compute.Units() + 2
 	projectedRND := "off"
-	if corp.ResearchAuto && corp.ResearchSpent+200 <= effectiveBudget(corp.ResearchBudget) && corp.Capital >= mathx.New(200) && corp.Compute >= mathx.New(corp.ComputeReserve+1) {
+	if corp.ResearchAuto && !sim.BudgetWouldExceed(corp.ResearchSpent, 200, effectiveBudget(corp.ResearchBudget)) && corp.Capital >= mathx.New(200) && corp.Compute.Units() > corp.ComputeReserve {
 		projectedCapital -= 200
 		projectedCompute--
 		projectedRND = "-200 capital / -1 compute"

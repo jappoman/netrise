@@ -359,3 +359,7 @@ pressed.
 Automation budget guards now compare spend and cost without adding first, so
 maximum-size persisted budgets cannot wrap and authorize work beyond their
 configured cap.
+
+Corporation compute-reserve policy values are bounded to the fixed-point range,
+and automated R&D compares available compute directly against the reserve
+without an overflow-prone `reserve + 1` expression.
