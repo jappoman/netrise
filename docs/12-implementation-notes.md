@@ -160,6 +160,8 @@ The integration suite now covers a deterministic 3,600-tick Corporation
 campaign with all starter assets, security, maintenance and automated R&D. It
 checks resource and meter bounds, event archive limits and research progress,
 giving the Corporation loop the same long-run regression coverage as Runner.
+It also saves and reopens an active Runner battle from the real catalog, then
+asserts byte-equivalent state and event results after deterministic resume.
 
 Corporation gross revenue now derives from demand, reputation and exposure in
 the shared engine. Reputation below 50% and exposure above zero apply bounded

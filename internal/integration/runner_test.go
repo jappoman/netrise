@@ -3,11 +3,13 @@ package integration
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
+	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 )
 
@@ -90,6 +92,58 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 		// The reset intentionally removes route access; the target must be
 		// rediscovered in the new run rather than remaining unlocked for free.
 		t.Fatal("identity burn retained route access")
+	}
+}
+
+func TestActiveBattleSaveReopenResumesIdentically(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 311)
+	original := sim.NewState(311)
+	original.Upgrades = []string{"secondhand_compiler"}
+	original.Resources.Bots = 12
+	original, _, err = e.Apply(original, game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: 10, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	original, _, err = e.Apply(original, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
+	if err != nil || original.ActiveBattle == nil {
+		t.Fatalf("battle did not remain resumable after setup: state=%#v err=%v", original, err)
+	}
+	dir := t.TempDir()
+	if err := save.Write(dir, original); err != nil {
+		t.Fatal(err)
+	}
+	resumed, err := save.Read(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var originalEvents, resumedEvents []game.Event
+	for original.ActiveBattle != nil || resumed.ActiveBattle != nil {
+		if original.ActiveBattle == nil || resumed.ActiveBattle == nil {
+			t.Fatalf("save/reopen diverged on battle lifetime: original=%#v resumed=%#v", original.ActiveBattle, resumed.ActiveBattle)
+		}
+		var events []game.Event
+		original, events, err = e.Apply(original, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		originalEvents = append(originalEvents, events...)
+		resumed, events, err = e.Apply(resumed, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resumedEvents = append(resumedEvents, events...)
+	}
+	if !reflect.DeepEqual(original, resumed) || !reflect.DeepEqual(originalEvents, resumedEvents) {
+		t.Fatalf("save/reopen changed deterministic result:\noriginal=%#v\nresumed=%#v\noriginal events=%#v\nresumed events=%#v", original, resumed, originalEvents, resumedEvents)
 	}
 }
 
