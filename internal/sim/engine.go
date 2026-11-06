@@ -62,7 +62,7 @@ func NewCorporationState(seed int64) game.State {
 		Faction: game.Corporation, WorldSeed: seed,
 		RNGState: uint64(seed) + 0x9e3779b97f4a7c15,
 		Corp: &game.CorpState{
-			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5,
+			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5, MaintenanceReserve: 5,
 			DemandBP:     10000,
 			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, Operational: true}},
 		},
@@ -371,7 +371,33 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.MaintenanceAuto = true
 		s.Corp.MaintenanceBudget = configuredBudget(c.Quantity, s.Corp.MaintenanceBudget)
+		if s.Corp.MaintenanceReserve <= 0 {
+			s.Corp.MaintenanceReserve = s.Corp.ICECapacity
+		}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "MaintenanceEnabled", Message: "Automated maintenance budget enabled."}}, nil
+	case game.CorpConfigurePolicy:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		if c.Quantity < 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "corporation policy value cannot be negative"}
+		}
+		switch c.ID {
+		case "maintenance":
+			if c.Quantity > s.Corp.ICECapacity {
+				return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "maintenance reserve exceeds ICE capacity"}
+			}
+			s.Corp.MaintenanceReserve = c.Quantity
+			s.Corp.MaintenanceAuto = true
+		case "research":
+			s.Corp.ResearchAuto = true
+			s.Corp.ResearchBudget = configuredBudget(c.Quantity, s.Corp.ResearchBudget)
+		case "compute_reserve":
+			s.Corp.ComputeReserve = c.Quantity
+		default:
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown corporation policy"}
+		}
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "CorpPolicyConfigured", Message: "Corporation policy configured: " + c.ID}}, nil
 	case game.CorpRestructure:
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
@@ -529,6 +555,12 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	if s.Corp.MaintenanceAuto && s.Corp.MaintenanceBudget <= 0 {
 		s.Corp.MaintenanceBudget = DefaultAutomationBudget
 	}
+	if s.Corp.MaintenanceReserve <= 0 {
+		s.Corp.MaintenanceReserve = s.Corp.ICECapacity
+	}
+	if s.Corp.ResearchAuto && s.Corp.ResearchBudget <= 0 {
+		s.Corp.ResearchBudget = DefaultAutomationBudget
+	}
 	rate := int64(2)
 	upkeep := int64(0)
 	for _, asset := range s.Corp.Assets {
@@ -552,8 +584,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 		}
 	}
 	s.Corp.RunValuation += rate
-	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
-	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.ICECapacity {
+	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.MaintenanceReserve {
 		if s.Corp.MaintenanceSpent+10 > s.Corp.MaintenanceBudget {
 			s.Corp.MaintenanceAuto = false
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceStopped", Message: "Automated maintenance stopped: budget reached."})
@@ -564,6 +595,24 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceRestocked", Message: "Automated maintenance restocked one ICE unit."})
 		}
 	}
+	if s.Corp.ResearchAuto && !safeOnly {
+		if s.Corp.ResearchSpent+200 > s.Corp.ResearchBudget {
+			s.Corp.ResearchAuto = false
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchStopped", Message: "Automated R&D stopped: budget reached."})
+		} else if s.Corp.Capital >= mathx.New(200) && s.Corp.Compute >= mathx.New(s.Corp.ComputeReserve+1) {
+			s.Corp.Capital -= mathx.New(200)
+			s.Corp.Compute -= mathx.New(1)
+			s.Corp.Research, _ = s.Corp.Research.Add(mathx.New(10))
+			s.Corp.ResearchSpent += 200
+			s.Corp.RunValuation += 200
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchAutomated", Message: "Automated R&D completed a systems study."})
+			if s.Corp.ResearchSpent >= s.Corp.ResearchBudget {
+				s.Corp.ResearchAuto = false
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchStopped", Message: "Automated R&D stopped: budget reached."})
+			}
+		}
+	}
+	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
 	return s, events
 }
 

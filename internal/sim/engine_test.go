@@ -415,6 +415,40 @@ func TestCorporationMaintenanceBudgetRestocksOnlyDuringActivePlay(t *testing.T) 
 	}
 }
 
+func TestCorporationResearchAllocationHonorsBudgetAndComputeReserve(t *testing.T) {
+	e := New(catalog(), 94)
+	s := NewCorporationState(94)
+	s.Corp.Capital = mathx.New(500)
+	s.Corp.Compute = mathx.New(2)
+	s, _, err := e.Apply(s, game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, _, err = e.Apply(s, game.Command{Kind: game.CorpConfigurePolicy, ID: "research", Quantity: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, events, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Corp.ResearchAuto || s.Corp.ResearchSpent != 200 || s.Corp.Research != mathx.New(10) || len(events) < 2 {
+		t.Fatalf("automated R&D did not allocate resources: state=%#v events=%#v err=%v", s.Corp, events, err)
+	}
+	reserve := NewCorporationState(94)
+	reserve.Corp.Capital = mathx.New(500)
+	reserve.Corp.Compute = mathx.New(2)
+	reserve, _, err = e.Apply(reserve, game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reserve, _, err = e.Apply(reserve, game.Command{Kind: game.CorpConfigurePolicy, ID: "research", Quantity: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reserve, _, err = e.Apply(reserve, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || reserve.Corp.Research != 0 {
+		t.Fatalf("compute reserve threshold was ignored: state=%#v err=%v", reserve.Corp, err)
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

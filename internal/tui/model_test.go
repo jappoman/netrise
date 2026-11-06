@@ -109,7 +109,7 @@ func TestCorporationMaintenanceScreenConfiguresBudget(t *testing.T) {
 	m := New(sim.NewCorporationState(7), sim.New(content.Catalog{SchemaVersion: 1}, 7), "")
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "A", Code: 'A'}))
 	m = updated.(Model)
-	if m.screen != "automation" || !strings.Contains(m.View().Content, "CORPORATION MAINTENANCE") {
+	if m.screen != "automation" || !strings.Contains(m.View().Content, "CORPORATION POLICIES") {
 		t.Fatalf("Corporation maintenance screen did not open: %s", m.View().Content)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "+", Code: '+'}))

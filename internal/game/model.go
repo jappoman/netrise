@@ -33,22 +33,27 @@ type CorpAsset struct {
 	Operational    bool   `json:"operational"`
 }
 type CorpState struct {
-	Capital           mathx.Amount `json:"capital"`
-	Compute           mathx.Amount `json:"compute"`
-	Research          mathx.Amount `json:"research"`
-	Influence         mathx.Amount `json:"influence"`
-	ICE               int64        `json:"ice"`
-	ICECapacity       int64        `json:"ice_capacity"`
-	ReputationBP      int64        `json:"reputation_bp"`
-	ExposureBP        int64        `json:"exposure_bp"`
-	Assets            []CorpAsset  `json:"assets"`
-	AttackCounter     int64        `json:"attack_counter"`
-	DemandBP          int64        `json:"demand_bp"`
-	MaintenanceAuto   bool         `json:"maintenance_auto"`
-	MaintenanceBudget int64        `json:"maintenance_budget"`
-	MaintenanceSpent  int64        `json:"maintenance_spent"`
-	RunValuation      int64        `json:"run_valuation"`
-	PatentShares      int64        `json:"patent_shares"`
+	Capital            mathx.Amount `json:"capital"`
+	Compute            mathx.Amount `json:"compute"`
+	Research           mathx.Amount `json:"research"`
+	Influence          mathx.Amount `json:"influence"`
+	ICE                int64        `json:"ice"`
+	ICECapacity        int64        `json:"ice_capacity"`
+	ReputationBP       int64        `json:"reputation_bp"`
+	ExposureBP         int64        `json:"exposure_bp"`
+	Assets             []CorpAsset  `json:"assets"`
+	AttackCounter      int64        `json:"attack_counter"`
+	DemandBP           int64        `json:"demand_bp"`
+	MaintenanceAuto    bool         `json:"maintenance_auto"`
+	MaintenanceBudget  int64        `json:"maintenance_budget"`
+	MaintenanceSpent   int64        `json:"maintenance_spent"`
+	MaintenanceReserve int64        `json:"maintenance_reserve"`
+	ResearchAuto       bool         `json:"research_auto"`
+	ResearchBudget     int64        `json:"research_budget"`
+	ResearchSpent      int64        `json:"research_spent"`
+	ComputeReserve     int64        `json:"compute_reserve"`
+	RunValuation       int64        `json:"run_valuation"`
+	PatentShares       int64        `json:"patent_shares"`
 }
 type Fabrication struct {
 	RemainingTicks int64 `json:"remaining_ticks"`
@@ -168,6 +173,7 @@ const (
 	CorpRunResearch       CommandKind = "corp_run_research"
 	CorpExpandMarket      CommandKind = "corp_expand_market"
 	CorpEnableMaintenance CommandKind = "corp_enable_maintenance"
+	CorpConfigurePolicy   CommandKind = "corp_configure_policy"
 	CorpRestructure       CommandKind = "corp_restructure"
 )
 

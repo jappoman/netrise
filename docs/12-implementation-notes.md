@@ -109,5 +109,10 @@ active ticks it safely restocks one reserve ICE unit at a time, emits
 budget is exhausted. Offline reconciliation never spends that budget; the TUI
 Corporation maintenance panel exposes the cap, usage and reserve state.
 
+The same Corporation policy panel now configures automated R&D capital budget
+and a compute reserve threshold. R&D spends 200 capital and 1 compute per active
+study, never consumes the protected compute reserve, and emits explicit
+configuration/completion/stop events.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

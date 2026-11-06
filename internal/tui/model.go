@@ -143,15 +143,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "up":
 				if m.automationPolicy > 0 {
 					m.automationPolicy--
+					m.syncCorporationPolicyValue()
 				}
 			case "down":
 				if m.automationPolicy < 2 {
 					m.automationPolicy++
+					m.syncCorporationPolicyValue()
 				}
 			case "+", "right":
-				m.automationBudget = nextAutomationBudget(m.automationBudget)
+				if m.state.Faction == game.Corporation && m.automationPolicy == 2 {
+					m.automationBudget = nextComputeReserve(m.automationBudget)
+				} else {
+					m.automationBudget = nextAutomationBudget(m.automationBudget)
+				}
 			case "-", "left":
-				m.automationBudget = previousAutomationBudget(m.automationBudget)
+				if m.state.Faction == game.Corporation && m.automationPolicy == 2 {
+					m.automationBudget = previousComputeReserve(m.automationBudget)
+				} else {
+					m.automationBudget = previousAutomationBudget(m.automationBudget)
+				}
 			case "enter":
 				m.enableSelectedAutomation()
 			case "esc", "o":
@@ -606,7 +616,13 @@ func (m Model) corpMaintenanceView() string {
 	if m.state.Corp == nil {
 		return "NETRISE // MAINTENANCE\n\nCorporation state unavailable.\n[esc] overview"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION MAINTENANCE\n\nPOLICY: %s\nSPENT: %d/%d capital\nICE: %d/%d\n\nSELECTED BUDGET: %d capital\n\n[+/- or left/right] budget\n[enter] enable/update  [esc] overview\nNEXT: maintenance restocks one reserve ICE per active tick and stops at the cap; offline time never spends this budget.", automationState(m.state.Corp.MaintenanceAuto), m.state.Corp.MaintenanceSpent, effectiveBudget(m.state.Corp.MaintenanceBudget), m.state.Corp.ICE, m.state.Corp.ICECapacity, m.automationBudget)
+	policies := []string{"maintenance budget", "R&D budget", "compute reserve"}
+	selected := policies[m.automationPolicy]
+	selectedValue := fmt.Sprintf("%d capital", m.automationBudget)
+	if m.automationPolicy == 2 {
+		selectedValue = fmt.Sprintf("%d compute", m.automationBudget)
+	}
+	return fmt.Sprintf("NETRISE // CORPORATION POLICIES\n\n> maintenance: %s | %d/%d capital | reserve %d/%d ICE\n  R&D: %s | %d/%d capital\n  compute reserve: %d units\n\nSELECTED: %s\nVALUE: %s\n\n[up/down] policy  [+/- or left/right] value\n[enter] enable/update  [esc] overview\nNEXT: maintenance and R&D spend only during active play; compute reserve protects capacity for other systems.", automationState(m.state.Corp.MaintenanceAuto), m.state.Corp.MaintenanceSpent, effectiveBudget(m.state.Corp.MaintenanceBudget), m.state.Corp.MaintenanceReserve, m.state.Corp.ICECapacity, automationState(m.state.Corp.ResearchAuto), m.state.Corp.ResearchSpent, effectiveBudget(m.state.Corp.ResearchBudget), m.state.Corp.ComputeReserve, selected, selectedValue)
 }
 
 func (m Model) automationPolicyState(policy string) (string, int64, int64) {
@@ -622,7 +638,14 @@ func (m Model) automationPolicyState(policy string) (string, int64, int64) {
 
 func (m *Model) enableSelectedAutomation() {
 	if m.state.Faction == game.Corporation {
-		m.applyCommand(game.Command{Kind: game.CorpEnableMaintenance, Quantity: m.automationBudget})
+		switch m.automationPolicy {
+		case 0:
+			m.applyCommand(game.Command{Kind: game.CorpEnableMaintenance, Quantity: m.automationBudget})
+		case 1:
+			m.applyCommand(game.Command{Kind: game.CorpConfigurePolicy, ID: "research", Quantity: m.automationBudget})
+		case 2:
+			m.applyCommand(game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: m.automationBudget})
+		}
 		return
 	}
 	policy := []string{"contracts", "fabrication", "recon"}[m.automationPolicy]
@@ -635,6 +658,20 @@ func (m *Model) enableSelectedAutomation() {
 	}
 	command := game.Command{Kind: game.EnableAutomation, ID: policy, Quantity: m.automationBudget, TargetID: targetID}
 	m.applyCommand(command)
+}
+
+func (m *Model) syncCorporationPolicyValue() {
+	if m.state.Corp == nil {
+		return
+	}
+	switch m.automationPolicy {
+	case 0:
+		m.automationBudget = effectiveBudget(m.state.Corp.MaintenanceBudget)
+	case 1:
+		m.automationBudget = effectiveBudget(m.state.Corp.ResearchBudget)
+	case 2:
+		m.automationBudget = m.state.Corp.ComputeReserve
+	}
 }
 
 func automationState(enabled bool) string {
@@ -668,6 +705,25 @@ func previousAutomationBudget(budget int64) int64 {
 		}
 	}
 	return 100
+}
+
+func nextComputeReserve(value int64) int64 {
+	for _, option := range []int64{0, 1, 2, 5, 10} {
+		if option > value {
+			return option
+		}
+	}
+	return 10
+}
+
+func previousComputeReserve(value int64) int64 {
+	options := []int64{0, 1, 2, 5, 10}
+	for i := len(options) - 1; i >= 0; i-- {
+		if options[i] < value {
+			return options[i]
+		}
+	}
+	return 0
 }
 
 func researchEffectText(effects content.ResearchEffects) string {
@@ -730,7 +786,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] maintenance budget\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy budget\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
