@@ -15,6 +15,7 @@ type Engine struct {
 
 const OfflineCapTicks int64 = 8 * 60 * 60
 const DefaultAutomationBudget int64 = 1000
+const SafeMeterRecoveryBPPerTick int64 = 25
 
 // ReconcileOffline advances only safe production. Hostile actions and battles
 // are intentionally not represented here, so closing the game cannot cause
@@ -708,6 +709,12 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 			s.Corp.AttackCounter++
 			if s.Corp.AttackCounter >= e.incursionInterval(s) && e.incursionAvailable(s) {
 				s, events = e.startCorporationIncursion(s, events)
+			}
+		}
+		if !safeOnly && s.ActiveBattle == nil {
+			s.HeatBP = maxInt64(0, s.HeatBP-SafeMeterRecoveryBPPerTick)
+			if s.Corp != nil {
+				s.Corp.ExposureBP = maxInt64(0, s.Corp.ExposureBP-SafeMeterRecoveryBPPerTick)
 			}
 		}
 		if s.ActiveBattle != nil {

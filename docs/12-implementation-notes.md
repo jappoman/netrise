@@ -299,3 +299,7 @@ valid state from wrapping a resource to zero on the next tick.
 
 Content validation now rejects cyclic target-route prerequisites as well as
 missing links, preventing catalog-authored progression softlocks.
+
+Active play now recovers Runner heat and Corporation exposure by 25 basis
+points per safe tick when no battle is running. Hostile/offline reconciliation
+does not add a new adverse action or resolve a battle while closed.

@@ -329,6 +329,23 @@ func TestOfflineCapAndClockReversal(t *testing.T) {
 	}
 }
 
+func TestActivePlayRecoversHeatAndCorporationExposureSafely(t *testing.T) {
+	e := New(catalog(), 413)
+	runner := NewState(413)
+	runner.HeatBP = SafeMeterRecoveryBPPerTick * 2
+	runner, _, err := e.Apply(runner, game.Command{Kind: game.AdvanceTicks, Ticks: 2})
+	if err != nil || runner.HeatBP != 0 {
+		t.Fatalf("active Runner heat did not recover: heat=%d err=%v", runner.HeatBP, err)
+	}
+
+	corp := NewCorporationState(413)
+	corp.Corp.ExposureBP = SafeMeterRecoveryBPPerTick * 2
+	corp, _, err = e.Apply(corp, game.Command{Kind: game.AdvanceTicks, Ticks: 2})
+	if err != nil || corp.Corp.ExposureBP != 0 {
+		t.Fatalf("active Corporation exposure did not recover: exposure=%d err=%v", corp.Corp.ExposureBP, err)
+	}
+}
+
 func TestCorporationOfflineSummaryIsSafeAndNonHostile(t *testing.T) {
 	e := New(catalog(), 5)
 	s := NewCorporationState(5)
