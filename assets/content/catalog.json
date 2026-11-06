@@ -18,10 +18,10 @@
     {"id":"black_archive","name":"Black Archive","cost":250,"description":"Unlocks data research (coming next)."}
   ],
   "research": [
-    {"id":"hardware_01","name":"Cold-Soldered Array","cost_data":10,"prerequisites":[],"description":"Improves the Runner's hardware discipline."},
-    {"id":"intrusion_01","name":"Layer Mapping","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves breach preparation."},
-    {"id":"anonymity_01","name":"Quiet Relay","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves stealth doctrine."},
-    {"id":"automation_01","name":"Routine Scripting","cost_data":30,"prerequisites":["intrusion_01"],"description":"Improves safe automation budgets."}
+    {"id":"hardware_01","name":"Cold-Soldered Array","cost_data":10,"prerequisites":[],"description":"Improves the Runner's hardware discipline.","effects":{"compute_per_second_bonus":1}},
+    {"id":"intrusion_01","name":"Layer Mapping","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves breach preparation.","effects":{"attack_bonus_percent":8}},
+    {"id":"anonymity_01","name":"Quiet Relay","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves stealth doctrine.","effects":{"stealth_heat_reduction_percent":15}},
+    {"id":"automation_01","name":"Routine Scripting","cost_data":30,"prerequisites":["intrusion_01"],"description":"Improves safe automation budgets.","effects":{"automation_interval_reduction":1}}
   ],
   "corp_assets": [
     {"id":"transit_hosting","name":"Transit Hosting","cost_capital":75,"capital_per_tick":4,"upkeep_per_tick":0,"integrity":100},

@@ -400,14 +400,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 			s = e.advanceCorporation(s)
 		}
 		if s.Faction != game.Corporation {
-			rate := int64(2)
-			for _, g := range e.Catalog.Generators {
-				for _, owned := range s.Generators {
-					if owned.ID == g.ID {
-						rate += owned.Count * g.ComputePerSecond
-					}
-				}
-			}
+			rate := e.ComputeRate(s)
 			produced := mathx.New(rate)
 			s.Resources.Compute, _ = s.Resources.Compute.Add(produced)
 		}
@@ -449,7 +442,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 }
 
 func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.State, []game.Event) {
-	if s.Automation.Contracts && s.LogicalTick%4 == 0 {
+	if s.Automation.Contracts && s.LogicalTick%e.automationInterval(s) == 0 {
 		s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(10))
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationProduced", Message: "Autodialer settled a safe contract.", Amount: 10})
 	}
@@ -521,11 +514,17 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	layer := target.Layers[b.LayerIndex]
 	attackMultiplier := int64(100)
 	heatMultiplier := int64(100)
+	effects := e.researchEffects(s)
 	switch b.Doctrine {
 	case game.Stealth:
 		attackMultiplier, heatMultiplier = 82, 55
+		heatMultiplier -= effects.StealthHeatReductionPercent
 	case game.Overload:
 		attackMultiplier, heatMultiplier = 125, 170
+	}
+	attackMultiplier += effects.AttackBonusPercent
+	if heatMultiplier < 0 {
+		heatMultiplier = 0
 	}
 	// Battle variation is deliberately bounded and comes from the persisted
 	// state stream. It cannot decide an otherwise impossible battle, but keeps
@@ -721,7 +720,29 @@ func (e *Engine) ComputeRate(s game.State) int64 {
 			}
 		}
 	}
-	return rate
+	return rate + e.researchEffects(s).ComputePerSecondBonus
+}
+
+func (e *Engine) researchEffects(s game.State) content.ResearchEffects {
+	var effects content.ResearchEffects
+	for _, node := range e.Catalog.Research {
+		if !contains(s.Research, node.ID) {
+			continue
+		}
+		effects.ComputePerSecondBonus += node.Effects.ComputePerSecondBonus
+		effects.AttackBonusPercent += node.Effects.AttackBonusPercent
+		effects.StealthHeatReductionPercent += node.Effects.StealthHeatReductionPercent
+		effects.AutomationIntervalReduction += node.Effects.AutomationIntervalReduction
+	}
+	return effects
+}
+
+func (e *Engine) automationInterval(s game.State) int64 {
+	interval := int64(4) - e.researchEffects(s).AutomationIntervalReduction
+	if interval < 1 {
+		return 1
+	}
+	return interval
 }
 func generatorCount(s game.State, id string) int64 {
 	for _, g := range s.Generators {

@@ -11,6 +11,7 @@ import (
 	"github.com/jappoman/netrise/internal/sim"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -337,9 +338,30 @@ func (m Model) researchView() string {
 		} else if researchPrerequisitesMet(m.state, node.Prerequisites) {
 			state = fmt.Sprintf("AVAILABLE (%d data)", node.CostData)
 		}
-		lines += fmt.Sprintf("%-22s %-18s %s\n", node.Name, node.ID, state)
+		description := node.Description
+		if effects := researchEffectText(node.Effects); effects != "" {
+			description += " // " + effects
+		}
+		lines += fmt.Sprintf("%-22s %-18s %s\n  %s\n", node.Name, node.ID, state, description)
 	}
 	return lines + "\n[enter] buy next available node  [esc] overview"
+}
+
+func researchEffectText(effects content.ResearchEffects) string {
+	var parts []string
+	if effects.ComputePerSecondBonus > 0 {
+		parts = append(parts, fmt.Sprintf("+%d compute/s", effects.ComputePerSecondBonus))
+	}
+	if effects.AttackBonusPercent > 0 {
+		parts = append(parts, fmt.Sprintf("+%d%% breach power", effects.AttackBonusPercent))
+	}
+	if effects.StealthHeatReductionPercent > 0 {
+		parts = append(parts, fmt.Sprintf("-%d%% stealth heat", effects.StealthHeatReductionPercent))
+	}
+	if effects.AutomationIntervalReduction > 0 {
+		parts = append(parts, fmt.Sprintf("automation every %ds faster", effects.AutomationIntervalReduction))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func (m Model) archiveView() string {

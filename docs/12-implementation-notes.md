@@ -54,5 +54,11 @@ Offline reconciliation now persists a safe-production digest (ticks and
 resource gains) shown in Overview, while active battles and hostile
 Corporation attack counters remain frozen during closed time.
 
+Research nodes now carry validated, data-driven effects in the content catalog.
+The initial Runner branch affects compute production, breach power, stealth heat,
+and safe automation cadence; the Research screen displays each node's effect.
+The simulation aggregates only completed nodes, so the same catalog data drives
+headless and TUI behavior without faction-specific UI mutations.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

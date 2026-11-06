@@ -61,3 +61,17 @@ func TestHelpViewExplainsBothCampaigns(t *testing.T) {
 		t.Fatal("Corporation help omitted objective")
 	}
 }
+
+func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
+	text := researchEffectText(content.ResearchEffects{
+		ComputePerSecondBonus:       1,
+		AttackBonusPercent:          8,
+		StealthHeatReductionPercent: 15,
+		AutomationIntervalReduction: 1,
+	})
+	for _, expected := range []string{"+1 compute/s", "+8% breach power", "-15% stealth heat", "automation every 1s faster"} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("research effect text omitted %q: %s", expected, text)
+		}
+	}
+}

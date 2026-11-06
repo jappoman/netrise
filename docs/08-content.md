@@ -44,7 +44,11 @@ Use explicit costs, unlock predicates and multiplier definitions in content JSON
 ## Initial research branches
 Runner: **Hardware**, **Intrusion**, **Anonymity**, **Automation**.
 Corp: **Infrastructure**, **Monetization**, **Security**, **Intelligence**.
-Research nodes have stable IDs, costs, prerequisite lists, effect DSL and descriptive text.
+Research nodes have stable IDs, costs, prerequisite lists, a validated effect DSL
+(`compute_per_second_bonus`, `attack_bonus_percent`,
+`stealth_heat_reduction_percent`, and `automation_interval_reduction`) and
+descriptive text. Effects are aggregated by the simulation only after a node is
+completed.
 
 ## Three doctrines
 Balanced (safe default), Stealth (lower heat/attrition with weaker attack), Overload (faster power with extra trace and losses). Each receives a distinct short textual description and color-neutral icon/text cue.

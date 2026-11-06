@@ -18,3 +18,10 @@ func TestValidateRejectsResearchCycles(t *testing.T) {
 		t.Fatal("research cycle accepted")
 	}
 }
+
+func TestValidateRejectsNegativeResearchEffects(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"research":[{"id":"a","name":"A","effects":{"compute_per_second_bonus":-1}}]}`))
+	if err == nil {
+		t.Fatal("negative research effect accepted")
+	}
+}

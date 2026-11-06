@@ -20,11 +20,18 @@ type Upgrade struct {
 	Description string `json:"description"`
 }
 type ResearchNode struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	CostData      int64    `json:"cost_data"`
-	Prerequisites []string `json:"prerequisites"`
-	Description   string   `json:"description"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	CostData      int64           `json:"cost_data"`
+	Prerequisites []string        `json:"prerequisites"`
+	Description   string          `json:"description"`
+	Effects       ResearchEffects `json:"effects"`
+}
+type ResearchEffects struct {
+	ComputePerSecondBonus       int64 `json:"compute_per_second_bonus"`
+	AttackBonusPercent          int64 `json:"attack_bonus_percent"`
+	StealthHeatReductionPercent int64 `json:"stealth_heat_reduction_percent"`
+	AutomationIntervalReduction int64 `json:"automation_interval_reduction"`
 }
 type CorpAssetDefinition struct {
 	ID             string `json:"id"`
@@ -92,7 +99,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, r := range c.Research {
-		if r.ID == "" || seen[r.ID] || r.Name == "" || r.CostData < 0 {
+		if r.ID == "" || seen[r.ID] || r.Name == "" || r.CostData < 0 || r.Effects.ComputePerSecondBonus < 0 || r.Effects.AttackBonusPercent < 0 || r.Effects.StealthHeatReductionPercent < 0 || r.Effects.AutomationIntervalReduction < 0 {
 			return fmt.Errorf("content: invalid research node %q", r.ID)
 		}
 		seen[r.ID] = true

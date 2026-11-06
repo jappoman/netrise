@@ -365,6 +365,81 @@ func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	}
 }
 
+func TestResearchEffectsChangeSimulationThroughCatalogData(t *testing.T) {
+	c := catalog()
+	c.Research[0].Effects.ComputePerSecondBonus = 2
+	c.Research[0].Effects.StealthHeatReductionPercent = 15
+	c.Research[1].Effects.AttackBonusPercent = 8
+	c.Research[1].Effects.AutomationIntervalReduction = 1
+	e := New(c, 52)
+	s := NewState(52)
+	s.Research = []string{"hardware", "intrusion"}
+	if got := e.ComputeRate(s); got != 4 {
+		t.Fatalf("research compute effect not applied: got %d", got)
+	}
+	base := NewState(52)
+	base.Upgrades = []string{"secondhand_compiler"}
+	base.Resources.Bots = 8
+	base, _, err := e.Apply(base, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Stealth})
+	if err != nil {
+		t.Fatal(err)
+	}
+	withResearch := NewState(52)
+	withResearch.Upgrades = []string{"secondhand_compiler"}
+	withResearch.Resources.Bots = 8
+	withResearch.Research = []string{"hardware"}
+	withResearch, _, err = e.Apply(withResearch, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Stealth})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, _, err = e.Apply(base, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	withResearch, _, err = e.Apply(withResearch, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if base.HeatBP-withResearch.HeatBP != 15 {
+		t.Fatalf("stealth research effect not applied: base=%d researched=%d", base.HeatBP, withResearch.HeatBP)
+	}
+	attackBase := NewState(52)
+	attackBase.Upgrades = []string{"secondhand_compiler"}
+	attackBase.Resources.Bots = 8
+	attackResearch := attackBase
+	attackResearch.Research = []string{"intrusion"}
+	attackBase, _, err = e.Apply(attackBase, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	attackResearch, _, err = e.Apply(attackResearch, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	attackBase, _, err = e.Apply(attackBase, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	attackResearch, _, err = e.Apply(attackResearch, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if attackResearch.ActiveBattle.LayerIntegrity >= attackBase.ActiveBattle.LayerIntegrity {
+		t.Fatalf("attack research effect not applied: base=%d researched=%d", attackBase.ActiveBattle.LayerIntegrity, attackResearch.ActiveBattle.LayerIntegrity)
+	}
+	automation := NewState(52)
+	automation.Upgrades = []string{"autodialer"}
+	automation.Automation.Contracts = true
+	automation.Research = []string{"intrusion"}
+	automation, events, err := e.Apply(automation, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].Type != "AutomationProduced" || automation.Resources.Credits != mathx.New(35) {
+		t.Fatalf("automation research effect not applied: events=%#v resources=%#v", events, automation.Resources)
+	}
+}
+
 func TestEventArchiveIsBoundedAndRejectsFailedCommands(t *testing.T) {
 	e := New(catalog(), 44)
 	s := NewState(44)
