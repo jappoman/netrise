@@ -1,12 +1,13 @@
 GO ?= go
 SEED ?= 17
 TICKS ?= 600
+FACTION ?= runner
 DATA_DIR ?=
 
 .PHONY: help fmt vet test race verify build bench play corp simulate
 
 help:
-	@printf '%s\n' 'NETRISE commands:' '  make play [DATA_DIR=/path]        start the Runner TUI' '  make corp [DATA_DIR=/path]        start the Corporation TUI' '  make simulate [SEED=17 TICKS=600] run a deterministic report' '  make test                         run unit tests' '  make verify                       format, vet, test and race-test'
+	@printf '%s\n' 'NETRISE commands:' '  make play [DATA_DIR=/path]                         start the Runner TUI' '  make corp [DATA_DIR=/path]                         start the Corporation TUI' '  make simulate [FACTION=runner SEED=17 TICKS=600]     run a deterministic report' '  make test                                            run unit tests' '  make verify                                          format, vet, test and race-test'
 
 fmt:
 	$(GO) fmt ./...
@@ -35,4 +36,4 @@ corp:
 	@if [ -n "$(DATA_DIR)" ]; then $(GO) run ./cmd/netrise corp --data-dir "$(DATA_DIR)"; else $(GO) run ./cmd/netrise corp; fi
 
 simulate:
-	$(GO) run ./cmd/netrise simulate --seed "$(SEED)" --ticks "$(TICKS)"
+	$(GO) run ./cmd/netrise simulate --faction "$(FACTION)" --seed "$(SEED)" --ticks "$(TICKS)"

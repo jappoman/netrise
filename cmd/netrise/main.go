@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --seed N --ticks N\n\nA deterministic fictional Runner/Corporation strategy game.")
+		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\n\nA deterministic fictional Runner/Corporation strategy game.")
 		return
 	}
 	if len(args) > 0 && args[0] == "--version" {
@@ -100,6 +100,7 @@ func simulate(args []string) {
 	fs := flag.NewFlagSet("simulate", flag.ContinueOnError)
 	seed := fs.Int64("seed", 1, "world seed")
 	ticks := fs.Int64("ticks", 0, "logical seconds")
+	faction := fs.String("faction", "runner", "campaign faction: runner or corp")
 	if err := fs.Parse(args); err != nil {
 		fatal(err)
 	}
@@ -110,7 +111,15 @@ func simulate(args []string) {
 	if err != nil {
 		fatal(err)
 	}
-	s := sim.NewState(*seed)
+	var s game.State
+	switch *faction {
+	case "runner":
+		s = sim.NewState(*seed)
+	case "corp", "corporation":
+		s = sim.NewCorporationState(*seed)
+	default:
+		fatal(fmt.Errorf("unknown faction %q (use runner or corp)", *faction))
+	}
 	s = sim.New(c, *seed).Advance(s, *ticks)
 	out := struct {
 		Seed  int64      `json:"seed"`

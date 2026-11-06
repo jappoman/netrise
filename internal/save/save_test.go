@@ -73,6 +73,18 @@ func TestCorruptPrimaryRecoversLastValidBackup(t *testing.T) {
 		t.Fatalf("backup recovery failed: %#v, %v", got, err)
 	}
 }
+
+func TestRoundTripPreservesActiveBattleForResume(t *testing.T) {
+	d := t.TempDir()
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 17, ActiveBattle: &game.Battle{TargetID: "t_01", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 6, LayerIndex: 1, LayerIntegrity: 12, DefenderICE: 3, TraceBP: 900, ElapsedTicks: 4, TimeLimit: 90}}
+	if err := Write(d, s); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(d)
+	if err != nil || got.ActiveBattle == nil || *got.ActiveBattle != *s.ActiveBattle || got.LogicalTick != s.LogicalTick {
+		t.Fatalf("active battle was not resumable: %#v, %v", got, err)
+	}
+}
 func TestMigrate(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"faction":"runner"}`), 0600); err != nil {
