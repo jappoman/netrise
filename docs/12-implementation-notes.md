@@ -45,6 +45,9 @@ release automation builds Linux, Windows, and macOS artifacts with SHA-256
 checksums. Each release artifact is a self-contained `.zip` or `.tar.gz`
 bundle containing the executable and catalog. Headless reports support both campaigns through
 `simulate --faction runner|corp`, with deterministic output verified for each.
+Save reads and writes also validate semantic state bounds at the persistence
+boundary; syntactically valid but impossible JSON is rejected or recovered from
+the last valid backup.
 The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.

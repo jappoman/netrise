@@ -1,6 +1,7 @@
 package save
 
 import (
+	"errors"
 	"github.com/jappoman/netrise/internal/game"
 	"os"
 	"testing"
@@ -71,6 +72,37 @@ func TestCorruptPrimaryRecoversLastValidBackup(t *testing.T) {
 	got, err := Read(d)
 	if err != nil || got.LogicalTick != first.LogicalTick {
 		t.Fatalf("backup recovery failed: %#v, %v", got, err)
+	}
+}
+
+func TestSemanticallyInvalidPrimaryRecoversLastValidBackup(t *testing.T) {
+	d := t.TempDir()
+	first := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 10}
+	second := first
+	second.LogicalTick = 20
+	if err := Write(d, first); err != nil {
+		t.Fatal(err)
+	}
+	if err := Write(d, second); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","logical_tick":-1}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(d)
+	if err != nil || got.LogicalTick != first.LogicalTick {
+		t.Fatalf("semantic backup recovery failed: %#v, %v", got, err)
+	}
+}
+
+func TestSemanticallyInvalidSaveIsRejected(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","heat_bp":10001}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Read(d)
+	if err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("semantic corruption was accepted: %v", err)
 	}
 }
 
