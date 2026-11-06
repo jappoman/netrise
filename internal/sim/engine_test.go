@@ -914,6 +914,26 @@ func TestCorporationValuationSaturatesAtInt64Maximum(t *testing.T) {
 	}
 }
 
+func TestPrestigeCountersSaturateAtInt64Maximum(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 36)
+	runner := NewState(36)
+	runner.RunExtractedData = 10000
+	runner.GhostKeys = math.MaxInt64
+	runner.PrestigeCount = math.MaxInt64
+	reset, _, err := e.Apply(runner, game.Command{Kind: game.IdentityBurn})
+	if err != nil || reset.GhostKeys != math.MaxInt64 || reset.PrestigeCount != math.MaxInt64 {
+		t.Fatalf("Runner prestige counters wrapped: state=%#v err=%v", reset, err)
+	}
+	corp := NewCorporationState(36)
+	corp.Corp.RunValuation = 1000
+	corp.Corp.PatentShares = math.MaxInt64
+	corp.PrestigeCount = math.MaxInt64
+	reset, _, err = e.Apply(corp, game.Command{Kind: game.CorpRestructure})
+	if err != nil || reset.Corp == nil || reset.Corp.PatentShares != math.MaxInt64 || reset.PrestigeCount != math.MaxInt64 {
+		t.Fatalf("Corporation prestige counters wrapped: state=%#v err=%v", reset, err)
+	}
+}
+
 func TestFactionBoundariesRejectCrossCampaignCommandsAtomically(t *testing.T) {
 	e := New(catalog(), 404)
 	corp := NewCorporationState(404)

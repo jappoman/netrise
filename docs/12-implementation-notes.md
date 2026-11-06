@@ -322,3 +322,7 @@ fixed-point range before they reach combat arithmetic or preflight estimates.
 Corporation valuation gains now use saturating arithmetic across offline
 aggregation, active revenue, R&D and market expansion, so a valid upper-bound
 save cannot wrap its prestige progress back to a negative value.
+
+Prestige counter accumulation and its TUI preview use the same saturating
+progression arithmetic, keeping Ghost Keys, Patent Shares and lifetime reset
+counts stable even at persisted integer limits.

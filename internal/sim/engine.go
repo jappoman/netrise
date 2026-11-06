@@ -120,7 +120,7 @@ func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
 			if elapsedTicks > math.MaxInt64/gross {
 				s.Corp.RunValuation = math.MaxInt64
 			} else {
-				s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, gross*elapsedTicks)
+				s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, gross*elapsedTicks)
 			}
 		}
 	}
@@ -389,10 +389,10 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if reward <= 0 {
 			return s, nil, &game.CommandError{Reason: game.ReasonPrestigeLocked, Detail: "extract at least 10,000 data before Identity Burn"}
 		}
-		ghostKeys := s.GhostKeys + reward
+		ghostKeys := AddNonNegativeSaturated(s.GhostKeys, reward)
 		newState := NewState(s.WorldSeed)
 		newState.GhostKeys = ghostKeys
-		newState.PrestigeCount = s.PrestigeCount + 1
+		newState.PrestigeCount = AddNonNegativeSaturated(s.PrestigeCount, 1)
 		newState.Resources.Credits = mathx.New(RunnerStarterCredits(ghostKeys))
 		newState.Resources.BotCapacity = RunnerBotCapacity(ghostKeys)
 		newState.GameVersion = s.GameVersion
@@ -534,7 +534,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= cost
 		s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
-		s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, 200)
+		s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, 200)
 		events := []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}
 		events = append(events, e.completeCorpResearch(&s)...)
 		return s, events, nil
@@ -559,7 +559,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Corp.Influence = mathx.AddSaturated(s.Corp.Influence, mathx.New(market.InfluenceGain))
 		s.Corp.DemandBP += market.DemandBonusBP
 		s.Corp.MarketTier++
-		s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, market.ValuationGain)
+		s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, market.ValuationGain)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: fmt.Sprintf("%s secured: demand +%d%%.", market.Name, market.DemandBonusBP/100)}}, nil
 	case game.CorpEnableMaintenance:
 		if s.Faction != game.Corporation || s.Corp == nil {
@@ -607,10 +607,10 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		newState := NewCorporationState(s.WorldSeed)
 		newState.GameVersion = s.GameVersion
-		newState.Corp.PatentShares = s.Corp.PatentShares + reward
+		newState.Corp.PatentShares = AddNonNegativeSaturated(s.Corp.PatentShares, reward)
 		newState.Corp.Capital = mathx.New(CorporationStarterCapital(newState.Corp.PatentShares))
 		newState.Corp.ICECapacity = CorporationICECapacity(newState.Corp.PatentShares)
-		newState.PrestigeCount = s.PrestigeCount + 1
+		newState.PrestigeCount = AddNonNegativeSaturated(s.PrestigeCount, 1)
 		return newState, []game.Event{{Tick: s.LogicalTick, Type: "RestructuringCompleted", Message: fmt.Sprintf("Restructuring complete. %d Patent Shares retained.", newState.Corp.PatentShares), Amount: reward}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
@@ -846,7 +846,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			}
 		}
 	}
-	s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, rate)
+	s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, rate)
 	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.MaintenanceReserve {
 		if s.Corp.MaintenanceSpent+10 > s.Corp.MaintenanceBudget {
 			s.Corp.MaintenanceAuto = false
@@ -867,7 +867,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			s.Corp.Compute -= mathx.New(1)
 			s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
 			s.Corp.ResearchSpent += 200
-			s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, 200)
+			s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, 200)
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchAutomated", Message: "Automated R&D completed a systems study."})
 			events = append(events, e.completeCorpResearch(&s)...)
 			if s.Corp.ResearchSpent >= s.Corp.ResearchBudget {
@@ -1304,7 +1304,9 @@ func maxInt64(a, b int64) int64 {
 	return b
 }
 
-func addNonNegativeSaturated(value, increment int64) int64 {
+// AddNonNegativeSaturated adds positive progression values without allowing
+// malformed upper-bound saves to wrap into negative state.
+func AddNonNegativeSaturated(value, increment int64) int64 {
 	if value < 0 {
 		value = 0
 	}
