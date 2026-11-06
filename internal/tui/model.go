@@ -99,6 +99,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "restructure" {
+			switch v.String() {
+			case "enter":
+				m.applyCommand(game.Command{Kind: game.CorpRestructure})
+				if m.state.PrestigeCount > 0 {
+					m.screen = "overview"
+				}
+			case "esc", "o":
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if v.String() == "t" {
 			m.screen = "targets"
 			return m, nil
@@ -112,7 +124,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if v.String() == "p" {
-			m.screen = "prestige"
+			if m.state.Faction == game.Corporation {
+				m.screen = "restructure"
+			} else {
+				m.screen = "prestige"
+			}
 			return m, nil
 		}
 		if m.screen == "result" && v.String() == "enter" {
@@ -135,6 +151,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command = game.Command{Kind: game.CorpBuyICE, Quantity: 1}
 		case "e":
 			command = game.Command{Kind: game.CorpDeployICE, Quantity: 1}
+		case "d":
+			command = game.Command{Kind: game.CorpRunResearch}
+		case "m":
+			command = game.Command{Kind: game.CorpExpandMarket}
+		case "M":
+			command = game.Command{Kind: game.CorpEnableMaintenance}
 		case "f":
 			command = game.Command{Kind: game.QueueFabrication, Quantity: 1}
 		case "u":
@@ -193,6 +215,9 @@ func (m Model) View() tea.View {
 	}
 	if m.screen == "prestige" {
 		return tea.NewView(m.prestigeView())
+	}
+	if m.screen == "restructure" {
+		return tea.NewView(m.restructureView())
 	}
 	if m.state.Faction == game.Corporation {
 		return tea.NewView(m.corpOverviewView())
@@ -273,11 +298,45 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[b] hosting [s] security desk [i] buy ICE [e] deploy ICE [q] quit"
+	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
 	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, controls, m.corpNextHint(), m.status)
+}
+
+func (m Model) restructureView() string {
+	reward := int64(0)
+	if m.state.Corp != nil {
+		reward = integerSqrtPreview(m.state.Corp.RunValuation / 1000)
+	}
+	patents := int64(0)
+	if m.state.Corp != nil {
+		patents = m.state.Corp.PatentShares
+	}
+	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\n%s", corpValuation(m.state), reward, patents, m.status)
+}
+
+func corpValuation(s game.State) int64 {
+	if s.Corp == nil {
+		return 0
+	}
+	return s.Corp.RunValuation
+}
+func integerSqrtPreview(value int64) int64 {
+	if value <= 0 {
+		return 0
+	}
+	var low, high int64 = 1, value
+	for low <= high {
+		mid := low + (high-low)/2
+		if mid <= value/mid {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+	return high
 }
 
 func corpCapitalRate(corp *game.CorpState) int64 {
