@@ -108,3 +108,14 @@ func TestValidateRejectsNegativeDataCapacity(t *testing.T) {
 		t.Fatal("negative generator data capacity accepted")
 	}
 }
+
+func TestValidateRejectsInvalidCorporationIncursion(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_incursion":{"interval_ticks":0,"bot_budget":8,"bot_commitment":9}}`))
+	if err == nil {
+		t.Fatal("incursion commitment above budget accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_incursion":{"interval_ticks":-1}}`))
+	if err == nil {
+		t.Fatal("negative incursion interval accepted")
+	}
+}

@@ -37,6 +37,7 @@
     {"id":"regional_exchange","name":"Regional Exchange","cost_capital":300,"demand_bonus_bp":1000,"influence_cost":10,"influence_gain":20,"valuation_gain":300},
     {"id":"civic_grid","name":"Civic Grid","cost_capital":600,"demand_bonus_bp":1000,"influence_cost":20,"influence_gain":40,"valuation_gain":600}
   ],
+  "corp_incursion": {"interval_ticks":30,"bot_budget":24,"bot_commitment":8},
   "targets": [
     {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90,"cooldown_ticks":60,"recon_cost":10,"recon_ticks":15,"intel_gain":45,"asset_damage":20},
     {"id":"t_02","name":"Holloway Transit / Dispatch Vault","corporation":"Holloway Transit","reachable":false,"requires_target_id":"t_01","layers":[{"integrity":65,"ice":5,"counter":2},{"integrity":45,"ice":3,"counter":2}],"loot_credits":90,"loot_data":25,"time_limit":90,"cooldown_ticks":75,"recon_cost":20,"recon_ticks":15,"intel_gain":35},

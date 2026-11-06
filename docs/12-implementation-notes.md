@@ -241,3 +241,4 @@ Runner data is now capacity-limited: the starter state has 100 data slots,
 `Local Data Cache` adds 100 catalogued slots, and successful loot records only
 the amount that fits. `DataCapacity` is persisted, legacy saves default it
 safely, and Overview/compact mode show `DATA current/capacity`.
+Corporation incursions are now catalog-driven and budget-constrained: interval, attacker commitment, and total bot budget live in content; the persistent spent counter prevents unlimited active-play attacks while offline reconciliation remains non-hostile. Legacy saves with missing budget fields use the documented default budget.

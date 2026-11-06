@@ -97,6 +97,11 @@ type Target struct {
 	IntelGain        int64   `json:"intel_gain"`
 	AssetDamage      int64   `json:"asset_damage"`
 }
+type CorpIncursion struct {
+	IntervalTicks int64 `json:"interval_ticks"`
+	BotBudget     int64 `json:"bot_budget"`
+	BotCommitment int64 `json:"bot_commitment"`
+}
 type Catalog struct {
 	SchemaVersion int                   `json:"schema_version"`
 	Generators    []Generator           `json:"generators"`
@@ -105,6 +110,7 @@ type Catalog struct {
 	CorpResearch  []CorpResearchNode    `json:"corp_research"`
 	CorpAssets    []CorpAssetDefinition `json:"corp_assets"`
 	CorpMarkets   []CorpMarketExpansion `json:"corp_markets"`
+	CorpIncursion CorpIncursion         `json:"corp_incursion"`
 	Targets       []Target              `json:"targets"`
 }
 
@@ -144,6 +150,9 @@ func Validate(c Catalog) error {
 		seen[r.ID] = true
 	}
 	corpSeen := map[string]bool{}
+	if c.CorpIncursion.IntervalTicks < 0 || c.CorpIncursion.BotBudget < 0 || c.CorpIncursion.BotCommitment < 0 || c.CorpIncursion.BotCommitment > c.CorpIncursion.BotBudget && c.CorpIncursion.BotBudget > 0 {
+		return fmt.Errorf("content: invalid corporation incursion")
+	}
 	for _, r := range c.CorpResearch {
 		if r.ID == "" || corpSeen[r.ID] || r.Name == "" || r.Threshold <= 0 || r.Effects.CapitalPerTickBonus < 0 || r.Effects.UpkeepReductionPercent < 0 || r.Effects.UpkeepReductionPercent > 100 {
 			return fmt.Errorf("content: invalid corporation research node %q", r.ID)

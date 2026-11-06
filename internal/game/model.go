@@ -49,6 +49,8 @@ type CorpState struct {
 	ExposureBP         int64        `json:"exposure_bp"`
 	Assets             []CorpAsset  `json:"assets"`
 	AttackCounter      int64        `json:"attack_counter"`
+	IncursionBudget    int64        `json:"incursion_budget"`
+	IncursionSpent     int64        `json:"incursion_spent"`
 	DemandBP           int64        `json:"demand_bp"`
 	MaintenanceAuto    bool         `json:"maintenance_auto"`
 	MaintenanceBudget  int64        `json:"maintenance_budget"`

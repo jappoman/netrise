@@ -138,8 +138,9 @@ func NewCorporationState(seed int64) game.State {
 		RNGState: uint64(seed) + 0x9e3779b97f4a7c15,
 		Corp: &game.CorpState{
 			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5, MaintenanceReserve: 5,
-			DemandBP:     10000,
-			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, MaxIntegrity: 100, Operational: true}},
+			IncursionBudget: 24,
+			DemandBP:        10000,
+			ReputationBP:    8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, MaxIntegrity: 100, Operational: true}},
 		},
 	}
 }
@@ -660,7 +661,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		}
 		if !safeOnly && s.Faction == game.Corporation && s.Corp != nil && s.ActiveBattle == nil {
 			s.Corp.AttackCounter++
-			if s.Corp.AttackCounter >= 30 {
+			if s.Corp.AttackCounter >= e.incursionInterval(s) && e.incursionAvailable(s) {
 				s, events = e.startCorporationIncursion(s, events)
 			}
 		}
@@ -860,12 +861,17 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 	if !ok || len(target.Layers) == 0 {
 		return s, events
 	}
+	committed := e.incursionCommitment(s)
+	if committed <= 0 || !e.incursionAvailable(s) {
+		return s, events
+	}
 	deployed := int64(0)
 	if s.Corp.ICE > 0 {
 		deployed = minInt64(s.Corp.ICE, 3)
 		s.Corp.ICE -= deployed
 	}
 	s.Corp.AttackCounter = 0
+	s.Corp.IncursionSpent += committed
 	assetID := ""
 	bestRate := int64(-1)
 	for _, asset := range s.Corp.Assets {
@@ -874,8 +880,43 @@ func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (g
 			bestRate = asset.CapitalPerTick
 		}
 	}
-	s.ActiveBattle = &game.Battle{TargetID: target.ID, DefenderAssetID: assetID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, DefenderAssetID: assetID, AttackerFaction: game.Runner, CommittedBots: committed, LiveBots: committed, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit, StartingHeatBP: s.HeatBP}
 	return s, append(events, game.Event{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Emergency audit: suspicious ingress detected."})
+}
+
+const (
+	defaultIncursionInterval   = 30
+	defaultIncursionBudget     = 24
+	defaultIncursionCommitment = 8
+)
+
+func (e *Engine) incursionInterval(s game.State) int64 {
+	if e.Catalog.CorpIncursion.IntervalTicks > 0 {
+		return e.Catalog.CorpIncursion.IntervalTicks
+	}
+	return defaultIncursionInterval
+}
+
+func (e *Engine) incursionBudget(s game.State) int64 {
+	if s.Corp.IncursionBudget > 0 {
+		return s.Corp.IncursionBudget
+	}
+	if e.Catalog.CorpIncursion.BotBudget > 0 {
+		return e.Catalog.CorpIncursion.BotBudget
+	}
+	return defaultIncursionBudget
+}
+
+func (e *Engine) incursionCommitment(s game.State) int64 {
+	if e.Catalog.CorpIncursion.BotCommitment > 0 {
+		return e.Catalog.CorpIncursion.BotCommitment
+	}
+	return defaultIncursionCommitment
+}
+
+func (e *Engine) incursionAvailable(s game.State) bool {
+	commitment := e.incursionCommitment(s)
+	return commitment > 0 && s.Corp.IncursionSpent <= e.incursionBudget(s)-commitment
 }
 
 func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, []game.Event) {

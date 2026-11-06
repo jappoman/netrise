@@ -305,6 +305,31 @@ func TestCorporationOfflineSummaryIsSafeAndNonHostile(t *testing.T) {
 	}
 }
 
+func TestCorporationIncursionUsesActiveBudgetOnly(t *testing.T) {
+	c := catalog()
+	c.Targets[0].ID = "t_01"
+	e := New(c, 106)
+	s := NewCorporationState(106)
+	s.Corp.IncursionBudget = 8
+	s, events, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 30})
+	if err != nil || s.ActiveBattle == nil || s.ActiveBattle.CommittedBots != 8 || s.Corp.IncursionSpent != 8 || len(events) == 0 {
+		t.Fatalf("budgeted incursion did not start: state=%#v events=%#v err=%v", s, events, err)
+	}
+	s.ActiveBattle = nil
+	s.Corp.AttackCounter = 29
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.ActiveBattle != nil || s.Corp.IncursionSpent != 8 || len(events) != 0 {
+		t.Fatalf("incursion exceeded budget: state=%#v events=%#v err=%v", s, events, err)
+	}
+
+	offline := NewCorporationState(107)
+	offline.Corp.IncursionBudget = 8
+	offline, _ = e.ReconcileOffline(offline, 60)
+	if offline.Corp.IncursionSpent != 0 || offline.ActiveBattle != nil {
+		t.Fatalf("offline reconciliation launched or spent an incursion: %#v", offline.Corp)
+	}
+}
+
 func TestOfflinePassiveAggregationMatchesTickPath(t *testing.T) {
 	e := New(catalog(), 104)
 	start := NewState(104)
