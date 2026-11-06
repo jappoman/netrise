@@ -48,6 +48,8 @@ saves and available from the TUI with `[l] archive`.
 The content validator rejects missing links and cyclic research prerequisites;
 an integration script exercises 3,600 Runner ticks with automation enabled and
 asserts bounded resources, event history and recon progress.
+The CLI also exposes `validate-content`, and the TUI `?` view explains the
+current objective and available actions separately for Runner and Corporation.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

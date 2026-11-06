@@ -23,8 +23,15 @@ func main() {
 		simulate(args[1:])
 		return
 	}
+	if len(args) > 0 && args[0] == "validate-content" {
+		if _, err := loadCatalog(); err != nil {
+			fatal(err)
+		}
+		fmt.Println("content: valid")
+		return
+	}
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\n\nA deterministic fictional Runner/Corporation strategy game.")
+		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game.")
 		return
 	}
 	if len(args) > 0 && args[0] == "--version" {

@@ -50,3 +50,14 @@ func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 		t.Fatalf("archive view omitted persisted event: %s", view)
 	}
 }
+
+func TestHelpViewExplainsBothCampaigns(t *testing.T) {
+	runner := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	if !strings.Contains(runner.helpView(), "prepare, breach") {
+		t.Fatal("Runner help omitted objective")
+	}
+	corp := New(sim.NewCorporationState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	if !strings.Contains(corp.helpView(), "information business") {
+		t.Fatal("Corporation help omitted objective")
+	}
+}

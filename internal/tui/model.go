@@ -38,6 +38,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.saveNow()
 			return m, tea.Quit
 		}
+		if m.screen == "help" {
+			if v.String() == "esc" || v.String() == "o" || v.String() == "?" {
+				m.screen = "overview"
+			}
+			return m, nil
+		}
+		if v.String() == "?" {
+			m.screen = "help"
+			return m, nil
+		}
 		if m.screen == "targets" {
 			switch v.String() {
 			case "up":
@@ -240,6 +250,9 @@ func (m Model) View() tea.View {
 	if m.screen == "restructure" {
 		return tea.NewView(m.restructureView())
 	}
+	if m.screen == "help" {
+		return tea.NewView(m.helpView())
+	}
 	if m.state.Faction == game.Corporation {
 		return tea.NewView(m.corpOverviewView())
 	}
@@ -342,6 +355,13 @@ func (m Model) archiveView() string {
 		lines += "No events recorded yet.\n"
 	}
 	return lines + "\n[esc] overview"
+}
+
+func (m Model) helpView() string {
+	if m.state.Faction == game.Corporation {
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+	}
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [i] recon  [y] research  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
 
 func (m Model) prestigeView() string {
