@@ -544,7 +544,7 @@ func TestCorporationMarketStatusAndNextActionAreVisible(t *testing.T) {
 	)
 	m.state.Corp.ICE = m.state.Corp.ICECapacity
 	view := m.corpOverviewView()
-	if !strings.Contains(view, "MARKET 0/1 | next Metro Contracts (150 capital, +10% demand)") || !strings.Contains(view, "press [m] to secure Metro Contracts") {
+	if !strings.Contains(view, "MARKET 0/1 | next Metro Contracts (150 capital, +10% demand) | need 50 capital") || !strings.Contains(view, "press [m] to secure Metro Contracts") {
 		t.Fatalf("Corporation market state was not self-explanatory: %s", view)
 	}
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "m", Code: 'm'}))

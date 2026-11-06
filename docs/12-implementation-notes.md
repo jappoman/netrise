@@ -351,3 +351,7 @@ to infer the research graph.
 Research nodes with satisfied prerequisites now distinguish affordable data
 costs from `NEED N DATA`, so an unavailable purchase explains its resource
 shortfall before the player presses Enter.
+
+The Corporation market summary now exposes capital and influence shortfalls
+for the next expansion directly in the overview, before an acquisition key is
+pressed.

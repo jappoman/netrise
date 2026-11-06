@@ -1403,10 +1403,21 @@ func (m Model) corpMarketSummary() string {
 		return fmt.Sprintf("%d/%d complete", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets))
 	}
 	next := m.corpMarketNext()
-	if next.InfluenceCost > 0 {
-		return fmt.Sprintf("%d/%d | next %s (%d capital, %d influence, +%d%% demand)", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.InfluenceCost, next.DemandBonusBP/100)
+	shortfall := make([]string, 0, 2)
+	if m.state.Corp.Capital.Units() < next.CostCapital {
+		shortfall = append(shortfall, fmt.Sprintf("need %d capital", next.CostCapital-m.state.Corp.Capital.Units()))
 	}
-	return fmt.Sprintf("%d/%d | next %s (%d capital, +%d%% demand)", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.DemandBonusBP/100)
+	if m.state.Corp.Influence.Units() < next.InfluenceCost {
+		shortfall = append(shortfall, fmt.Sprintf("need %d influence", next.InfluenceCost-m.state.Corp.Influence.Units()))
+	}
+	requirements := ""
+	if len(shortfall) > 0 {
+		requirements = " | " + strings.Join(shortfall, ", ")
+	}
+	if next.InfluenceCost > 0 {
+		return fmt.Sprintf("%d/%d | next %s (%d capital, %d influence, +%d%% demand)%s", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.InfluenceCost, next.DemandBonusBP/100, requirements)
+	}
+	return fmt.Sprintf("%d/%d | next %s (%d capital, +%d%% demand)%s", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.DemandBonusBP/100, requirements)
 }
 
 func (m Model) corpAssetSummary() string {
