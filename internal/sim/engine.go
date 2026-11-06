@@ -51,6 +51,7 @@ func NewCorporationState(seed int64) game.State {
 		RNGState: uint64(seed) + 0x9e3779b97f4a7c15,
 		Corp: &game.CorpState{
 			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5,
+			DemandBP:     10000,
 			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, Operational: true}},
 		},
 	}
@@ -276,7 +277,7 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d capital", definition.CostCapital)}
 		}
 		s.Corp.Capital -= mathx.New(definition.CostCapital)
-		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, Integrity: definition.Integrity, Operational: true})
+		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, Operational: true})
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetBuilt", Message: definition.Name + " commissioned."}}, nil
 	case game.CorpBuyICE:
 		if s.Faction != game.Corporation || s.Corp == nil {
@@ -306,6 +307,51 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.ActiveBattle.DefenderICE += c.Quantity
 		s.ActiveBattle.InterventionUsed = true
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ICEDeployed", Message: fmt.Sprintf("%d reserve ICE deployed.", c.Quantity)}}, nil
+	case game.CorpRunResearch:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		cost := mathx.New(200)
+		if s.Corp.Capital < cost {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "R&D requires 200 capital"}
+		}
+		s.Corp.Capital -= cost
+		s.Corp.Research, _ = s.Corp.Research.Add(mathx.New(10))
+		s.Corp.RunValuation += 200
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}, nil
+	case game.CorpExpandMarket:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		cost := mathx.New(150)
+		if s.Corp.Capital < cost {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "market expansion requires 150 capital"}
+		}
+		s.Corp.Capital -= cost
+		s.Corp.Influence, _ = s.Corp.Influence.Add(mathx.New(10))
+		s.Corp.DemandBP = minInt64(10000, s.Corp.DemandBP+1000)
+		s.Corp.RunValuation += 150
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: "New service demand secured."}}, nil
+	case game.CorpEnableMaintenance:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		s.Corp.MaintenanceAuto = true
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "MaintenanceEnabled", Message: "Automated maintenance budget enabled."}}, nil
+	case game.CorpRestructure:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		reward := integerSqrt(s.Corp.RunValuation / 1000)
+		if reward <= 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonPrestigeLocked, Detail: "reach 1,000 valuation before Restructuring"}
+		}
+		newState := NewCorporationState(s.WorldSeed)
+		newState.GameVersion = s.GameVersion
+		newState.Corp.PatentShares = s.Corp.PatentShares + reward
+		newState.Corp.Capital = mathx.New(100 + newState.Corp.PatentShares*10)
+		newState.PrestigeCount = s.PrestigeCount + 1
+		return newState, []game.Event{{Tick: s.LogicalTick, Type: "RestructuringCompleted", Message: fmt.Sprintf("Restructuring complete. %d Patent Shares retained.", newState.Corp.PatentShares), Amount: reward}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
@@ -396,12 +442,28 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 
 func (e *Engine) advanceCorporation(s game.State) game.State {
 	rate := int64(2)
+	upkeep := int64(0)
 	for _, asset := range s.Corp.Assets {
 		if asset.Operational {
 			rate += asset.CapitalPerTick
+			upkeep += asset.UpkeepPerTick
 		}
 	}
+	if s.Corp.DemandBP <= 0 {
+		s.Corp.DemandBP = 10000
+	}
+	rate = rate * s.Corp.DemandBP / 10000
 	s.Corp.Capital, _ = s.Corp.Capital.Add(mathx.New(rate))
+	if upkeep > 0 && s.Corp.Capital >= mathx.New(upkeep) {
+		s.Corp.Capital -= mathx.New(upkeep)
+	} else if upkeep > 0 {
+		for i := range s.Corp.Assets {
+			if s.Corp.Assets[i].UpkeepPerTick > 0 {
+				s.Corp.Assets[i].Operational = false
+			}
+		}
+	}
+	s.Corp.RunValuation += rate
 	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
 	return s
 }

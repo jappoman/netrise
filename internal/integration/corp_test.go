@@ -34,6 +34,7 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 20})
 	apply(game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"})
 	apply(game.Command{Kind: game.CorpBuyICE, Quantity: 2})
+	apply(game.Command{Kind: game.CorpEnableMaintenance})
 	if len(s.Corp.Assets) != 3 || s.Corp.ICE != 5 || s.Corp.Capital < 0 {
 		t.Fatalf("corporate investment state invalid: %#v", s.Corp)
 	}
@@ -54,5 +55,17 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	}
 	if s.Corp.ICE != 0 {
 		t.Fatalf("reserve ICE accounting failed: %d", s.Corp.ICE)
+	}
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 10})
+	apply(game.Command{Kind: game.CorpRunResearch})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 25})
+	apply(game.Command{Kind: game.CorpExpandMarket})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 50})
+	if s.Corp.Research <= 0 || s.Corp.Influence <= 0 || s.Corp.DemandBP <= 8000 || s.Corp.RunValuation < 1000 {
+		t.Fatalf("corporate growth systems did not progress: %#v", s.Corp)
+	}
+	apply(game.Command{Kind: game.CorpRestructure})
+	if s.PrestigeCount != 1 || s.Corp.PatentShares != 1 || len(s.Corp.Assets) != 1 || s.Corp.ExposureBP != 0 {
+		t.Fatalf("restructuring did not reset/retain correctly: state=%#v", s)
 	}
 }

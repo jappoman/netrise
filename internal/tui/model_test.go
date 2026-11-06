@@ -14,3 +14,15 @@ func TestCompactResizeDoesNotPanic(t *testing.T) {
 		t.Fatal("nil model")
 	}
 }
+
+func TestCorporationOverviewRendersAtCompactSize(t *testing.T) {
+	m := New(sim.NewCorporationState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
+	if updated == nil {
+		t.Fatal("nil Corporation model")
+	}
+	view := updated.(Model).View()
+	if view.Content == "" {
+		t.Fatal("empty Corporation view")
+	}
+}

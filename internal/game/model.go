@@ -28,20 +28,25 @@ type CorpAsset struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
 	CapitalPerTick int64  `json:"capital_per_tick"`
+	UpkeepPerTick  int64  `json:"upkeep_per_tick"`
 	Integrity      int64  `json:"integrity"`
 	Operational    bool   `json:"operational"`
 }
 type CorpState struct {
-	Capital       mathx.Amount `json:"capital"`
-	Compute       mathx.Amount `json:"compute"`
-	Research      mathx.Amount `json:"research"`
-	Influence     mathx.Amount `json:"influence"`
-	ICE           int64        `json:"ice"`
-	ICECapacity   int64        `json:"ice_capacity"`
-	ReputationBP  int64        `json:"reputation_bp"`
-	ExposureBP    int64        `json:"exposure_bp"`
-	Assets        []CorpAsset  `json:"assets"`
-	AttackCounter int64        `json:"attack_counter"`
+	Capital         mathx.Amount `json:"capital"`
+	Compute         mathx.Amount `json:"compute"`
+	Research        mathx.Amount `json:"research"`
+	Influence       mathx.Amount `json:"influence"`
+	ICE             int64        `json:"ice"`
+	ICECapacity     int64        `json:"ice_capacity"`
+	ReputationBP    int64        `json:"reputation_bp"`
+	ExposureBP      int64        `json:"exposure_bp"`
+	Assets          []CorpAsset  `json:"assets"`
+	AttackCounter   int64        `json:"attack_counter"`
+	DemandBP        int64        `json:"demand_bp"`
+	MaintenanceAuto bool         `json:"maintenance_auto"`
+	RunValuation    int64        `json:"run_valuation"`
+	PatentShares    int64        `json:"patent_shares"`
 }
 type Fabrication struct {
 	RemainingTicks int64 `json:"remaining_ticks"`
@@ -123,21 +128,25 @@ type Battle struct {
 type CommandKind string
 
 const (
-	AdvanceTicks     CommandKind = "advance_ticks"
-	CollectContract  CommandKind = "collect_contract"
-	BuyGenerator     CommandKind = "buy_generator"
-	QueueFabrication CommandKind = "queue_fabrication"
-	BuyUpgrade       CommandKind = "buy_upgrade"
-	StartBattle      CommandKind = "start_battle"
-	ReinforceBattle  CommandKind = "reinforce_battle"
-	WithdrawBattle   CommandKind = "withdraw_battle"
-	StartRecon       CommandKind = "start_recon"
-	EnableAutomation CommandKind = "enable_automation"
-	BuyResearch      CommandKind = "buy_research"
-	IdentityBurn     CommandKind = "identity_burn"
-	CorpBuildAsset   CommandKind = "corp_build_asset"
-	CorpBuyICE       CommandKind = "corp_buy_ice"
-	CorpDeployICE    CommandKind = "corp_deploy_ice"
+	AdvanceTicks          CommandKind = "advance_ticks"
+	CollectContract       CommandKind = "collect_contract"
+	BuyGenerator          CommandKind = "buy_generator"
+	QueueFabrication      CommandKind = "queue_fabrication"
+	BuyUpgrade            CommandKind = "buy_upgrade"
+	StartBattle           CommandKind = "start_battle"
+	ReinforceBattle       CommandKind = "reinforce_battle"
+	WithdrawBattle        CommandKind = "withdraw_battle"
+	StartRecon            CommandKind = "start_recon"
+	EnableAutomation      CommandKind = "enable_automation"
+	BuyResearch           CommandKind = "buy_research"
+	IdentityBurn          CommandKind = "identity_burn"
+	CorpBuildAsset        CommandKind = "corp_build_asset"
+	CorpBuyICE            CommandKind = "corp_buy_ice"
+	CorpDeployICE         CommandKind = "corp_deploy_ice"
+	CorpRunResearch       CommandKind = "corp_run_research"
+	CorpExpandMarket      CommandKind = "corp_expand_market"
+	CorpEnableMaintenance CommandKind = "corp_enable_maintenance"
+	CorpRestructure       CommandKind = "corp_restructure"
 )
 
 type Command struct {

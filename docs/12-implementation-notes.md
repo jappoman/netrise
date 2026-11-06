@@ -30,6 +30,9 @@ separate campaign save, capital-producing client assets, reserve ICE,
 reputation/exposure meters, and a deterministic active-play NPC intrusion.
 Corporation emergency ICE uses the shared battle state and resolution path,
 while the outcome applies Corporation-specific defense or exposure effects.
+The Corporation slice now also includes capital-funded R&D, market demand and
+influence expansion, upkeep-aware automated maintenance, and a separate
+`Restructuring` prestige that retains Patent Shares.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
