@@ -50,6 +50,9 @@ an integration script exercises 3,600 Runner ticks with automation enabled and
 asserts bounded resources, event history and recon progress.
 The CLI also exposes `validate-content`, and the TUI `?` view explains the
 current objective and available actions separately for Runner and Corporation.
+Offline reconciliation now persists a safe-production digest (ticks and
+resource gains) shown in Overview, while active battles and hostile
+Corporation attack counters remain frozen during closed time.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

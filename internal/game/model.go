@@ -79,6 +79,13 @@ type State struct {
 	PrestigeCount    int64            `json:"prestige_count"`
 	Corp             *CorpState       `json:"corp,omitempty"`
 	EventLog         []Event          `json:"event_log,omitempty"`
+	OfflineSummary   *OfflineSummary  `json:"offline_summary,omitempty"`
+}
+
+type OfflineSummary struct {
+	Ticks           int64        `json:"ticks"`
+	ComputeProduced mathx.Amount `json:"compute_produced"`
+	CapitalProduced mathx.Amount `json:"capital_produced"`
 }
 
 type Automation struct {

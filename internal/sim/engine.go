@@ -29,10 +29,21 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	// the battle RNG stream so closing the game cannot decide an attack.
 	activeBattle := s.ActiveBattle
 	rngState := s.RNGState
+	beforeCompute := s.Resources.Compute
+	beforeCapital := mathx.Amount(0)
+	if s.Corp != nil {
+		beforeCapital = s.Corp.Capital
+	}
 	s.ActiveBattle = nil
 	s, _ = e.advanceEvents(s, elapsedTicks, true)
 	s.ActiveBattle = activeBattle
 	s.RNGState = rngState
+	computeProduced, _ := s.Resources.Compute.Add(-beforeCompute)
+	capitalProduced := mathx.Amount(0)
+	if s.Corp != nil {
+		capitalProduced, _ = s.Corp.Capital.Add(-beforeCapital)
+	}
+	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced}
 	return s, elapsedTicks
 }
 

@@ -212,12 +212,25 @@ func TestOfflineCapAndClockReversal(t *testing.T) {
 	e := New(catalog(), 1)
 	s := NewState(1)
 	got, applied := e.ReconcileOffline(s, OfflineCapTicks+100)
-	if applied != OfflineCapTicks || got.LogicalTick != OfflineCapTicks {
+	if applied != OfflineCapTicks || got.LogicalTick != OfflineCapTicks || got.OfflineSummary == nil || got.OfflineSummary.Ticks != OfflineCapTicks {
 		t.Fatalf("offline cap failed: ticks=%d state=%d", applied, got.LogicalTick)
 	}
 	got, applied = e.ReconcileOffline(s, -1)
 	if applied != 0 || got.LogicalTick != 0 {
 		t.Fatal("clock reversal advanced the simulation")
+	}
+}
+
+func TestCorporationOfflineSummaryIsSafeAndNonHostile(t *testing.T) {
+	e := New(catalog(), 5)
+	s := NewCorporationState(5)
+	before := s.Corp.Capital
+	got, applied := e.ReconcileOffline(s, 100)
+	if applied != 100 || got.OfflineSummary == nil || got.OfflineSummary.CapitalProduced <= 0 || got.Corp.Capital <= before || got.ActiveBattle != nil {
+		t.Fatalf("invalid Corporation offline summary: before=%s after=%s summary=%#v", before, got.Corp.Capital, got.OfflineSummary)
+	}
+	if got.Corp.AttackCounter != s.Corp.AttackCounter {
+		t.Fatal("offline time advanced hostile attack counter")
 	}
 }
 
