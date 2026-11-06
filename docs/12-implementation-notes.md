@@ -401,3 +401,7 @@ remain readable in the player-facing TUI.
 Target ICE and loot estimates now saturate both multi-layer aggregation and
 uncertainty multiplication, keeping the Target screen safe for extreme catalog
 values without changing the underlying simulation.
+
+Runner automation budgets and cumulative usage counters are now validated at the
+save boundary, matching Corporation policy validation and rejecting negative
+state before a policy can resume.

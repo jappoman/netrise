@@ -130,6 +130,9 @@ func validateState(s game.State) error {
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
 		return errors.New("negative progression value")
 	}
+	if s.Automation.ContractBudget < 0 || s.Automation.ContractEarned < 0 || s.Automation.FabricationBudget < 0 || s.Automation.FabricationSpent < 0 || s.Automation.ReconBudget < 0 || s.Automation.ReconSpent < 0 {
+		return errors.New("negative Runner automation budget or usage")
+	}
 	seenGenerators := make(map[string]struct{}, len(s.Generators))
 	for _, generator := range s.Generators {
 		if generator.ID == "" || generator.Count <= 0 {

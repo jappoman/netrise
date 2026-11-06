@@ -132,6 +132,17 @@ func TestSaveRejectsUnrepresentableFixedPointAssetValues(t *testing.T) {
 	}
 }
 
+func TestSaveRejectsNegativeRunnerAutomationCounters(t *testing.T) {
+	d := t.TempDir()
+	payload := `{"schema_version":1,"faction":"runner","automation":{"contracts":true,"contract_budget":100,"contract_earned":-1}}`
+	if err := os.WriteFile(Path(d), []byte(payload), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("negative Runner automation usage was accepted: %v", err)
+	}
+}
+
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {
