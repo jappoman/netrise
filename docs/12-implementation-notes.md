@@ -463,7 +463,9 @@ events or state changes while the game is closed.
 Interactive campaigns now acquire a faction-scoped advisory session lock before
 loading state. Unix builds use `Flock` and Windows builds use `LockFileEx`, so a
 second process receives a clear error while independent Runner and Corporation
-saves remain available; the lock is released when the TUI exits.
+saves remain available; the lock is released when the TUI exits. The save test
+suite also holds a lock in a separate helper process to verify the OS-level
+exclusion rather than only same-process handles.
 
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
