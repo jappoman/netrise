@@ -179,6 +179,9 @@ func validateState(s game.State) error {
 			return errors.New("invalid battle result")
 		}
 	}
+	if len(s.EventLog) > game.EventLogLimit {
+		return errors.New("event log exceeds limit")
+	}
 	for _, event := range s.EventLog {
 		if event.Tick < 0 || event.Tick > s.LogicalTick || event.Type == "" {
 			return errors.New("invalid event log")

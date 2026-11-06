@@ -1,6 +1,7 @@
 package save
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/jappoman/netrise/internal/game"
 	"os"
@@ -176,6 +177,24 @@ func TestSaveRejectsNegativeOfflineSummary(t *testing.T) {
 	}
 	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
 		t.Fatalf("negative offline summary was accepted: %v", err)
+	}
+}
+
+func TestSaveRejectsOversizedEventLog(t *testing.T) {
+	d := t.TempDir()
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 1, EventLog: make([]game.Event, game.EventLogLimit+1)}
+	for i := range s.EventLog {
+		s.EventLog[i] = game.Event{Tick: 1, Type: "Test", Message: "event"}
+	}
+	payload, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(d), payload, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("oversized event log was accepted: %v", err)
 	}
 }
 

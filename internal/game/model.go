@@ -3,6 +3,7 @@ package game
 import "github.com/jappoman/netrise/internal/mathx"
 
 const CurrentSchema = 1
+const EventLogLimit = 200
 
 type Faction string
 

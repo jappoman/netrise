@@ -154,7 +154,7 @@ func NewCorporationState(seed int64) game.State {
 	}
 }
 
-const EventLogLimit = 200
+const EventLogLimit = game.EventLogLimit
 
 func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, error) {
 	next, events, err := e.apply(s, c)

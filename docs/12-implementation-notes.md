@@ -417,3 +417,6 @@ capacity before a save can be reopened.
 Offline reconciliation summaries are also checked for non-negative ticks and
 resource deltas, so the Overview cannot display fabricated offline gains after a
 corrupted save.
+
+The 200-entry event archive limit is now defined in the shared game model and
+enforced at both engine append and save-load boundaries.
