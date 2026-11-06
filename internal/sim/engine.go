@@ -410,7 +410,11 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		asset := &s.Corp.Assets[assetIndex]
 		maxIntegrity := asset.MaxIntegrity
 		if maxIntegrity <= 0 {
-			maxIntegrity = asset.Integrity
+			if definition, ok := e.corpAsset(asset.ID); ok {
+				maxIntegrity = definition.Integrity
+			} else {
+				maxIntegrity = asset.Integrity
+			}
 			asset.MaxIntegrity = maxIntegrity
 		}
 		if asset.Integrity >= maxIntegrity {

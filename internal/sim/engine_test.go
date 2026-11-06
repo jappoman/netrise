@@ -657,6 +657,19 @@ func TestCorporationAssetDamageAndRepairUseSharedBattle(t *testing.T) {
 	}
 }
 
+func TestCorporationRepairMigratesLegacyAssetIntegrity(t *testing.T) {
+	c := catalog()
+	c.CorpAssets = []content.CorpAssetDefinition{{ID: "legacy", Name: "Legacy Service", Integrity: 100}}
+	e := New(c, 103)
+	s := NewCorporationState(103)
+	s.Corp.Capital = mathx.New(100)
+	s.Corp.Assets = []game.CorpAsset{{ID: "legacy", Name: "Legacy Service", Integrity: 0, Operational: false}}
+	s, events, err := e.Apply(s, game.Command{Kind: game.CorpRepairAsset, ID: "legacy", Quantity: 25})
+	if err != nil || s.Corp.Assets[0].Integrity != 25 || s.Corp.Assets[0].MaxIntegrity != 100 || !s.Corp.Assets[0].Operational || !hasEvent(events, "AssetRepaired") {
+		t.Fatalf("legacy asset repair did not use catalog maximum: state=%#v events=%#v err=%v", s.Corp.Assets[0], events, err)
+	}
+}
+
 func hasEvent(events []game.Event, eventType string) bool {
 	for _, event := range events {
 		if event.Type == eventType {

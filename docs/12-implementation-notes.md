@@ -177,7 +177,8 @@ incursion ends as `isolated`, and an `AssetIsolationEnded` event marks automatic
 recovery. Reserve ICE and isolation share the single intervention budget.
 Incursions also apply catalog `asset_damage` to that selected asset; zero
 integrity disables it and `[r]` repairs a chosen damaged asset at one capital
-per integrity, restoring a recoverable Corporation security loop.
+per integrity, restoring a recoverable Corporation security loop. Legacy saves
+without `max_integrity` migrate that ceiling from the validated asset catalog.
 
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
