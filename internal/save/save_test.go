@@ -127,3 +127,36 @@ func TestMigrate(t *testing.T) {
 		t.Fatal(s, err)
 	}
 }
+
+func TestCorporationMarketProgressionRoundTripsAndLegacyDefaults(t *testing.T) {
+	d := t.TempDir()
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Corporation, Corp: &game.CorpState{
+		Capital: 9000, DemandBP: 12000, Influence: 20000, MarketTier: 2,
+	}}
+	if err := Write(d, s); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ReadFaction(d, game.Corporation)
+	if err != nil || got.Corp == nil || got.Corp.MarketTier != 2 || got.Corp.DemandBP != 12000 || got.Corp.Influence != 20000 {
+		t.Fatalf("Corporation market progression did not round-trip: %#v, %v", got, err)
+	}
+
+	legacyDir := t.TempDir()
+	if err := os.WriteFile(PathForFaction(legacyDir, game.Corporation), []byte(`{"schema_version":1,"faction":"corporation","corp":{"capital":1000,"demand_bp":10000}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := ReadFaction(legacyDir, game.Corporation)
+	if err != nil || legacy.Corp == nil || legacy.Corp.MarketTier != 0 {
+		t.Fatalf("legacy Corporation save did not default market tier: %#v, %v", legacy, err)
+	}
+}
+
+func TestCorporationMarketDemandBoundsAreEnforced(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(PathForFaction(d, game.Corporation), []byte(`{"schema_version":1,"faction":"corporation","corp":{"demand_bp":20001}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadFaction(d, game.Corporation); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("oversaturated Corporation save was accepted: %v", err)
+	}
+}

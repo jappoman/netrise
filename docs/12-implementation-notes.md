@@ -191,6 +191,9 @@ and later tiers consume catalogued influence as well as capital. They stop
 atomically when the next tier is unaffordable or the catalog is exhausted.
 Overview, compact mode, report and next-step hints show the next market name,
 costs and demand gain.
+Save tests cover round-tripping market tiers and demand above 100%, defaulting
+the new tier field for legacy Corporation JSON and rejecting impossible demand
+values at the persistence boundary.
 
 Prestige confirmation screens now expose their lock reason before confirmation:
 Runner Identity Burn states the 10,000-data threshold, while Corporation
