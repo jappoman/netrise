@@ -104,17 +104,17 @@ func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
 	if s.Corp == nil {
 		rate := e.ComputeRate(s)
 		gain, _ := mathx.New(rate).MulUnits(elapsedTicks)
-		s.Resources.Compute, _ = s.Resources.Compute.Add(gain)
+		s.Resources.Compute = mathx.AddSaturated(s.Resources.Compute, gain)
 	} else {
 		gross := e.CorporationGrossRate(s)
 		upkeep := e.CorporationUpkeepRate(s)
 		net := gross - upkeep
 		if net > 0 {
 			gain, _ := mathx.New(net).MulUnits(elapsedTicks)
-			s.Corp.Capital, _ = s.Corp.Capital.Add(gain)
+			s.Corp.Capital = mathx.AddSaturated(s.Corp.Capital, gain)
 		}
 		computeGain, _ := mathx.New(2).MulUnits(elapsedTicks)
-		s.Corp.Compute, _ = s.Corp.Compute.Add(computeGain)
+		s.Corp.Compute = mathx.AddSaturated(s.Corp.Compute, computeGain)
 		if gross > 0 && elapsedTicks <= (1<<63-1-s.Corp.RunValuation)/gross {
 			s.Corp.RunValuation += gross * elapsedTicks
 		}
@@ -527,7 +527,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "R&D requires 200 capital"}
 		}
 		s.Corp.Capital -= cost
-		s.Corp.Research, _ = s.Corp.Research.Add(mathx.New(10))
+		s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
 		s.Corp.RunValuation += 200
 		events := []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}
 		events = append(events, e.completeCorpResearch(&s)...)
@@ -550,7 +550,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= cost
 		s.Corp.Influence -= influenceCost
-		s.Corp.Influence, _ = s.Corp.Influence.Add(mathx.New(market.InfluenceGain))
+		s.Corp.Influence = mathx.AddSaturated(s.Corp.Influence, mathx.New(market.InfluenceGain))
 		s.Corp.DemandBP += market.DemandBonusBP
 		s.Corp.MarketTier++
 		s.Corp.RunValuation += market.ValuationGain
@@ -678,7 +678,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		if s.Faction != game.Corporation {
 			rate := e.ComputeRate(s)
 			produced := mathx.New(rate)
-			s.Resources.Compute, _ = s.Resources.Compute.Add(produced)
+			s.Resources.Compute = mathx.AddSaturated(s.Resources.Compute, produced)
 		}
 		if s.Fabrication != nil {
 			s.Fabrication.RemainingTicks--
@@ -726,7 +726,7 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Autodialer stopped: contract budget reached."})
 		} else {
 			amount := minInt64(10, remaining)
-			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(amount))
+			s.Resources.Credits = mathx.AddSaturated(s.Resources.Credits, mathx.New(amount))
 			s.Automation.ContractEarned += amount
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationProduced", Message: "Autodialer settled a safe contract.", Amount: amount})
 			if s.Automation.ContractEarned >= s.Automation.ContractBudget {
@@ -809,7 +809,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	if s.Corp.DemandBP <= 0 {
 		s.Corp.DemandBP = 10000
 	}
-	s.Corp.Capital, _ = s.Corp.Capital.Add(mathx.New(rate))
+	s.Corp.Capital = mathx.AddSaturated(s.Corp.Capital, mathx.New(rate))
 	availableCapital := s.Corp.Capital.Units()
 	for i := range s.Corp.Assets {
 		asset := &s.Corp.Assets[i]
@@ -852,7 +852,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 		} else if s.Corp.Capital >= mathx.New(200) && s.Corp.Compute >= mathx.New(s.Corp.ComputeReserve+1) {
 			s.Corp.Capital -= mathx.New(200)
 			s.Corp.Compute -= mathx.New(1)
-			s.Corp.Research, _ = s.Corp.Research.Add(mathx.New(10))
+			s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
 			s.Corp.ResearchSpent += 200
 			s.Corp.RunValuation += 200
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchAutomated", Message: "Automated R&D completed a systems study."})
@@ -863,7 +863,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			}
 		}
 	}
-	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
+	s.Corp.Compute = mathx.AddSaturated(s.Corp.Compute, mathx.New(2))
 	return s, events
 }
 
@@ -1085,10 +1085,10 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 				return s, events
 			}
 			s.Resources.Bots += b.LiveBots
-			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
+			s.Resources.Credits = mathx.AddSaturated(s.Resources.Credits, mathx.New(target.LootCredits))
 			dataLooted := minInt64(target.LootData, maxInt64(0, s.Resources.DataCapacity-s.Resources.Data.Units()))
 			if dataLooted > 0 {
-				s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(dataLooted))
+				s.Resources.Data = mathx.AddSaturated(s.Resources.Data, mathx.New(dataLooted))
 			}
 			s.RunExtractedData += dataLooted
 			setTargetCooldown(&s, target)
@@ -1257,11 +1257,28 @@ func (e *Engine) ComputeRate(s game.State) int64 {
 	for _, g := range e.Catalog.Generators {
 		for _, owned := range s.Generators {
 			if owned.ID == g.ID {
+				if g.ComputePerSecond <= 0 {
+					continue
+				}
+				if owned.Count > (mathx.MaxUnits-rate)/g.ComputePerSecond {
+					return mathx.MaxUnits
+				}
 				rate += owned.Count * g.ComputePerSecond
 			}
 		}
 	}
-	return rate + e.researchEffects(s).ComputePerSecondBonus + e.upgradeEffects(s).ComputePerSecondBonus
+	rate = addCappedRate(rate, e.researchEffects(s).ComputePerSecondBonus)
+	return addCappedRate(rate, e.upgradeEffects(s).ComputePerSecondBonus)
+}
+
+func addCappedRate(rate, bonus int64) int64 {
+	if bonus <= 0 || rate >= mathx.MaxUnits-bonus {
+		if bonus > 0 {
+			return mathx.MaxUnits
+		}
+		return rate
+	}
+	return rate + bonus
 }
 
 // CorporationGrossRate returns demand-adjusted capital production for the

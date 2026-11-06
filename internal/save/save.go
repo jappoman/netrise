@@ -130,6 +130,11 @@ func validateState(s game.State) error {
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
 		return errors.New("negative progression value")
 	}
+	for _, generator := range s.Generators {
+		if generator.ID == "" || generator.Count <= 0 {
+			return errors.New("invalid generator state")
+		}
+	}
 	for id, intel := range s.Intel {
 		if id == "" || intel < 0 || intel > 100 {
 			return errors.New("intel bounds exceeded")

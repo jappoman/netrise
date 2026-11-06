@@ -56,3 +56,14 @@ func TestNewPanicsInsteadOfSilentlyOverflowing(t *testing.T) {
 	}()
 	_ = New(MaxUnits + 1)
 }
+
+func TestAddSaturatedClampsBothDirections(t *testing.T) {
+	max := Amount(^uint64(0) >> 1)
+	min := Amount(-max - 1)
+	if got := AddSaturated(max, 1); got != max {
+		t.Fatalf("positive overflow was not saturated: %d", got)
+	}
+	if got := AddSaturated(min, -1); got != min {
+		t.Fatalf("negative overflow was not saturated: %d", got)
+	}
+}

@@ -111,6 +111,16 @@ func TestSemanticallyInvalidSaveIsRejected(t *testing.T) {
 	}
 }
 
+func TestInvalidGeneratorStateIsRejected(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("invalid generator state was accepted: %v", err)
+	}
+}
+
 func TestTemporaryAccessRoundTripsAndInvalidAccessIsRejected(t *testing.T) {
 	d := t.TempDir()
 	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, Access: map[string]int64{"t_01": 120}}

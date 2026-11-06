@@ -873,6 +873,19 @@ func TestFactionBoundariesRejectCrossCampaignCommandsAtomically(t *testing.T) {
 	}
 }
 
+func TestComputeRateSaturatesForExtremeGeneratorCounts(t *testing.T) {
+	catalog := content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", ComputePerSecond: 6}}}
+	e := New(catalog, 412)
+	s := NewState(412)
+	s.Generators = []game.Generator{{ID: "rig", Count: mathx.MaxUnits}}
+	if got := e.ComputeRate(s); got != mathx.MaxUnits {
+		t.Fatalf("extreme generator rate was not saturated: %d", got)
+	}
+	if advanced, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1}); err != nil || advanced.Resources.Compute.Units() != mathx.MaxUnits {
+		t.Fatalf("extreme generator tick overflowed: rate=%d compute=%d err=%v", e.ComputeRate(s), advanced.Resources.Compute, err)
+	}
+}
+
 func TestResearchEffectsChangeSimulationThroughCatalogData(t *testing.T) {
 	c := catalog()
 	c.Research[0].Effects.ComputePerSecondBonus = 2

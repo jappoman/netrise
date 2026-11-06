@@ -13,6 +13,11 @@ var ErrOverflow = errors.New("fixed-point arithmetic overflow")
 
 type Amount int64
 
+const (
+	maxAmount = Amount(^uint64(0) >> 1)
+	minAmount = Amount(-maxAmount - 1)
+)
+
 func NewChecked(units int64) (Amount, error) {
 	if units > MaxUnits || units < -MaxUnits {
 		return 0, ErrOverflow
@@ -33,6 +38,19 @@ func (a Amount) Add(b Amount) (Amount, error) {
 		return 0, ErrOverflow
 	}
 	return Amount(c), nil
+}
+
+// AddSaturated preserves a valid Amount when an incremental gain exceeds the
+// representable range. It is intended for bounded production paths where the
+// engine cannot return a command error from inside a logical tick.
+func AddSaturated(a, b Amount) Amount {
+	if sum, err := a.Add(b); err == nil {
+		return sum
+	}
+	if b < 0 {
+		return minAmount
+	}
+	return maxAmount
 }
 func (a Amount) MulUnits(n int64) (Amount, error) {
 	left := int64(a)
