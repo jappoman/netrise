@@ -565,7 +565,7 @@ func (m Model) targetsView() string {
 		}
 		intel := targetIntel(m.state, target.ID)
 		recon := targetReconStatus(m.state, target)
-		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | ICE:%s | %s | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), targetICESummary(target, intel), recon, targetAccessLabel(m.state, target.ID))
+		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | ICE:%s | reward:%s | %s | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), targetICESummary(target, intel), targetLootSummary(target, intel), recon, targetAccessLabel(m.state, target.ID))
 	}
 	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview\nNEXT: " + m.targetsNextHint()
 }
@@ -591,7 +591,7 @@ func (m Model) preflightView() string {
 	}
 	commitment := commitmentBots(m.state.Resources.Bots, m.commitmentPct)
 	estimatedTicks, estimatedHeat := m.engine.EstimateBattle(m.state, target, m.doctrine, commitment)
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nESTIMATED ICE: %s\nACCESS: %s\nCOOLDOWN: %s\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), targetICESummary(target, intel), targetAccessLabel(m.state, target.ID), targetCooldownLabel(m.state, target.ID), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nESTIMATED ICE: %s\nESTIMATED REWARD: %s\nACCESS: %s\nCOOLDOWN: %s\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), targetICESummary(target, intel), targetLootSummary(target, intel), targetAccessLabel(m.state, target.ID), targetCooldownLabel(m.state, target.ID), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
 }
 
 func (m Model) reconLine() string {
@@ -1211,6 +1211,14 @@ func targetICESummary(target content.Target, intel int64) string {
 			total += layer.ICE
 		}
 	}
+	return estimateRange(total, intel)
+}
+
+func targetLootSummary(target content.Target, intel int64) string {
+	return fmt.Sprintf("%s CR / %s data", estimateRange(target.LootCredits, intel), estimateRange(target.LootData, intel))
+}
+
+func estimateRange(total, intel int64) string {
 	if total <= 0 {
 		return "0"
 	}
@@ -1220,7 +1228,7 @@ func targetICESummary(target content.Target, intel int64) string {
 	if intel > 100 {
 		intel = 100
 	}
-	uncertaintyBP := (100 - intel) * 2500
+	uncertaintyBP := (100 - intel) * 25
 	low := total * (10000 - uncertaintyBP) / 10000
 	high := (total*(10000+uncertaintyBP) + 9999) / 10000
 	if low < 1 {

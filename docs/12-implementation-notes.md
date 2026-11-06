@@ -316,6 +316,10 @@ derived from target layers and current intel. The range narrows to the exact
 catalog value at 100% intel, keeping uncertainty visible without exposing
 hidden defense values prematurely.
 
+The same intel-driven range is now shown for catalogued credit and data loot,
+so preflight communicates both security risk and expected reward without a
+false precision claim.
+
 Content validation also bounds layer integrity, ICE and counter values to the
 fixed-point range before they reach combat arithmetic or preflight estimates.
 

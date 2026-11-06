@@ -648,7 +648,7 @@ func TestPreflightAdjustsCommitmentAndLaunchesSelectedAmount(t *testing.T) {
 func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 	catalog := content.Catalog{
 		SchemaVersion: 1,
-		Targets:       []content.Target{{ID: "target", Name: "Relay", Corporation: "Holloway Transit", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1}}, ReconCost: 10, ReconTicks: 5, IntelGain: 40}},
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Corporation: "Holloway Transit", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1}}, LootCredits: 5, LootData: 3, ReconCost: 10, ReconTicks: 5, IntelGain: 40}},
 	}
 	state := sim.NewState(5)
 	state.Upgrades = []string{"street_contacts"}
@@ -656,7 +656,7 @@ func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 	m := New(state, sim.New(catalog, 5), "")
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "t", Code: 't'}))
 	m = updated.(Model)
-	if !strings.Contains(m.targetsView(), "intel:0% (unknown)") || !strings.Contains(m.targetsView(), "ICE:1-2") || !strings.Contains(m.targetsView(), "recon ready: 10 CR / 5 ticks [i]") {
+	if !strings.Contains(m.targetsView(), "intel:0% (unknown)") || !strings.Contains(m.targetsView(), "ICE:1-2") || !strings.Contains(m.targetsView(), "reward:3-7 CR / 2-4 data") || !strings.Contains(m.targetsView(), "recon ready: 10 CR / 5 ticks [i]") {
 		t.Fatalf("target screen omitted recon guidance: %s", m.targetsView())
 	}
 	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "i", Code: 'i'}))
@@ -674,7 +674,7 @@ func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 func TestPreflightShowsIntelDrivenICESummary(t *testing.T) {
 	catalog := content.Catalog{
 		SchemaVersion: 1,
-		Targets:       []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 2}, {Integrity: 10, ICE: 3}}, TimeLimit: 30}},
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 2}, {Integrity: 10, ICE: 3}}, LootCredits: 5, LootData: 3, TimeLimit: 30}},
 	}
 	state := sim.NewState(5)
 	state.Intel = map[string]int64{"target": 100}
@@ -683,7 +683,7 @@ func TestPreflightShowsIntelDrivenICESummary(t *testing.T) {
 	m := New(state, sim.New(catalog, 5), "")
 	m.screen = "preflight"
 	view := m.preflightView()
-	if !strings.Contains(view, "ESTIMATED ICE: 5") {
+	if !strings.Contains(view, "ESTIMATED ICE: 5") || !strings.Contains(view, "ESTIMATED REWARD: 5 CR / 3 data") {
 		t.Fatalf("preflight omitted exact intel-driven ICE estimate: %s", view)
 	}
 }
