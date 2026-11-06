@@ -37,6 +37,8 @@ The initial M5 quality layer is in place: `NO_COLOR` removes ANSI styling,
 terminals below 80×24 receive a compact safe view, CI verifies Linux/Windows/
 macOS builds, and Make targets expose Runner, Corporation, simulation, build,
 vet, test, and race workflows.
+`NETRISE_HIGH_CONTRAST=1` provides an explicit bold white-on-black title rail
+for low-contrast terminals, while `NO_COLOR` remains the higher-priority mode.
 Save reads now recover a valid `.bak` snapshot when the primary JSON is
 corrupted. A simulation benchmark covers 10,000 logical ticks, and tag-based
 release automation builds Linux, Windows, and macOS artifacts with SHA-256

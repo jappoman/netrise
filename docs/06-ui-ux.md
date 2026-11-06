@@ -66,6 +66,8 @@ Global: `Tab` switch panel, arrows/jk navigate, `Enter` confirm, `Esc` back, `?`
 Runner: phosphor green, muted teal, soot black, emergency red. Corp: amber, pale paper, charcoal, red security alerts. Noir retrofuture, deliberately restrained neon.
 - Avoid continuously flashing visuals, audio surprises or fake destructive system warnings.
 - Respect NO_COLOR and provide 16-color, high-contrast and reduced-motion modes.
+- `NO_COLOR=1` disables styling; `NETRISE_HIGH_CONTRAST=1` switches the title
+  rail to a bold white-on-black treatment, with `NO_COLOR` taking precedence.
 - Do not overwrite real shell history, execute user shell or access clipboard by default.
 - Clear distinction between fictional in-game commands and real CLI.
 - Text must remain selectable where host permits; avoid high-frequency full-screen disruptive repaints.

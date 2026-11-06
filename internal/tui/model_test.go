@@ -95,6 +95,19 @@ func TestNoColorOmitsANSIStyling(t *testing.T) {
 	}
 }
 
+func TestHighContrastModeIsSelectableAndNoColorWins(t *testing.T) {
+	t.Setenv("NETRISE_HIGH_CONTRAST", "1")
+	contrast := terminalTitleStyle().Render("TITLE")
+	if !strings.Contains(contrast, "TITLE") {
+		t.Fatal("high-contrast mode did not select a foreground color")
+	}
+	t.Setenv("NO_COLOR", "1")
+	plain := terminalTitleStyle().Render("TITLE")
+	if strings.Contains(plain, "\x1b[") {
+		t.Fatal("NO_COLOR did not override high-contrast styling")
+	}
+}
+
 func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	m.state.EventLog = []game.Event{{Tick: 9, Type: "BattleEnded", Message: "Breach successful."}}

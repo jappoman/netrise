@@ -346,10 +346,7 @@ func (m Model) View() tea.View {
 	if m.compact() && m.screen == "overview" {
 		return tea.NewView(m.compactView())
 	}
-	titleStyle := lipgloss.NewStyle()
-	if os.Getenv("NO_COLOR") == "" {
-		titleStyle = titleStyle.Bold(true).Foreground(lipgloss.Color("42"))
-	}
+	titleStyle := terminalTitleStyle()
 	title := titleStyle.Render("NETRISE // RUNNER TERMINAL")
 	if m.screen == "targets" {
 		return tea.NewView(m.targetsView())
@@ -403,6 +400,17 @@ func (m Model) View() tea.View {
 	}
 	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.automationSummary(), m.offlineLine(), controls, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
+}
+
+func terminalTitleStyle() lipgloss.Style {
+	style := lipgloss.NewStyle()
+	if os.Getenv("NO_COLOR") != "" {
+		return style
+	}
+	if os.Getenv("NETRISE_HIGH_CONTRAST") != "" {
+		return style.Bold(true).Foreground(lipgloss.Color("15")).Background(lipgloss.Color("0"))
+	}
+	return style.Bold(true).Foreground(lipgloss.Color("42"))
 }
 
 func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height > 0 && m.height < 24) }
