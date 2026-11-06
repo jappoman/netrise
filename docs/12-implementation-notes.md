@@ -431,3 +431,6 @@ into the player-facing TUI.
 
 The same control-character policy now applies to data-driven catalog IDs, names,
 descriptions and target labels before content can reach any TUI screen.
+
+Save validation extends that policy to persisted target, asset, research and
+generator labels, closing indirect TUI injection paths through resumed state.

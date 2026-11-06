@@ -122,6 +122,9 @@ func validateState(s game.State) error {
 	if s.Faction != game.Runner && s.Faction != game.Corporation {
 		return fmt.Errorf("unknown faction %q", s.Faction)
 	}
+	if !safeSaveText(s.GameVersion) || !safeSaveText(s.CampaignID) || !safeSaveText(s.Automation.ReconTargetID) {
+		return errors.New("save metadata contains control characters")
+	}
 	if s.LogicalTick < 0 || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Data < 0 || s.Resources.ComputeRemainder < 0 || int64(s.Resources.ComputeRemainder) >= mathx.Scale {
 		return errors.New("negative tick/resource or invalid compute remainder")
 	}
@@ -139,7 +142,7 @@ func validateState(s game.State) error {
 	}
 	seenGenerators := make(map[string]struct{}, len(s.Generators))
 	for _, generator := range s.Generators {
-		if generator.ID == "" || generator.Count <= 0 {
+		if !requiredSaveText(generator.ID) || generator.Count <= 0 {
 			return errors.New("invalid generator state")
 		}
 		if _, exists := seenGenerators[generator.ID]; exists {
@@ -147,22 +150,37 @@ func validateState(s game.State) error {
 		}
 		seenGenerators[generator.ID] = struct{}{}
 	}
+	for _, id := range s.Upgrades {
+		if !requiredSaveText(id) {
+			return errors.New("invalid upgrade state")
+		}
+	}
+	for _, id := range s.Research {
+		if !requiredSaveText(id) {
+			return errors.New("invalid research state")
+		}
+	}
+	for _, id := range s.CompletedTargets {
+		if !requiredSaveText(id) {
+			return errors.New("invalid completed target state")
+		}
+	}
 	for id, intel := range s.Intel {
-		if id == "" || intel < 0 || intel > 100 {
+		if !requiredSaveText(id) || intel < 0 || intel > 100 {
 			return errors.New("intel bounds exceeded")
 		}
 	}
 	for id, cooldown := range s.TargetCooldowns {
-		if id == "" || cooldown < 0 {
+		if !requiredSaveText(id) || cooldown < 0 {
 			return errors.New("target cooldown bounds exceeded")
 		}
 	}
 	for id, access := range s.Access {
-		if id == "" || access < 0 {
+		if !requiredSaveText(id) || access < 0 {
 			return errors.New("access bounds exceeded")
 		}
 	}
-	if s.Recon != nil && (s.Recon.TargetID == "" || s.Recon.RemainingTicks < 0) {
+	if s.Recon != nil && (!requiredSaveText(s.Recon.TargetID) || s.Recon.RemainingTicks < 0) {
 		return errors.New("invalid recon job")
 	}
 	if s.Fabrication != nil && (s.Fabrication.Quantity <= 0 || s.Fabrication.RemainingTicks <= 0 || s.Fabrication.Quantity > s.Resources.BotCapacity-s.Resources.Bots) {
@@ -170,13 +188,13 @@ func validateState(s game.State) error {
 	}
 	if s.ActiveBattle != nil {
 		b := s.ActiveBattle
-		if b.TargetID == "" || b.CommittedBots < 0 || b.LiveBots < 0 || b.LiveBots > b.CommittedBots || (s.Faction == game.Runner && b.CommittedBots > s.Resources.BotCapacity-s.Resources.Bots) || b.LayerIndex < 0 || b.LayerIntegrity < 0 || b.DefenderICE < 0 || b.TraceBP < 0 || b.TraceBP > 10000 || b.ElapsedTicks < 0 || b.TimeLimit <= 0 || b.ElapsedTicks > b.TimeLimit || b.StartingHeatBP < 0 || b.StartingHeatBP > 10000 {
+		if !requiredSaveText(b.TargetID) || !safeSaveText(b.DefenderAssetID) || !safeSaveText(string(b.Doctrine)) || b.CommittedBots < 0 || b.LiveBots < 0 || b.LiveBots > b.CommittedBots || (s.Faction == game.Runner && b.CommittedBots > s.Resources.BotCapacity-s.Resources.Bots) || b.LayerIndex < 0 || b.LayerIntegrity < 0 || b.DefenderICE < 0 || b.TraceBP < 0 || b.TraceBP > 10000 || b.ElapsedTicks < 0 || b.TimeLimit <= 0 || b.ElapsedTicks > b.TimeLimit || b.StartingHeatBP < 0 || b.StartingHeatBP > 10000 {
 			return errors.New("invalid active battle")
 		}
 	}
 	if s.LastBattle != nil {
 		result := s.LastBattle
-		if result.TargetID == "" || result.Outcome == "" || result.CommittedBots < 0 || result.Survivors < 0 || result.Survivors > result.CommittedBots || result.BotsLost < 0 || result.BotsLost > result.CommittedBots || result.BotsLost != result.CommittedBots-result.Survivors || result.CreditsLooted < 0 || result.DataLooted < 0 || result.TraceBP < 0 || result.TraceBP > 10000 || result.HeatBeforeBP < 0 || result.HeatBeforeBP > 10000 || result.HeatAfterBP < 0 || result.HeatAfterBP > 10000 || result.HeatAddedBP < 0 || result.HeatAddedBP > 10000 || result.ElapsedTicks < 0 {
+		if !requiredSaveText(result.TargetID) || !safeSaveText(string(result.Doctrine)) || !requiredSaveText(result.Outcome) || result.CommittedBots < 0 || result.Survivors < 0 || result.Survivors > result.CommittedBots || result.BotsLost < 0 || result.BotsLost > result.CommittedBots || result.BotsLost != result.CommittedBots-result.Survivors || result.CreditsLooted < 0 || result.DataLooted < 0 || result.TraceBP < 0 || result.TraceBP > 10000 || result.HeatBeforeBP < 0 || result.HeatBeforeBP > 10000 || result.HeatAfterBP < 0 || result.HeatAfterBP > 10000 || result.HeatAddedBP < 0 || result.HeatAddedBP > 10000 || result.ElapsedTicks < 0 {
 			return errors.New("invalid battle result")
 		}
 	}
@@ -184,7 +202,7 @@ func validateState(s game.State) error {
 		return errors.New("event log exceeds limit")
 	}
 	for _, event := range s.EventLog {
-		if event.Tick < 0 || event.Tick > s.LogicalTick || !safeEventText(event.Type) || !safeEventText(event.Message) {
+		if event.Tick < 0 || event.Tick > s.LogicalTick || !requiredSaveText(event.Type) || !requiredSaveText(event.Message) {
 			return errors.New("invalid event log")
 		}
 	}
@@ -193,8 +211,13 @@ func validateState(s game.State) error {
 		if c.Capital < 0 || c.Compute < 0 || c.Research < 0 || c.Influence < 0 || c.ICE < 0 || c.ICECapacity < 0 || c.ICE > c.ICECapacity || c.ReputationBP < 0 || c.ReputationBP > 10000 || c.ExposureBP < 0 || c.ExposureBP > 10000 || c.DemandBP < 0 || c.DemandBP > 20000 || c.AttackCounter < 0 || c.IncursionBudget < 0 || c.IncursionSpent < 0 || c.IncursionSpent > c.IncursionBudget || c.MaintenanceBudget < 0 || c.MaintenanceSpent < 0 || c.ResearchBudget < 0 || c.ResearchSpent < 0 || c.ComputeReserve < 0 || c.RunValuation < 0 || c.PatentShares < 0 || c.MarketTier < 0 {
 			return errors.New("corporation bounds exceeded")
 		}
+		for _, id := range c.CompletedResearch {
+			if !requiredSaveText(id) {
+				return errors.New("invalid Corporation research state")
+			}
+		}
 		for _, asset := range c.Assets {
-			if asset.ID == "" || asset.Integrity < 0 || asset.Integrity > mathx.MaxUnits || asset.MaxIntegrity < 0 || asset.MaxIntegrity > mathx.MaxUnits || (asset.MaxIntegrity > 0 && asset.Integrity > asset.MaxIntegrity) || (asset.MaxIntegrity > 0 && asset.Integrity == 0 && asset.Operational) || asset.CapitalPerTick < 0 || asset.CapitalPerTick > mathx.MaxUnits || asset.UpkeepPerTick < 0 || asset.UpkeepPerTick > mathx.MaxUnits || asset.IsolationCostCapital < 0 || asset.IsolationCostCapital > mathx.MaxUnits || asset.IsolationTicks < 0 || asset.IsolatedUntilTick < 0 {
+			if !requiredSaveText(asset.ID) || !requiredSaveText(asset.Name) || asset.Integrity < 0 || asset.Integrity > mathx.MaxUnits || asset.MaxIntegrity < 0 || asset.MaxIntegrity > mathx.MaxUnits || (asset.MaxIntegrity > 0 && asset.Integrity > asset.MaxIntegrity) || (asset.MaxIntegrity > 0 && asset.Integrity == 0 && asset.Operational) || asset.CapitalPerTick < 0 || asset.CapitalPerTick > mathx.MaxUnits || asset.UpkeepPerTick < 0 || asset.UpkeepPerTick > mathx.MaxUnits || asset.IsolationCostCapital < 0 || asset.IsolationCostCapital > mathx.MaxUnits || asset.IsolationTicks < 0 || asset.IsolatedUntilTick < 0 {
 				return errors.New("invalid corporation asset")
 			}
 		}
@@ -202,10 +225,7 @@ func validateState(s game.State) error {
 	return nil
 }
 
-func safeEventText(value string) bool {
-	if value == "" {
-		return false
-	}
+func safeSaveText(value string) bool {
 	for _, r := range value {
 		if unicode.IsControl(r) {
 			return false
@@ -213,6 +233,8 @@ func safeEventText(value string) bool {
 	}
 	return true
 }
+
+func requiredSaveText(value string) bool { return value != "" && safeSaveText(value) }
 
 func migrateV0(s game.State) (game.State, error) {
 	s.SchemaVersion = game.CurrentSchema
