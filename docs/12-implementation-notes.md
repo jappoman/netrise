@@ -259,3 +259,7 @@ PowerShell's default runner and CMD.
 The TUI suite now includes a real keyboard-driven Runner flow on the shipped
 catalog: Overview to Targets, Preflight, Battle playback and Result, including
 the player-facing outcome and next-action rail.
+
+It also covers the Corporation keyboard loop on the shipped catalog: security
+investment, active NPC incursion, emergency asset isolation and the resulting
+player-facing resolution screen.

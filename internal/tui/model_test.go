@@ -247,6 +247,42 @@ func TestRunnerKeyboardFlowReachesBattleResultEndToEnd(t *testing.T) {
 	}
 }
 
+func TestCorporationKeyboardFlowRespondsToIncursionEndToEnd(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state := sim.NewCorporationState(23)
+	m := New(state, sim.New(catalog, 23), t.TempDir())
+	key := func(text string) tea.KeyPressMsg { return tea.KeyPressMsg(tea.Key{Text: text, Code: rune(text[0])}) }
+	updated, _ := m.Update(key("s"))
+	m = updated.(Model)
+	if len(m.state.Corp.Assets) != 2 || m.state.Corp.Capital != mathx.New(10) {
+		t.Fatalf("security action did not build asset: %#v", m.state.Corp)
+	}
+	for ticks := 0; ticks < 30 && m.state.ActiveBattle == nil; ticks++ {
+		updated, _ = m.Update(tickMsg{})
+		m = updated.(Model)
+	}
+	if m.screen != "battle" || m.state.ActiveBattle == nil {
+		t.Fatalf("active Corporation incursion did not reach battle screen: screen=%q battle=%#v", m.screen, m.state.ActiveBattle)
+	}
+	updated, _ = m.Update(key("x"))
+	m = updated.(Model)
+	if m.screen != "result" || m.state.ActiveBattle != nil || m.state.LastBattle == nil || m.state.LastBattle.Outcome != "isolated" {
+		t.Fatalf("keyboard isolation did not resolve incursion: screen=%q battle=%#v result=%#v", m.screen, m.state.ActiveBattle, m.state.LastBattle)
+	}
+	if !strings.Contains(m.View().Content, "OUTCOME: isolated") || !strings.Contains(m.View().Content, "NEXT:") {
+		t.Fatalf("Corporation result omitted outcome and next action: %s", m.View().Content)
+	}
+}
+
 func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	state := sim.NewState(20)
 	state.CompletedTargets = []string{"t_01"}
