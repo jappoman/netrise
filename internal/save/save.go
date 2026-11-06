@@ -130,10 +130,15 @@ func validateState(s game.State) error {
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
 		return errors.New("negative progression value")
 	}
+	seenGenerators := make(map[string]struct{}, len(s.Generators))
 	for _, generator := range s.Generators {
 		if generator.ID == "" || generator.Count <= 0 {
 			return errors.New("invalid generator state")
 		}
+		if _, exists := seenGenerators[generator.ID]; exists {
+			return errors.New("duplicate generator state")
+		}
+		seenGenerators[generator.ID] = struct{}{}
 	}
 	for id, intel := range s.Intel {
 		if id == "" || intel < 0 || intel > 100 {

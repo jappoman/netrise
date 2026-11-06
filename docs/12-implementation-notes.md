@@ -293,9 +293,10 @@ The Runner integration suite now walks all five catalog targets in order,
 using each victory's temporary access token to reach the next route and
 verifying the final target without bypassing engine reachability checks.
 
-Generator counts are validated at the save boundary and passive production
-uses saturating fixed-point addition, preventing extreme but syntactically
-valid state from wrapping a resource to zero on the next tick.
+Generator counts are validated at the save boundary, including duplicate-ID
+rejection, and passive production uses saturating fixed-point addition. This
+prevents malformed state from double-counting a generator or wrapping a
+resource to zero on the next tick.
 
 Content validation now rejects cyclic target-route prerequisites as well as
 missing links, preventing catalog-authored progression softlocks.
