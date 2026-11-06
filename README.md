@@ -6,7 +6,7 @@ NETRISE is a planned single-player, offline-first, retrofuturistic cyberpunk inc
 
 The game runs as a **native terminal user interface (TUI)** on real terminals (Bash, Fish, PowerShell, CMD/Windows Terminal). The same game core and TUI are intended to run inside a bundled terminal window for a future Steam edition.
 
-> **Status:** design and implementation planning. The repository is a specification, not a finished game. Numerical values and schedules are design hypotheses requiring playtests.
+> **Status:** active playable prototype. The repository contains the deterministic Runner/Corporation engine, terminal UI, persistence, offline reconciliation and release packaging foundation. Numerical values and schedules remain balance hypotheses requiring playtests.
 
 ## Core experience
 
@@ -49,7 +49,7 @@ The game runs as a **native terminal user interface (TUI)** on real terminals (B
 
 ## Implementation posture
 
-Start with a narrow **Runner vertical slice** plus a simulated Corporation opponent. The Corp campaign is a first-class product goal but **not** the first coding milestone. Design shared state and systems so Corp becomes a real playable economy later.
+The current implementation provides a narrow but playable **Runner vertical slice** and a first-class asymmetric **Corporation campaign** on one shared deterministic engine. Balance iteration, extended content, human playtesting and the future Steam host remain outside the MVP foundation.
 
 Recommended stack: **Go**, **Bubble Tea v2**, **Lip Gloss**, standard-library JSON for initial saves and content definitions. All packages and APIs must be verified against their installed versions by the coding agent before implementation.
 

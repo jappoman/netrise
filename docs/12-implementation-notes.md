@@ -1,7 +1,8 @@
 # 12. Implementation notes
 
-The current implementation covers M0, the economy portion of M1, M2, and the
-first M3 progression slice: a Runner state, validated starter content,
+The current implementation covers the M0 foundation, M1 deterministic economy,
+M2 conflict, the M3 Runner progression slice, and the core M4 Corporation
+campaign: a Runner state, validated starter content,
 deterministic 1 Hz resource production, contracts, generator purchases, bot
 fabrication, versioned atomic JSON saves, capped safe offline reconciliation,
 a headless report, and a minimal Bubble Tea v2 terminal adapter. The combat
