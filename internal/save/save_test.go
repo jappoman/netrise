@@ -35,6 +35,24 @@ func TestRoundTripPreservesProgressionState(t *testing.T) {
 		t.Fatalf("progression state was not preserved: %#v, %v", got, err)
 	}
 }
+
+func TestCorporationUsesSeparateSaveFile(t *testing.T) {
+	d := t.TempDir()
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Corporation, Corp: &game.CorpState{Capital: 100}}
+	if err := Write(d, s); err != nil {
+		t.Fatal(err)
+	}
+	if PathForFaction(d, game.Corporation) == Path(d) {
+		t.Fatal("campaign save paths collided")
+	}
+	got, err := ReadFaction(d, game.Corporation)
+	if err != nil || got.Faction != game.Corporation || got.Corp == nil {
+		t.Fatalf("corporation save was not isolated: %#v, %v", got, err)
+	}
+	if _, err := Read(d); err == nil {
+		t.Fatal("corporation save leaked into runner save")
+	}
+}
 func TestMigrate(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"faction":"runner"}`), 0600); err != nil {

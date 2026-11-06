@@ -124,7 +124,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 			command = game.Command{Kind: game.CollectContract}
 		case "b":
-			command = game.Command{Kind: game.BuyGenerator, ID: "salvaged_rig"}
+			if m.state.Faction == game.Corporation {
+				command = game.Command{Kind: game.CorpBuildAsset, ID: "transit_hosting"}
+			} else {
+				command = game.Command{Kind: game.BuyGenerator, ID: "salvaged_rig"}
+			}
+		case "s":
+			command = game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"}
+		case "i":
+			command = game.Command{Kind: game.CorpBuyICE, Quantity: 1}
+		case "e":
+			command = game.Command{Kind: game.CorpDeployICE, Quantity: 1}
 		case "f":
 			command = game.Command{Kind: game.QueueFabrication, Quantity: 1}
 		case "u":
@@ -183,6 +193,9 @@ func (m Model) View() tea.View {
 	}
 	if m.screen == "prestige" {
 		return tea.NewView(m.prestigeView())
+	}
+	if m.state.Faction == game.Corporation {
+		return tea.NewView(m.corpOverviewView())
 	}
 	battle := "NO ACTIVE BATTLE"
 	if m.state.ActiveBattle != nil {
@@ -249,6 +262,32 @@ func (m Model) researchView() string {
 func (m Model) prestigeView() string {
 	reward := m.engine.IdentityBurnReward(m.state)
 	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, m.status)
+}
+
+func (m Model) corpOverviewView() string {
+	corp := m.state.Corp
+	if corp == nil {
+		return "NETRISE // CORPORATION\n\nCampaign state unavailable.\n[q] quit"
+	}
+	battle := "NO ACTIVE INCURSION"
+	if m.state.ActiveBattle != nil {
+		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
+	}
+	controls := "[b] hosting [s] security desk [i] buy ICE [e] deploy ICE [q] quit"
+	if m.state.ActiveBattle != nil {
+		controls = "[e] deploy reserve ICE [q] quit"
+	}
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, controls, m.corpNextHint(), m.status)
+}
+
+func corpCapitalRate(corp *game.CorpState) int64 {
+	rate := int64(2)
+	for _, asset := range corp.Assets {
+		if asset.Operational {
+			rate += asset.CapitalPerTick
+		}
+	}
+	return rate
 }
 
 func (m Model) nextResearchID() string {
@@ -332,6 +371,22 @@ func (m Model) nextHint() string {
 		return "press [f] when you have 10 compute and 2 credits"
 	}
 	return "press [a] to launch the tutorial breach with all bots"
+}
+
+func (m Model) corpNextHint() string {
+	if m.state.ActiveBattle != nil {
+		return "review the intrusion and deploy reserve ICE only when needed"
+	}
+	if m.state.Corp == nil {
+		return "campaign state unavailable"
+	}
+	if len(m.state.Corp.Assets) < 2 {
+		return "build Transit Hosting, then invest in a Security Desk"
+	}
+	if m.state.Corp.ICE < m.state.Corp.ICECapacity {
+		return "restock reserve ICE before the next emergency audit"
+	}
+	return "maintain capital and watch the next active-play intrusion"
 }
 
 func hasUpgrade(s game.State, id string) bool {

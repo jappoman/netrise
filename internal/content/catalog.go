@@ -26,6 +26,13 @@ type ResearchNode struct {
 	Prerequisites []string `json:"prerequisites"`
 	Description   string   `json:"description"`
 }
+type CorpAssetDefinition struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	CostCapital    int64  `json:"cost_capital"`
+	CapitalPerTick int64  `json:"capital_per_tick"`
+	Integrity      int64  `json:"integrity"`
+}
 type Layer struct {
 	Integrity int64 `json:"integrity"`
 	ICE       int64 `json:"ice"`
@@ -46,11 +53,12 @@ type Target struct {
 	IntelGain        int64   `json:"intel_gain"`
 }
 type Catalog struct {
-	SchemaVersion int            `json:"schema_version"`
-	Generators    []Generator    `json:"generators"`
-	Upgrades      []Upgrade      `json:"upgrades"`
-	Research      []ResearchNode `json:"research"`
-	Targets       []Target       `json:"targets"`
+	SchemaVersion int                   `json:"schema_version"`
+	Generators    []Generator           `json:"generators"`
+	Upgrades      []Upgrade             `json:"upgrades"`
+	Research      []ResearchNode        `json:"research"`
+	CorpAssets    []CorpAssetDefinition `json:"corp_assets"`
+	Targets       []Target              `json:"targets"`
 }
 
 func Load(r io.Reader) (Catalog, error) {
@@ -94,6 +102,13 @@ func Validate(c Catalog) error {
 				return fmt.Errorf("content: research %q has invalid prerequisite %q", r.ID, prerequisite)
 			}
 		}
+	}
+	seen = map[string]bool{}
+	for _, a := range c.CorpAssets {
+		if a.ID == "" || seen[a.ID] || a.Name == "" || a.CostCapital < 0 || a.CapitalPerTick < 0 || a.Integrity <= 0 {
+			return fmt.Errorf("content: invalid corporation asset %q", a.ID)
+		}
+		seen[a.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {

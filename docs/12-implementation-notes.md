@@ -25,5 +25,11 @@ reinforcement, and persistent save/load. A save records UTC time and
 reconciles only safe production on startup, capped at eight hours.
 `--data-dir` overrides the default per-user configuration directory.
 
+The first Corporation slice is now playable through `netrise corp`: it has a
+separate campaign save, capital-producing client assets, reserve ICE,
+reputation/exposure meters, and a deterministic active-play NPC intrusion.
+Corporation emergency ICE uses the shared battle state and resolution path,
+while the outcome applies Corporation-specific defense or exposure effects.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

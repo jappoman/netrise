@@ -30,7 +30,7 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	activeBattle := s.ActiveBattle
 	rngState := s.RNGState
 	s.ActiveBattle = nil
-	s = e.Advance(s, elapsedTicks)
+	s, _ = e.advanceEvents(s, elapsedTicks, true)
 	s.ActiveBattle = activeBattle
 	s.RNGState = rngState
 	return s, elapsedTicks
@@ -44,12 +44,24 @@ func NewState(seed int64) game.State {
 	return game.State{SchemaVersion: game.CurrentSchema, GameVersion: "0.1.0", CampaignID: "runner-01", Faction: game.Runner, WorldSeed: seed, RNGState: uint64(seed) + 0x9e3779b97f4a7c15, Resources: game.Resources{Credits: mathx.New(25), Compute: mathx.New(2), BotCapacity: 20}}
 }
 
+func NewCorporationState(seed int64) game.State {
+	return game.State{
+		SchemaVersion: game.CurrentSchema, GameVersion: "0.1.0", CampaignID: "corp-01",
+		Faction: game.Corporation, WorldSeed: seed,
+		RNGState: uint64(seed) + 0x9e3779b97f4a7c15,
+		Corp: &game.CorpState{
+			Capital: mathx.New(100), Compute: mathx.New(2), ICE: 3, ICECapacity: 5,
+			ReputationBP: 8000, Assets: []game.CorpAsset{{ID: "starter_client", Name: "Starter Client", CapitalPerTick: 2, Integrity: 100, Operational: true}},
+		},
+	}
+}
+
 func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, error) {
 	if c.Kind == game.AdvanceTicks {
 		if c.Ticks < 0 {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "ticks cannot be negative"}
 		}
-		advanced, events := e.advanceEvents(s, c.Ticks)
+		advanced, events := e.advanceEvents(s, c.Ticks, false)
 		return advanced, events, nil
 	}
 	// Validate all spending before changing the snapshot.
@@ -238,6 +250,9 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Research = append(s.Research, node.ID)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ResearchCompleted", Message: node.Name + " completed."}}, nil
 	case game.IdentityBurn:
+		if s.Faction != game.Runner {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "Identity Burn is a Runner reset"}
+		}
 		reward := integerSqrt(s.RunExtractedData / 10000)
 		if reward <= 0 {
 			return s, nil, &game.CommandError{Reason: game.ReasonPrestigeLocked, Detail: "extract at least 10,000 data before Identity Burn"}
@@ -249,31 +264,78 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		newState.Resources.Credits = mathx.New(25 + ghostKeys*5)
 		newState.GameVersion = s.GameVersion
 		return newState, []game.Event{{Tick: s.LogicalTick, Type: "PrestigeCompleted", Message: fmt.Sprintf("Identity Burn complete. %d Ghost Keys retained.", ghostKeys), Amount: reward}}, nil
+	case game.CorpBuildAsset:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		definition, ok := e.corpAsset(c.ID)
+		if !ok {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown corporation asset"}
+		}
+		if s.Corp.Capital < mathx.New(definition.CostCapital) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d capital", definition.CostCapital)}
+		}
+		s.Corp.Capital -= mathx.New(definition.CostCapital)
+		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, Integrity: definition.Integrity, Operational: true})
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetBuilt", Message: definition.Name + " commissioned."}}, nil
+	case game.CorpBuyICE:
+		if s.Faction != game.Corporation || s.Corp == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
+		}
+		if c.Quantity <= 0 || s.Corp.ICE+c.Quantity > s.Corp.ICECapacity {
+			return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "ICE capacity reached"}
+		}
+		cost, err := mathx.New(10).MulUnits(c.Quantity)
+		if err != nil || s.Corp.Capital < cost {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "ICE requires 10 capital per unit"}
+		}
+		s.Corp.Capital -= cost
+		s.Corp.ICE += c.Quantity
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "ICEBuilt", Message: fmt.Sprintf("%d ICE units restocked.", c.Quantity)}}, nil
+	case game.CorpDeployICE:
+		if s.Faction != game.Corporation || s.Corp == nil || s.ActiveBattle == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonNoBattle, Detail: "no active Corporation incursion"}
+		}
+		if c.Quantity <= 0 || c.Quantity > s.Corp.ICE {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "not enough reserve ICE"}
+		}
+		if s.ActiveBattle.InterventionUsed {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "emergency response already used"}
+		}
+		s.Corp.ICE -= c.Quantity
+		s.ActiveBattle.DefenderICE += c.Quantity
+		s.ActiveBattle.InterventionUsed = true
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "ICEDeployed", Message: fmt.Sprintf("%d reserve ICE deployed.", c.Quantity)}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
 }
 func (e *Engine) Advance(s game.State, ticks int64) game.State {
-	advanced, _ := e.advanceEvents(s, ticks)
+	advanced, _ := e.advanceEvents(s, ticks, false)
 	return advanced
 }
 
-func (e *Engine) advanceEvents(s game.State, ticks int64) (game.State, []game.Event) {
+func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.State, []game.Event) {
 	var events []game.Event
 	for i := int64(0); i < ticks; i++ {
 		s.LogicalTick++
 		s.RNGState ^= s.RNGState << 7
 		s.RNGState ^= s.RNGState >> 9
-		rate := int64(2)
-		for _, g := range e.Catalog.Generators {
-			for _, owned := range s.Generators {
-				if owned.ID == g.ID {
-					rate += owned.Count * g.ComputePerSecond
+		if s.Faction == game.Corporation && s.Corp != nil {
+			s = e.advanceCorporation(s)
+		}
+		if s.Faction != game.Corporation {
+			rate := int64(2)
+			for _, g := range e.Catalog.Generators {
+				for _, owned := range s.Generators {
+					if owned.ID == g.ID {
+						rate += owned.Count * g.ComputePerSecond
+					}
 				}
 			}
+			produced := mathx.New(rate)
+			s.Resources.Compute, _ = s.Resources.Compute.Add(produced)
 		}
-		produced := mathx.New(rate)
-		s.Resources.Compute, _ = s.Resources.Compute.Add(produced)
 		if s.Fabrication != nil {
 			s.Fabrication.RemainingTicks--
 			if s.Fabrication.RemainingTicks <= 0 {
@@ -296,6 +358,12 @@ func (e *Engine) advanceEvents(s game.State, ticks int64) (game.State, []game.Ev
 					events = append(events, game.Event{Tick: s.LogicalTick, Type: "ReconCompleted", Message: fmt.Sprintf("Recon complete: %s intel %d%%.", target.Name, s.Intel[target.ID])})
 				}
 				s.Recon = nil
+			}
+		}
+		if !safeOnly && s.Faction == game.Corporation && s.Corp != nil && s.ActiveBattle == nil {
+			s.Corp.AttackCounter++
+			if s.Corp.AttackCounter >= 30 {
+				s, events = e.startCorporationIncursion(s, events)
 			}
 		}
 		if s.ActiveBattle != nil {
@@ -324,6 +392,33 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 		}
 	}
 	return s, events
+}
+
+func (e *Engine) advanceCorporation(s game.State) game.State {
+	rate := int64(2)
+	for _, asset := range s.Corp.Assets {
+		if asset.Operational {
+			rate += asset.CapitalPerTick
+		}
+	}
+	s.Corp.Capital, _ = s.Corp.Capital.Add(mathx.New(rate))
+	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
+	return s
+}
+
+func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (game.State, []game.Event) {
+	target, ok := e.target("t_01")
+	if !ok || len(target.Layers) == 0 {
+		return s, events
+	}
+	deployed := int64(0)
+	if s.Corp.ICE > 0 {
+		deployed = minInt64(s.Corp.ICE, 3)
+		s.Corp.ICE -= deployed
+	}
+	s.Corp.AttackCounter = 0
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 8, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE + deployed, TimeLimit: target.TimeLimit}
+	return s, append(events, game.Event{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Emergency audit: suspicious ingress detected."})
 }
 
 func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, []game.Event) {
@@ -373,7 +468,12 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BotsLost", Message: "Countermeasure destroyed one bot."})
 	}
 	if b.LiveBots <= 0 {
-		s.LastBattle = battleResult(b, "defeat", 0, 0, 0, s.HeatBP)
+		if s.Faction == game.Corporation {
+			s.Corp.ReputationBP = minInt64(10000, s.Corp.ReputationBP+500)
+			s.LastBattle = battleResult(b, "defended", 0, 0, 0, s.HeatBP)
+		} else {
+			s.LastBattle = battleResult(b, "defeat", 0, 0, 0, s.HeatBP)
+		}
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach failed. The committed bots were lost."})
 		s.ActiveBattle = nil
 		return s, events
@@ -382,6 +482,14 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "LayerBreached", Message: fmt.Sprintf("Layer %d breached.", b.LayerIndex+1)})
 		b.LayerIndex++
 		if b.LayerIndex >= len(target.Layers) {
+			if s.Faction == game.Corporation {
+				s.Corp.ExposureBP = minInt64(10000, s.Corp.ExposureBP+2000)
+				s.Corp.ReputationBP = maxInt64(0, s.Corp.ReputationBP-1000)
+				s.LastBattle = battleResult(b, "breach", b.LiveBots, 0, 0, s.HeatBP)
+				s.ActiveBattle = nil
+				events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Emergency audit failed. Sensitive asset exposed."})
+				return s, events
+			}
 			s.Resources.Bots += b.LiveBots
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
 			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
@@ -398,6 +506,13 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		b.DefenderICE = target.Layers[b.LayerIndex].ICE
 	}
 	if b.ElapsedTicks >= b.TimeLimit {
+		if s.Faction == game.Corporation {
+			s.Corp.ReputationBP = minInt64(10000, s.Corp.ReputationBP+250)
+			s.LastBattle = battleResult(b, "defended", 0, 0, 0, s.HeatBP)
+			s.ActiveBattle = nil
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Audit timed out. The asset remains secured."})
+			return s, events
+		}
 		s.Resources.Bots += b.LiveBots
 		s.LastBattle = battleResult(b, "timeout", b.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
@@ -423,6 +538,15 @@ func (e *Engine) target(id string) (content.Target, bool) {
 		}
 	}
 	return content.Target{}, false
+}
+
+func (e *Engine) corpAsset(id string) (content.CorpAssetDefinition, bool) {
+	for _, asset := range e.Catalog.CorpAssets {
+		if asset.ID == id {
+			return asset, true
+		}
+	}
+	return content.CorpAssetDefinition{}, false
 }
 
 func (e *Engine) researchNode(id string) (content.ResearchNode, bool) {
@@ -482,6 +606,13 @@ func hasUpgrade(s game.State, id string) bool {
 
 func maxInt64(a, b int64) int64 {
 	if a > b {
+		return a
+	}
+	return b
+}
+
+func minInt64(a, b int64) int64 {
+	if a < b {
 		return a
 	}
 	return b

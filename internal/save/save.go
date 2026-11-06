@@ -12,7 +12,16 @@ import (
 var ErrCorrupt = errors.New("save is corrupt")
 
 func Path(dir string) string { return filepath.Join(dir, "runner.json") }
+func PathForFaction(dir string, faction game.Faction) string {
+	if faction == game.Corporation {
+		return filepath.Join(dir, "corporation.json")
+	}
+	return Path(dir)
+}
 func Write(dir string, s game.State) error {
+	return writeAt(dir, PathForFaction(dir, s.Faction), s)
+}
+func writeAt(dir, path string, s game.State) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
@@ -20,7 +29,7 @@ func Write(dir string, s game.State) error {
 	if err != nil {
 		return err
 	}
-	tmp := Path(dir) + ".tmp"
+	tmp := path + ".tmp"
 	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -36,13 +45,16 @@ func Write(dir string, s game.State) error {
 		os.Remove(tmp)
 		return err
 	}
-	if _, err = os.Stat(Path(dir)); err == nil {
-		_ = os.Rename(Path(dir), Path(dir)+".bak")
+	if _, err = os.Stat(path); err == nil {
+		_ = os.Rename(path, path+".bak")
 	}
-	return os.Rename(tmp, Path(dir))
+	return os.Rename(tmp, path)
 }
 func Read(dir string) (game.State, error) {
-	b, err := os.ReadFile(Path(dir))
+	return ReadFaction(dir, game.Runner)
+}
+func ReadFaction(dir string, faction game.Faction) (game.State, error) {
+	b, err := os.ReadFile(PathForFaction(dir, faction))
 	if err != nil {
 		return game.State{}, err
 	}

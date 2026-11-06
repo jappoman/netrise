@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
-		fmt.Println("netrise [--data-dir DIR]\nnetrise simulate --seed N --ticks N\n\nA deterministic fictional Runner strategy game.")
+		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --seed N --ticks N\n\nA deterministic fictional Runner/Corporation strategy game.")
 		return
 	}
 	if len(args) > 0 && args[0] == "--version" {
@@ -43,7 +43,11 @@ func main() {
 		}
 		dataDir = filepath.Join(configDir, "netrise")
 	}
-	s := loadState(dataDir, e)
+	faction := game.Runner
+	if len(args) > 0 && args[0] == "corp" {
+		faction = game.Corporation
+	}
+	s := loadState(dataDir, e, faction)
 	p := tea.NewProgram(tui.New(s, e, dataDir))
 	if _, err = p.Run(); err != nil {
 		fatal(err)
@@ -67,11 +71,14 @@ func extractDataDir(args []string) ([]string, string) {
 	return filtered, dataDir
 }
 
-func loadState(dataDir string, e *sim.Engine) game.State {
-	s, err := save.Read(dataDir)
+func loadState(dataDir string, e *sim.Engine, faction game.Faction) game.State {
+	s, err := save.ReadFaction(dataDir, faction)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			fatal(fmt.Errorf("load save: %w", err))
+		}
+		if faction == game.Corporation {
+			return sim.NewCorporationState(1)
 		}
 		return sim.NewState(1)
 	}

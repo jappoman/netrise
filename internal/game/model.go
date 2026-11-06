@@ -6,7 +6,10 @@ const CurrentSchema = 1
 
 type Faction string
 
-const Runner Faction = "runner"
+const (
+	Runner      Faction = "runner"
+	Corporation Faction = "corporation"
+)
 
 type Resources struct {
 	Credits          mathx.Amount `json:"credits"`
@@ -20,6 +23,25 @@ type Resources struct {
 type Generator struct {
 	ID    string `json:"id"`
 	Count int64  `json:"count"`
+}
+type CorpAsset struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	CapitalPerTick int64  `json:"capital_per_tick"`
+	Integrity      int64  `json:"integrity"`
+	Operational    bool   `json:"operational"`
+}
+type CorpState struct {
+	Capital       mathx.Amount `json:"capital"`
+	Compute       mathx.Amount `json:"compute"`
+	Research      mathx.Amount `json:"research"`
+	Influence     mathx.Amount `json:"influence"`
+	ICE           int64        `json:"ice"`
+	ICECapacity   int64        `json:"ice_capacity"`
+	ReputationBP  int64        `json:"reputation_bp"`
+	ExposureBP    int64        `json:"exposure_bp"`
+	Assets        []CorpAsset  `json:"assets"`
+	AttackCounter int64        `json:"attack_counter"`
 }
 type Fabrication struct {
 	RemainingTicks int64 `json:"remaining_ticks"`
@@ -50,6 +72,7 @@ type State struct {
 	RunExtractedData int64            `json:"run_extracted_data"`
 	GhostKeys        int64            `json:"ghost_keys"`
 	PrestigeCount    int64            `json:"prestige_count"`
+	Corp             *CorpState       `json:"corp,omitempty"`
 }
 
 type Automation struct {
@@ -84,6 +107,7 @@ const (
 
 type Battle struct {
 	TargetID         string   `json:"target_id"`
+	AttackerFaction  Faction  `json:"attacker_faction"`
 	Doctrine         Doctrine `json:"doctrine"`
 	CommittedBots    int64    `json:"committed_bots"`
 	LiveBots         int64    `json:"live_bots"`
@@ -111,6 +135,9 @@ const (
 	EnableAutomation CommandKind = "enable_automation"
 	BuyResearch      CommandKind = "buy_research"
 	IdentityBurn     CommandKind = "identity_burn"
+	CorpBuildAsset   CommandKind = "corp_build_asset"
+	CorpBuyICE       CommandKind = "corp_buy_ice"
+	CorpDeployICE    CommandKind = "corp_deploy_ice"
 )
 
 type Command struct {
@@ -147,6 +174,7 @@ const (
 	ReasonReconLocked         Reason = "recon_locked"
 	ReasonResearchLocked      Reason = "research_locked"
 	ReasonPrestigeLocked      Reason = "prestige_locked"
+	ReasonFactionMismatch     Reason = "faction_mismatch"
 )
 
 type CommandError struct {
