@@ -53,10 +53,22 @@ jobs:
           if [ "$GOOS" = "windows" ]; then
             (cd dist && zip -qr "${bundle}.zip" "${bundle}")
             (cd dist && sha256sum "${bundle}.zip" > "${bundle}.zip.sha256" && sha256sum -c "${bundle}.zip.sha256")
+            archive="dist/${bundle}.zip"
           else
             tar -C dist -czf "dist/${bundle}.tar.gz" "${bundle}"
             (cd dist && sha256sum "${bundle}.tar.gz" > "${bundle}.tar.gz.sha256" && sha256sum -c "${bundle}.tar.gz.sha256")
+            archive="dist/${bundle}.tar.gz"
           fi
+          verify="${RUNNER_TEMP}/netrise-release-verify-${GOOS}-${GOARCH}"
+          rm -rf "$verify"
+          mkdir -p "$verify"
+          if [ "$GOOS" = "windows" ]; then
+            unzip -q "$archive" -d "$verify"
+          else
+            tar -xzf "$archive" -C "$verify"
+          fi
+          test -s "$verify/${bundle}/${name}"
+          test -s "$verify/${bundle}/assets/content/catalog.json"
       - uses: actions/upload-artifact@v4
         with:
           name: netrise-${{ matrix.goos }}-${{ matrix.goarch }}
