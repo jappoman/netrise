@@ -440,3 +440,7 @@ flags, matching the top-level CLI help behavior instead of reporting an error.
 
 The `corp --help` alias now follows the same clean help path and never starts a
 TUI session when a user is asking for command usage.
+
+The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
+release smoke checks cover top-level, Corporation and simulation help before
+running both faction simulations.

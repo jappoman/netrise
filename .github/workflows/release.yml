@@ -46,6 +46,9 @@ jobs:
           cp assets/content/catalog.json "dist/${bundle}/assets/content/catalog.json"
           if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "amd64" ]; then
             (cd "dist/${bundle}" && "./${name}" --version)
+            (cd "dist/${bundle}" && "./${name}" --help)
+            (cd "dist/${bundle}" && "./${name}" corp --help)
+            (cd "dist/${bundle}" && "./${name}" simulate --help)
             (cd "dist/${bundle}" && "./${name}" validate-content)
             (cd "dist/${bundle}" && "./${name}" simulate --faction runner --seed 17 --ticks 600 >/dev/null)
             (cd "dist/${bundle}" && "./${name}" simulate --faction corp --seed 17 --ticks 600 >/dev/null)

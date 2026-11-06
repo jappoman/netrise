@@ -43,6 +43,9 @@ jobs:
           cp assets/content/catalog.json "$bundle/assets/content/catalog.json"
           cd "$RUNNER_TEMP"
           "$bundle/$exe" --version
+          "$bundle/$exe" --help
+          "$bundle/$exe" corp --help
+          "$bundle/$exe" simulate --help
           "$bundle/$exe" validate-content
           "$bundle/$exe" simulate --faction runner --seed 17 --ticks 600
           "$bundle/$exe" simulate --faction corp --seed 17 --ticks 600
@@ -68,6 +71,17 @@ jobs:
         shell: cmd
         run: |
           go run ./cmd/netrise --version
+          go run ./cmd/netrise validate-content
+          go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
+          go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+      - name: PowerShell smoke flow
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          go run ./cmd/netrise --version
+          go run ./cmd/netrise --help
+          go run ./cmd/netrise corp --help
+          go run ./cmd/netrise simulate --help
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
