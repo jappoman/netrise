@@ -60,5 +60,12 @@ and safe automation cadence; the Research screen displays each node's effect.
 The simulation aggregates only completed nodes, so the same catalog data drives
 headless and TUI behavior without faction-specific UI mutations.
 
+Runner upgrades now also expose validated catalog effects. Salvaged Clock and
+Heat Sink Array affect passive compute and battle heat; Proxy Ledger improves
+stealth power; Stolen Memory Bank increases capacity; Packet Scheduler and
+Signal Profiler shorten safe jobs; Black Archive discounts research. Existing
+upgrade IDs remain the source of unlock predicates, while numeric bonuses are
+aggregated by the engine.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

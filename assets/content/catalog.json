@@ -7,15 +7,15 @@
   ],
   "upgrades": [
     {"id":"secondhand_compiler","name":"Secondhand Compiler","cost":75,"description":"Unlocks bot fabrication."},
-    {"id":"heat_sink_array","name":"Heat Sink Array","cost":125,"description":"Reduces future heat pressure."},
+    {"id":"heat_sink_array","name":"Heat Sink Array","cost":125,"description":"Reduces future heat pressure.","effects":{"heat_reduction_percent":20}},
     {"id":"street_contacts","name":"Street Contacts","cost":150,"description":"Unlocks reconnaissance."},
-    {"id":"salvaged_clock","name":"Salvaged Clock","cost":60,"description":"Improves the Runner's compute discipline."},
-    {"id":"proxy_ledger","name":"Proxy Ledger","cost":100,"description":"Improves stealth preparation."},
-    {"id":"stolen_memory_bank","name":"Stolen Memory Bank","cost":100,"description":"Increases long-term bot logistics."},
-    {"id":"packet_scheduler","name":"Packet Scheduler","cost":125,"description":"Unlocks safe automated fabrication."},
+    {"id":"salvaged_clock","name":"Salvaged Clock","cost":60,"description":"Improves the Runner's compute discipline.","effects":{"compute_per_second_bonus":1}},
+    {"id":"proxy_ledger","name":"Proxy Ledger","cost":100,"description":"Improves stealth preparation.","effects":{"stealth_attack_bonus_percent":10}},
+    {"id":"stolen_memory_bank","name":"Stolen Memory Bank","cost":100,"description":"Increases long-term bot logistics.","effects":{"bot_capacity_bonus":25}},
+    {"id":"packet_scheduler","name":"Packet Scheduler","cost":125,"description":"Unlocks safe automated fabrication.","effects":{"fabrication_ticks_reduction":1}},
     {"id":"autodialer","name":"Autodialer","cost":150,"description":"Unlocks safe automated contracts."},
-    {"id":"signal_profiler","name":"Signal Profiler","cost":175,"description":"Unlocks safe automated recon."},
-    {"id":"black_archive","name":"Black Archive","cost":250,"description":"Unlocks data research (coming next)."}
+    {"id":"signal_profiler","name":"Signal Profiler","cost":175,"description":"Unlocks safe automated recon.","effects":{"recon_ticks_reduction":5}},
+    {"id":"black_archive","name":"Black Archive","cost":250,"description":"Unlocks data research.","effects":{"research_discount_percent":25}}
   ],
   "research": [
     {"id":"hardware_01","name":"Cold-Soldered Array","cost_data":10,"prerequisites":[],"description":"Improves the Runner's hardware discipline.","effects":{"compute_per_second_bonus":1}},

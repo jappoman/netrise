@@ -14,10 +14,20 @@ type Generator struct {
 	BotCapacity      int64  `json:"bot_capacity"`
 }
 type Upgrade struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Cost        int64  `json:"cost"`
-	Description string `json:"description"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Cost        int64          `json:"cost"`
+	Description string         `json:"description"`
+	Effects     UpgradeEffects `json:"effects"`
+}
+type UpgradeEffects struct {
+	ComputePerSecondBonus     int64 `json:"compute_per_second_bonus"`
+	HeatReductionPercent      int64 `json:"heat_reduction_percent"`
+	StealthAttackBonusPercent int64 `json:"stealth_attack_bonus_percent"`
+	BotCapacityBonus          int64 `json:"bot_capacity_bonus"`
+	FabricationTicksReduction int64 `json:"fabrication_ticks_reduction"`
+	ReconTicksReduction       int64 `json:"recon_ticks_reduction"`
+	ResearchDiscountPercent   int64 `json:"research_discount_percent"`
 }
 type ResearchNode struct {
 	ID            string          `json:"id"`
@@ -92,7 +102,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, u := range c.Upgrades {
-		if u.ID == "" || seen[u.ID] || u.Cost < 0 {
+		if u.ID == "" || seen[u.ID] || u.Cost < 0 || u.Effects.ComputePerSecondBonus < 0 || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || u.Effects.BotCapacityBonus < 0 || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true

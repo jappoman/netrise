@@ -25,3 +25,10 @@ func TestValidateRejectsNegativeResearchEffects(t *testing.T) {
 		t.Fatal("negative research effect accepted")
 	}
 }
+
+func TestValidateRejectsInvalidUpgradeEffects(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"upgrades":[{"id":"u","effects":{"heat_reduction_percent":101}}]}`))
+	if err == nil {
+		t.Fatal("invalid upgrade effect accepted")
+	}
+}

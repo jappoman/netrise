@@ -39,7 +39,10 @@ Each target needs: layer integrity, defense resist, starting/max ICE, trace modi
 | u_09 | Signal Profiler | narrower ICE estimate |
 | u_10 | Black Archive | unlock data research |
 
-Use explicit costs, unlock predicates and multiplier definitions in content JSON. Upgrade UX should display exact before/after effect.
+Use explicit costs, unlock predicates and multiplier definitions in content JSON. The
+initial catalog uses a validated upgrade effect block for compute, heat, stealth,
+bot capacity, safe-job duration and research discounts. Upgrade UX should display
+exact before/after effect.
 
 ## Initial research branches
 Runner: **Hardware**, **Intrusion**, **Anonymity**, **Automation**.

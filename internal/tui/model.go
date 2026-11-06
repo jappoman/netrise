@@ -333,10 +333,11 @@ func (m Model) researchView() string {
 	lines := "NETRISE // RESEARCH\n\n"
 	for _, node := range m.engine.Catalog.Research {
 		state := "LOCKED"
+		cost := m.engine.ResearchCost(m.state, node.CostData)
 		if hasResearch(m.state, node.ID) {
 			state = "COMPLETE"
 		} else if researchPrerequisitesMet(m.state, node.Prerequisites) {
-			state = fmt.Sprintf("AVAILABLE (%d data)", node.CostData)
+			state = fmt.Sprintf("AVAILABLE (%d data)", cost)
 		}
 		description := node.Description
 		if effects := researchEffectText(node.Effects); effects != "" {

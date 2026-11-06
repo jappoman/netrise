@@ -440,6 +440,41 @@ func TestResearchEffectsChangeSimulationThroughCatalogData(t *testing.T) {
 	}
 }
 
+func TestUpgradeEffectsChangeEconomyAndPreparation(t *testing.T) {
+	c := catalog()
+	c.Upgrades[0].Effects = content.UpgradeEffects{
+		ComputePerSecondBonus:     2,
+		BotCapacityBonus:          5,
+		FabricationTicksReduction: 2,
+		ReconTicksReduction:       5,
+		ResearchDiscountPercent:   50,
+	}
+	e := New(c, 64)
+	s := NewState(64)
+	s.Resources.Credits = mathx.New(100)
+	s.Resources.Data = mathx.New(5)
+	s.Upgrades = []string{"secondhand_compiler", "street_contacts", "u"}
+	if got := e.ComputeRate(s); got != 4 {
+		t.Fatalf("upgrade compute effect not applied: got %d", got)
+	}
+	if _, _, err := e.Apply(s, game.Command{Kind: game.BuyResearch, ID: "hardware"}); err != nil {
+		t.Fatalf("upgrade research discount not applied: %v", err)
+	}
+	s.Resources.Compute = mathx.New(10)
+	s.Resources.Bots = 1
+	s.Resources.Credits = mathx.New(10)
+	queued, _, err := e.Apply(s, game.Command{Kind: game.QueueFabrication, Quantity: 1})
+	if err != nil || queued.Fabrication == nil || queued.Fabrication.RemainingTicks != 1 {
+		t.Fatalf("fabrication upgrade effect not applied: state=%#v err=%v", queued, err)
+	}
+	s.Fabrication = nil
+	s.Resources.Credits = mathx.New(20)
+	recon, _, err := e.Apply(s, game.Command{Kind: game.StartRecon, ID: "target"})
+	if err != nil || recon.Recon == nil || recon.Recon.RemainingTicks != 10 {
+		t.Fatalf("recon upgrade effect not applied: state=%#v err=%v", recon, err)
+	}
+}
+
 func TestEventArchiveIsBoundedAndRejectsFailedCommands(t *testing.T) {
 	e := New(catalog(), 44)
 	s := NewState(44)

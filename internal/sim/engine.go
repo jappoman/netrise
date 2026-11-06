@@ -139,7 +139,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Resources.Compute -= computeCost
 		s.Resources.Credits -= creditCost
-		s.Fabrication = &game.Fabrication{RemainingTicks: 3, Quantity: c.Quantity}
+		s.Fabrication = &game.Fabrication{RemainingTicks: e.fabricationTicks(s), Quantity: c.Quantity}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "FabricationQueued", Message: "Bot compiler queued."}}, nil
 	case game.BuyUpgrade:
 		var upgrade *content.Upgrade
@@ -159,6 +159,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Resources.Credits -= mathx.New(upgrade.Cost)
 		s.Upgrades = append(s.Upgrades, c.ID)
+		s.Resources.BotCapacity += upgrade.Effects.BotCapacityBonus
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "UpgradePurchased", Message: upgrade.Name + " installed."}}, nil
 	case game.StartBattle:
 		if s.ActiveBattle != nil {
@@ -225,7 +226,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d credits for recon", target.ReconCost)}
 		}
 		s.Resources.Credits -= mathx.New(target.ReconCost)
-		s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: target.ReconTicks}
+		s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: e.reconTicks(s, target.ReconTicks)}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ReconStarted", Message: "Recon package deployed: " + target.Name}}, nil
 	case game.EnableAutomation:
 		switch c.ID {
@@ -265,10 +266,11 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 				return s, nil, &game.CommandError{Reason: game.ReasonResearchLocked, Detail: "research prerequisite missing: " + prerequisite}
 			}
 		}
-		if s.Resources.Data < mathx.New(node.CostData) {
-			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientData, Detail: fmt.Sprintf("need %d data", node.CostData)}
+		costData := e.researchCost(s, node.CostData)
+		if s.Resources.Data < mathx.New(costData) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientData, Detail: fmt.Sprintf("need %d data", costData)}
 		}
-		s.Resources.Data -= mathx.New(node.CostData)
+		s.Resources.Data -= mathx.New(costData)
 		s.Research = append(s.Research, node.ID)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ResearchCompleted", Message: node.Name + " completed."}}, nil
 	case game.IdentityBurn:
@@ -449,13 +451,13 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 	if s.Automation.Fabrication && s.Fabrication == nil && hasUpgrade(s, "secondhand_compiler") && s.Resources.Bots < s.Resources.BotCapacity && s.Resources.Compute >= mathx.New(10) && s.Resources.Credits >= mathx.New(2) {
 		s.Resources.Compute -= mathx.New(10)
 		s.Resources.Credits -= mathx.New(2)
-		s.Fabrication = &game.Fabrication{RemainingTicks: 3, Quantity: 1}
+		s.Fabrication = &game.Fabrication{RemainingTicks: e.fabricationTicks(s), Quantity: 1}
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Packet Scheduler queued one bot."})
 	}
 	if s.Automation.ReconTargetID != "" && s.Recon == nil {
 		if target, ok := e.target(s.Automation.ReconTargetID); ok && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
 			s.Resources.Credits -= mathx.New(target.ReconCost)
-			s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: target.ReconTicks}
+			s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: e.reconTicks(s, target.ReconTicks)}
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Signal Profiler queued recon: " + target.Name})
 		}
 	}
@@ -515,14 +517,17 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	attackMultiplier := int64(100)
 	heatMultiplier := int64(100)
 	effects := e.researchEffects(s)
+	upgradeEffects := e.upgradeEffects(s)
 	switch b.Doctrine {
 	case game.Stealth:
 		attackMultiplier, heatMultiplier = 82, 55
 		heatMultiplier -= effects.StealthHeatReductionPercent
+		attackMultiplier += upgradeEffects.StealthAttackBonusPercent
 	case game.Overload:
 		attackMultiplier, heatMultiplier = 125, 170
 	}
 	attackMultiplier += effects.AttackBonusPercent
+	heatMultiplier -= upgradeEffects.HeatReductionPercent
 	if heatMultiplier < 0 {
 		heatMultiplier = 0
 	}
@@ -720,7 +725,58 @@ func (e *Engine) ComputeRate(s game.State) int64 {
 			}
 		}
 	}
-	return rate + e.researchEffects(s).ComputePerSecondBonus
+	return rate + e.researchEffects(s).ComputePerSecondBonus + e.upgradeEffects(s).ComputePerSecondBonus
+}
+
+func (e *Engine) upgradeEffects(s game.State) content.UpgradeEffects {
+	var effects content.UpgradeEffects
+	for _, upgrade := range e.Catalog.Upgrades {
+		if !hasUpgrade(s, upgrade.ID) {
+			continue
+		}
+		effects.ComputePerSecondBonus += upgrade.Effects.ComputePerSecondBonus
+		effects.HeatReductionPercent += upgrade.Effects.HeatReductionPercent
+		effects.StealthAttackBonusPercent += upgrade.Effects.StealthAttackBonusPercent
+		effects.BotCapacityBonus += upgrade.Effects.BotCapacityBonus
+		effects.FabricationTicksReduction += upgrade.Effects.FabricationTicksReduction
+		effects.ReconTicksReduction += upgrade.Effects.ReconTicksReduction
+		effects.ResearchDiscountPercent += upgrade.Effects.ResearchDiscountPercent
+	}
+	return effects
+}
+
+func (e *Engine) fabricationTicks(s game.State) int64 {
+	ticks := int64(3) - e.upgradeEffects(s).FabricationTicksReduction
+	if ticks < 1 {
+		return 1
+	}
+	return ticks
+}
+
+func (e *Engine) reconTicks(s game.State, base int64) int64 {
+	ticks := base - e.upgradeEffects(s).ReconTicksReduction
+	if ticks < 1 {
+		return 1
+	}
+	return ticks
+}
+
+func (e *Engine) researchCost(s game.State, base int64) int64 {
+	discount := e.upgradeEffects(s).ResearchDiscountPercent
+	multiplier := int64(100) - discount
+	if multiplier <= 0 {
+		return 0
+	}
+	if base > math.MaxInt64/multiplier {
+		return math.MaxInt64 / 100
+	}
+	return base * multiplier / 100
+}
+
+// ResearchCost exposes the catalog cost after completed upgrade discounts for
+// player-facing panels without duplicating economy rules in the TUI.
+func (e *Engine) ResearchCost(s game.State, base int64) int64 {
+	return e.researchCost(s, base)
 }
 
 func (e *Engine) researchEffects(s game.State) content.ResearchEffects {
