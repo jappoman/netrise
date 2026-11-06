@@ -245,3 +245,4 @@ the amount that fits. `DataCapacity` is persisted, legacy saves default it
 safely, and Overview/compact mode show `DATA current/capacity`.
 Corporation incursions are now catalog-driven and budget-constrained: interval, attacker commitment, and total bot budget live in content; the persistent spent counter prevents unlimited active-play attacks while offline reconciliation remains non-hostile. Legacy saves with missing budget fields use the documented default budget.
 Runner victories now grant catalogued temporary access tokens. Adjacent routes require an active token, tokens expire only during active play, and expiration is observable through `AccessGranted`/`AccessExpired` events and the target browser; legacy content without an access duration retains its previous completed-route behavior.
+Save writes now use unique permissioned temporary files and report backup-rotation failures instead of silently continuing with an uncertain snapshot.

@@ -34,9 +34,14 @@ func writeAt(dir, path string, s game.State) error {
 	if err != nil {
 		return err
 	}
-	tmp := path + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	f, err := os.CreateTemp(dir, ".netrise-save-*.tmp")
 	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if err = f.Chmod(0600); err != nil {
+		_ = f.Close()
 		return err
 	}
 	if _, err = f.Write(b); err == nil {
@@ -47,11 +52,20 @@ func writeAt(dir, path string, s game.State) error {
 		err = closeErr
 	}
 	if err != nil {
-		os.Remove(tmp)
 		return err
 	}
 	if _, err = os.Stat(path); err == nil {
-		_ = os.Rename(path, path+".bak")
+		backup := path + ".bak"
+		if renameErr := os.Rename(path, backup); renameErr != nil {
+			if removeErr := os.Remove(backup); removeErr != nil {
+				return fmt.Errorf("rotate save backup: %w", renameErr)
+			}
+			if renameErr = os.Rename(path, backup); renameErr != nil {
+				return fmt.Errorf("rotate save backup: %w", renameErr)
+			}
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("inspect existing save: %w", err)
 	}
 	return os.Rename(tmp, path)
 }
