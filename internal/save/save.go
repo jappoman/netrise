@@ -161,12 +161,12 @@ func validateState(s game.State) error {
 	if s.Recon != nil && (s.Recon.TargetID == "" || s.Recon.RemainingTicks < 0) {
 		return errors.New("invalid recon job")
 	}
-	if s.Fabrication != nil && (s.Fabrication.Quantity <= 0 || s.Fabrication.RemainingTicks <= 0) {
+	if s.Fabrication != nil && (s.Fabrication.Quantity <= 0 || s.Fabrication.RemainingTicks <= 0 || s.Fabrication.Quantity > s.Resources.BotCapacity-s.Resources.Bots) {
 		return errors.New("invalid fabrication job")
 	}
 	if s.ActiveBattle != nil {
 		b := s.ActiveBattle
-		if b.TargetID == "" || b.CommittedBots < 0 || b.LiveBots < 0 || b.LiveBots > b.CommittedBots || b.LayerIndex < 0 || b.LayerIntegrity < 0 || b.DefenderICE < 0 || b.TraceBP < 0 || b.TraceBP > 10000 || b.ElapsedTicks < 0 || b.TimeLimit <= 0 || b.ElapsedTicks > b.TimeLimit {
+		if b.TargetID == "" || b.CommittedBots < 0 || b.LiveBots < 0 || b.LiveBots > b.CommittedBots || (s.Faction == game.Runner && b.CommittedBots > s.Resources.BotCapacity-s.Resources.Bots) || b.LayerIndex < 0 || b.LayerIntegrity < 0 || b.DefenderICE < 0 || b.TraceBP < 0 || b.TraceBP > 10000 || b.ElapsedTicks < 0 || b.TimeLimit <= 0 || b.ElapsedTicks > b.TimeLimit || b.StartingHeatBP < 0 || b.StartingHeatBP > 10000 {
 			return errors.New("invalid active battle")
 		}
 	}

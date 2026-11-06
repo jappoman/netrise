@@ -409,3 +409,7 @@ state before a policy can resume.
 Persisted fabrication jobs, battle results and event archive entries now also
 have semantic checks for positive timers, coherent bot accounting, bounded
 meters and logical timestamps before they are resumed by the TUI.
+
+Active Runner battles now validate their committed units against reserve capacity
+and starting heat, while persisted fabrication quantities must fit remaining bot
+capacity before a save can be reopened.

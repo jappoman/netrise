@@ -159,6 +159,13 @@ func TestSaveRejectsInvalidBattleAndJobSnapshots(t *testing.T) {
 	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
 		t.Fatalf("invalid fabrication job was accepted: %v", err)
 	}
+	invalidBattleState := `{"schema_version":1,"faction":"runner","resources":{"bots":1,"bot_capacity":2},"active_battle":{"target_id":"t_01","committed_bots":2,"live_bots":2,"layer_integrity":1,"time_limit":10,"starting_heat_bp":10001}}`
+	if err := os.WriteFile(Path(d), []byte(invalidBattleState), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("invalid active battle state was accepted: %v", err)
+	}
 }
 
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
@@ -201,7 +208,7 @@ func TestTemporaryAccessRoundTripsAndInvalidAccessIsRejected(t *testing.T) {
 
 func TestRoundTripPreservesActiveBattleForResume(t *testing.T) {
 	d := t.TempDir()
-	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 17, ActiveBattle: &game.Battle{TargetID: "t_01", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 6, LayerIndex: 1, LayerIntegrity: 12, DefenderICE: 3, TraceBP: 900, ElapsedTicks: 4, TimeLimit: 90}}
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 17, Resources: game.Resources{Bots: 2, BotCapacity: 20}, ActiveBattle: &game.Battle{TargetID: "t_01", AttackerFaction: game.Runner, CommittedBots: 8, LiveBots: 6, LayerIndex: 1, LayerIntegrity: 12, DefenderICE: 3, TraceBP: 900, ElapsedTicks: 4, TimeLimit: 90}}
 	if err := Write(d, s); err != nil {
 		t.Fatal(err)
 	}
