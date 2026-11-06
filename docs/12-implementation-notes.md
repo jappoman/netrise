@@ -309,3 +309,6 @@ Target lists and Runner preflight now show a deterministic ICE estimate range
 derived from target layers and current intel. The range narrows to the exact
 catalog value at 100% intel, keeping uncertainty visible without exposing
 hidden defense values prematurely.
+
+Content validation also bounds layer integrity, ICE and counter values to the
+fixed-point range before they reach combat arithmetic or preflight estimates.

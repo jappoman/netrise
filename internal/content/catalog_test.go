@@ -109,6 +109,21 @@ func TestValidateRejectsUnrepresentableAmountCosts(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnrepresentableCombatValues(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":9223372036854775807}]}]}`))
+	if err == nil {
+		t.Fatal("layer integrity beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1,"ice":9223372036854775807}]}]}`))
+	if err == nil {
+		t.Fatal("layer ICE beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1,"counter":9223372036854775807}]}]}`))
+	if err == nil {
+		t.Fatal("layer counter beyond fixed-point range accepted")
+	}
+}
+
 func TestValidateRejectsNegativeDataCapacity(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"generators":[{"id":"cache","name":"Cache","data_capacity":-1}]}`))
 	if err == nil {

@@ -220,7 +220,7 @@ func Validate(c Catalog) error {
 		}
 		seen[t.ID] = true
 		for _, l := range t.Layers {
-			if l.Integrity <= 0 || l.ICE < 0 || l.Counter < 0 {
+			if l.Integrity <= 0 || !fitsAmount(l.Integrity) || !fitsAmount(l.ICE) || !fitsAmount(l.Counter) {
 				return fmt.Errorf("content: invalid layer in target %q", t.ID)
 			}
 		}
