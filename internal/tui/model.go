@@ -1108,7 +1108,15 @@ func targetAvailable(s game.State, target content.Target) bool {
 		return true
 	}
 	if s.Access != nil {
-		return s.Access[target.RequiresTargetID] > 0
+		if remaining, ok := s.Access[target.RequiresTargetID]; ok {
+			return remaining > 0
+		}
+		for _, id := range s.CompletedTargets {
+			if id == target.RequiresTargetID {
+				return true
+			}
+		}
+		return false
 	}
 	for _, id := range s.CompletedTargets {
 		if id == target.RequiresTargetID {

@@ -626,7 +626,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		if !safeOnly {
 			for id, remaining := range s.Access {
 				if remaining <= 1 {
-					delete(s.Access, id)
+					s.Access[id] = 0
 					events = append(events, game.Event{Tick: s.LogicalTick, Type: "AccessExpired", Message: "Temporary access expired: " + id})
 				} else {
 					s.Access[id] = remaining - 1
@@ -1167,7 +1167,10 @@ func (e *Engine) isReachable(s game.State, target content.Target) bool {
 		return false
 	}
 	if s.Access != nil {
-		return s.Access[target.RequiresTargetID] > 0
+		if remaining, ok := s.Access[target.RequiresTargetID]; ok {
+			return remaining > 0
+		}
+		return contains(s.CompletedTargets, target.RequiresTargetID)
 	}
 	return contains(s.CompletedTargets, target.RequiresTargetID)
 }

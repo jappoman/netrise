@@ -76,11 +76,16 @@ func TestVictoryGrantsTemporaryAccessAndOfflineKeepsItSafe(t *testing.T) {
 		t.Fatalf("offline reconciliation consumed temporary access: %#v", offline.Access)
 	}
 	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
-	if err != nil || len(s.Access) != 0 || !hasEvent(events, "AccessExpired") {
+	if err != nil || s.Access["t_01"] != 0 || !hasEvent(events, "AccessExpired") {
 		t.Fatalf("active ticks did not expire access: state=%#v events=%#v err=%v", s.Access, events, err)
 	}
 	if _, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Balanced}); err == nil {
 		t.Fatal("expired access still allowed the adjacent target")
+	}
+	s.CompletedTargets = []string{"legacy-route"}
+	legacyTarget := content.Target{ID: "legacy-next", RequiresTargetID: "legacy-route"}
+	if !e.isReachable(s, legacyTarget) {
+		t.Fatal("legacy completed route was lost when access map was introduced")
 	}
 }
 
