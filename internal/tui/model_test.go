@@ -26,6 +26,9 @@ func TestCorporationOverviewRendersAtCompactSize(t *testing.T) {
 	if view.Content == "" {
 		t.Fatal("empty Corporation view")
 	}
+	if !strings.Contains(view.Content, "[b] hosting") {
+		t.Fatal("compact Corporation view hides the action rail")
+	}
 }
 
 func TestNoColorOmitsANSIStyling(t *testing.T) {

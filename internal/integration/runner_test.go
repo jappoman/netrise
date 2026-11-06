@@ -86,3 +86,47 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 		t.Fatal("identity burn retained route access")
 	}
 }
+
+func TestCombatCommitmentMatrixDoesNotRewardLessPower(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := catalog.Targets[0]
+	wins := func(commitment int64) int {
+		count := 0
+		for seed := int64(1); seed <= 20; seed++ {
+			e := sim.New(catalog, seed)
+			s := sim.NewState(seed)
+			s.Upgrades = []string{"secondhand_compiler"}
+			s.Resources.Bots = commitment
+			var commandErr error
+			s, _, commandErr = e.Apply(s, game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: commitment, Doctrine: game.Balanced})
+			if commandErr != nil {
+				t.Fatal(commandErr)
+			}
+			for tick := int64(0); s.ActiveBattle != nil && tick <= target.TimeLimit; tick++ {
+				s, _, commandErr = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+				if commandErr != nil {
+					t.Fatal(commandErr)
+				}
+			}
+			if s.ActiveBattle != nil {
+				t.Fatalf("battle exceeded time limit for seed %d and commitment %d", seed, commitment)
+			}
+			if s.LastBattle != nil && s.LastBattle.Outcome == "victory" {
+				count++
+			}
+		}
+		return count
+	}
+	low, high := wins(5), wins(15)
+	if high < low {
+		t.Fatalf("more committed bots reduced wins: low=%d high=%d", low, high)
+	}
+}
