@@ -216,7 +216,7 @@ per integrity, restoring a recoverable Corporation security loop. Legacy saves
 without `max_integrity` migrate that ceiling from the validated asset catalog.
 
 The integration suite now runs a deterministic combat-balance smoke sweep across
-all five targets, three doctrines, four commitment levels and seeds 1..10. It
+all five targets, three doctrines, four commitment levels and seeds 1..100. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and
 non-negative resources for every case without bypassing the production engine.
 

@@ -212,7 +212,7 @@ func TestBattleBalanceSweepResolvesEveryTargetAndDoctrine(t *testing.T) {
 	for _, target := range catalog.Targets {
 		for _, doctrine := range doctrines {
 			for _, commitment := range commitments {
-				for seed := int64(1); seed <= 10; seed++ {
+				for seed := int64(1); seed <= 100; seed++ {
 					e := sim.New(catalog, seed)
 					s := sim.NewState(seed)
 					s.Upgrades = []string{"secondhand_compiler"}

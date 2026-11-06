@@ -32,11 +32,11 @@ Sweep seed [1..100], attacker commitment levels 25/50/75/100%, doctrines [balanc
 **Warning:** a simple attrition formula can create runaway collapse (bots die so damage falls, extending fight). Use automated tests to detect impossible or oppressive low-level battles and adjust layer health, damage, ICE attack or early bot income.
 
 The integration suite includes a deterministic smoke sweep over all five catalog
-targets, all three doctrines, four commitment levels and seeds 1..10. It makes
+targets, all three doctrines, four commitment levels and seeds 1..100. It makes
 targets reachable only inside the test, then asserts that every battle resolves
 within its time limit, records a valid Runner outcome, preserves bot/heat
-accounting and never produces negative resources. The broader seed 1..100 and
-intel/tech matrix remains a playtest expansion rather than a release gate.
+accounting and never produces negative resources. The broader intel/tech matrix
+remains a playtest expansion rather than a release gate.
 
 The Corporation integration suite also runs a scripted 3,600-tick campaign
 with all three starter assets, security capacity, maintenance and automated
