@@ -292,6 +292,15 @@ func TestCorporationCannotOpenRunnerTargets(t *testing.T) {
 	}
 }
 
+func TestCorporationCannotOpenRunnerResearch(t *testing.T) {
+	m := New(sim.NewCorporationState(406), sim.New(content.Catalog{SchemaVersion: 1}, 406), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "y", Code: 'y'}))
+	got := updated.(Model)
+	if got.screen != "overview" || !strings.Contains(got.status, "Runner operation") {
+		t.Fatalf("Corporation crossed into Runner research: screen=%q status=%q", got.screen, got.status)
+	}
+}
+
 func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	state := sim.NewState(20)
 	state.CompletedTargets = []string{"t_01"}

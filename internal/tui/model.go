@@ -230,6 +230,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if v.String() == "y" {
+			if m.state.Faction == game.Corporation {
+				m.status = "research tree is a Runner operation; use [d] R&D or [v] report"
+				return m, nil
+			}
 			m.screen = "research"
 			return m, nil
 		}
