@@ -12,6 +12,17 @@ func TestLoadRejectsDuplicateIDs(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsTerminalControlSequences(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"upgrades":[{"id":"u","name":"\u001b[31munsafe","description":"bad"}]}`))
+	if err == nil {
+		t.Fatal("terminal control sequence in content name accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"t","name":"Target","corporation":"Corp\nInjected","layers":[{"integrity":1}],"time_limit":1}]}`))
+	if err == nil {
+		t.Fatal("control sequence in target corporation accepted")
+	}
+}
+
 func TestValidateRejectsResearchCycles(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"research":[{"id":"a","name":"A","prerequisites":["b"]},{"id":"b","name":"B","prerequisites":["a"]}]}`))
 	if err == nil {

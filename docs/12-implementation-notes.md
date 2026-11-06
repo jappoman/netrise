@@ -428,3 +428,6 @@ for maximum-size persisted reserves.
 Event archive text is now rejected at the save boundary when it contains control
 characters, preventing untrusted JSON from injecting terminal escape sequences
 into the player-facing TUI.
+
+The same control-character policy now applies to data-driven catalog IDs, names,
+descriptions and target labels before content can reach any TUI screen.
