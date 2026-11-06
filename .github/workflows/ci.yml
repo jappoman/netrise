@@ -49,6 +49,7 @@ jobs:
           "$bundle/$exe" validate-content
           "$bundle/$exe" simulate --faction runner --seed 17 --ticks 600
           "$bundle/$exe" simulate --faction corp --seed 17 --ticks 600
+          if "$bundle/$exe" unknown-command; then exit 1; fi
       - name: CLI smoke flow
         run: |
           go run ./cmd/netrise --version
@@ -66,6 +67,9 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          if go run ./cmd/netrise unknown-command
+            exit 1
+          end
       - name: CMD smoke flow
         if: runner.os == 'Windows'
         shell: cmd
@@ -74,6 +78,8 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise unknown-command
+          if %ERRORLEVEL% EQU 0 exit /b 1
       - name: PowerShell smoke flow
         if: runner.os == 'Windows'
         shell: pwsh
@@ -85,3 +91,5 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+          go run ./cmd/netrise unknown-command
+          if ($LASTEXITCODE -eq 0) { throw 'unknown command unexpectedly succeeded' }

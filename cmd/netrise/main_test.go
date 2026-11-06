@@ -26,6 +26,23 @@ func TestCatalogBundlePathsAreExecutableRelative(t *testing.T) {
 	}
 }
 
+func TestValidateTopLevelArgsRejectsUnknownCommands(t *testing.T) {
+	if err := validateTopLevelArgs([]string{"unknown"}); err == nil {
+		t.Fatal("unknown top-level command was accepted")
+	}
+	if err := validateTopLevelArgs([]string{"validate-content", "extra"}); err == nil {
+		t.Fatal("validate-content accepted an unexpected argument")
+	}
+	if err := validateTopLevelArgs([]string{"corp", "--unexpected"}); err == nil {
+		t.Fatal("Corporation command accepted an unexpected argument")
+	}
+	for _, args := range [][]string{{}, {"corp"}, {"simulate", "--help"}, {"validate-content"}, {"--help"}} {
+		if err := validateTopLevelArgs(args); err != nil {
+			t.Fatalf("valid top-level args rejected: %v: %v", args, err)
+		}
+	}
+}
+
 func TestLoadStateUsesInjectedClockForOfflineReconciliation(t *testing.T) {
 	dir := t.TempDir()
 	saved := time.Date(2026, time.November, 6, 10, 0, 0, 0, time.UTC)

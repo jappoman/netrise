@@ -451,6 +451,9 @@ an updated UTC timestamp. Reopening a save before the first TUI autosave cannot
 grant the same elapsed interval twice; regression tests cover the full
 Runner and Corporation load/reopen paths.
 
+Top-level CLI validation now rejects unknown commands and extra arguments to
+`validate-content` instead of falling through to an interactive TUI session.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.

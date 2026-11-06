@@ -52,6 +52,7 @@ jobs:
             (cd "dist/${bundle}" && "./${name}" validate-content)
             (cd "dist/${bundle}" && "./${name}" simulate --faction runner --seed 17 --ticks 600 >/dev/null)
             (cd "dist/${bundle}" && "./${name}" simulate --faction corp --seed 17 --ticks 600 >/dev/null)
+            if (cd "dist/${bundle}" && "./${name}" unknown-command); then exit 1; fi
           fi
           if [ "$GOOS" = "windows" ]; then
             (cd dist && zip -qr "${bundle}.zip" "${bundle}")

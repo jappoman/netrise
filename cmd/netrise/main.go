@@ -19,6 +19,9 @@ const version = "0.1.0"
 
 func main() {
 	args, dataDir := extractDataDir(os.Args[1:])
+	if err := validateTopLevelArgs(args); err != nil {
+		fatal(err)
+	}
 	if len(args) > 0 && args[0] == "simulate" {
 		simulate(args[1:])
 		return
@@ -31,7 +34,7 @@ func main() {
 		return
 	}
 	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h" || args[0] == "corp" && len(args) > 1 && (args[1] == "--help" || args[1] == "-h")) {
-		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game.")
+		fmt.Println(topLevelUsage())
 		return
 	}
 	if len(args) > 0 && args[0] == "--version" {
@@ -58,6 +61,40 @@ func main() {
 	p := tea.NewProgram(tui.New(s, e, dataDir))
 	if _, err = p.Run(); err != nil {
 		fatal(err)
+	}
+}
+
+func topLevelUsage() string {
+	return "netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game."
+}
+
+func validateTopLevelArgs(args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	switch args[0] {
+	case "simulate":
+		return nil
+	case "corp":
+		if len(args) > 1 && args[1] != "--help" && args[1] != "-h" {
+			return fmt.Errorf("corp does not accept %q (use --help)", args[1])
+		}
+		if len(args) > 2 {
+			return fmt.Errorf("corp help accepts no additional arguments")
+		}
+		return nil
+	case "--help", "-h", "--version":
+		if len(args) > 1 {
+			return fmt.Errorf("%s accepts no additional arguments", args[0])
+		}
+		return nil
+	case "validate-content":
+		if len(args) > 1 {
+			return fmt.Errorf("validate-content does not accept arguments")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown command %q (use --help)", args[0])
 	}
 }
 
