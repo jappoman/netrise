@@ -330,3 +330,8 @@ save cannot wrap its prestige progress back to a negative value.
 Prestige counter accumulation and its TUI preview use the same saturating
 progression arithmetic, keeping Ghost Keys, Patent Shares and lifetime reset
 counts stable even at persisted integer limits.
+
+Battle and preflight damage calculations now use checked non-negative
+multiply/divide helpers and safe ceiling division, preventing extreme but
+validated content or resumed battle state from overflowing intermediate
+values.

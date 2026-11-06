@@ -914,6 +914,22 @@ func TestCorporationValuationSaturatesAtInt64Maximum(t *testing.T) {
 	}
 }
 
+func TestBattleArithmeticHandlesExtremeInputs(t *testing.T) {
+	target := content.Target{ID: "extreme", Name: "Extreme", Reachable: true, Layers: []content.Layer{{Integrity: math.MaxInt64, ICE: math.MaxInt64, Counter: math.MaxInt64}}, TimeLimit: 10}
+	e := New(content.Catalog{SchemaVersion: 1, Targets: []content.Target{target}}, 37)
+	s := NewState(37)
+	s.Resources.Bots = math.MaxInt64
+	s.ActiveBattle = &game.Battle{TargetID: target.ID, AttackerFaction: game.Runner, CommittedBots: math.MaxInt64, LiveBots: math.MaxInt64, LayerIntegrity: math.MaxInt64, DefenderICE: math.MaxInt64, TimeLimit: 10}
+	advanced, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || advanced.ActiveBattle == nil && advanced.LastBattle == nil {
+		t.Fatalf("extreme battle arithmetic failed: state=%#v err=%v", advanced, err)
+	}
+	ticks, heat := e.EstimateBattle(s, target, game.Overload, math.MaxInt64)
+	if ticks < 0 || ticks > target.TimeLimit || heat < 0 {
+		t.Fatalf("extreme battle estimate escaped bounds: ticks=%d heat=%d", ticks, heat)
+	}
+}
+
 func TestPrestigeCountersSaturateAtInt64Maximum(t *testing.T) {
 	e := New(content.Catalog{SchemaVersion: 1}, 36)
 	runner := NewState(36)

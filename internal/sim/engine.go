@@ -1014,8 +1014,8 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	s.RNGState ^= s.RNGState << 7
 	s.RNGState ^= s.RNGState >> 9
 	variationBP := int64(9500 + s.RNGState%1001)
-	damage := b.LiveBots * attackMultiplier / (100 + b.DefenderICE)
-	damage = damage * variationBP / 10000
+	damage := mulDivNonNegative(b.LiveBots, attackMultiplier, AddNonNegativeSaturated(100, b.DefenderICE))
+	damage = mulDivNonNegative(damage, variationBP, 10000)
 	if damage < 1 {
 		damage = 1
 	}
@@ -1045,7 +1045,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		}
 		counterTicks := b.ElapsedTicks / 3
 		previousCounterTicks := (b.ElapsedTicks - 1) / 3
-		losses := (counterTicks*lossBP)/100 - (previousCounterTicks*lossBP)/100
+		losses := mulDivNonNegative(counterTicks, lossBP, 100) - mulDivNonNegative(previousCounterTicks, lossBP, 100)
 		if losses > 0 {
 			losses = minInt64(losses, b.LiveBots)
 			b.LiveBots -= losses
@@ -1319,6 +1319,36 @@ func AddNonNegativeSaturated(value, increment int64) int64 {
 	return value + increment
 }
 
+func mulDivNonNegative(value, multiplier, divisor int64) int64 {
+	if value <= 0 || multiplier <= 0 {
+		return 0
+	}
+	if divisor <= 0 {
+		return math.MaxInt64
+	}
+	quotient := value / divisor
+	remainder := value % divisor
+	if quotient > math.MaxInt64/multiplier || remainder > math.MaxInt64/multiplier {
+		return math.MaxInt64
+	}
+	result := quotient * multiplier
+	return AddNonNegativeSaturated(result, remainder*multiplier/divisor)
+}
+
+func ceilDivNonNegative(value, divisor int64) int64 {
+	if value <= 0 {
+		return 0
+	}
+	if divisor <= 0 {
+		return math.MaxInt64
+	}
+	result := value / divisor
+	if value%divisor != 0 {
+		result = AddNonNegativeSaturated(result, 1)
+	}
+	return result
+}
+
 func minInt64(a, b int64) int64 {
 	if a < b {
 		return a
@@ -1457,16 +1487,16 @@ func (e *Engine) EstimateBattle(s game.State, target content.Target, doctrine ga
 	}
 	ticks := int64(0)
 	for _, layer := range target.Layers {
-		damage := commitment * attack / (100 + layer.ICE)
+		damage := mulDivNonNegative(commitment, attack, AddNonNegativeSaturated(100, layer.ICE))
 		if damage < 1 {
 			damage = 1
 		}
-		ticks += (layer.Integrity + damage - 1) / damage
+		ticks = AddNonNegativeSaturated(ticks, ceilDivNonNegative(layer.Integrity, damage))
 	}
 	if ticks > target.TimeLimit {
 		ticks = target.TimeLimit
 	}
-	return ticks, ticks * heat
+	return ticks, mulDivNonNegative(ticks, heat, 1)
 }
 
 func (e *Engine) upgradeEffects(s game.State) content.UpgradeEffects {
