@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"fmt"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
@@ -26,6 +27,28 @@ func TestPlayerViewUsesFullScreenAlternateBuffer(t *testing.T) {
 	m := New(sim.NewState(2), sim.New(content.Catalog{SchemaVersion: 1}, 2), "")
 	if view := m.View(); !view.AltScreen {
 		t.Fatal("player-facing TUI did not request the terminal alternate screen")
+	}
+}
+
+func TestUpgradeMenuFitsAtStandardTerminalHeight(t *testing.T) {
+	upgrades := make([]content.Upgrade, 14)
+	for i := range upgrades {
+		upgrades[i] = content.Upgrade{ID: fmt.Sprintf("upgrade_%d", i), Name: fmt.Sprintf("Upgrade %d", i), Description: "A safe catalogued improvement.", Cost: 1}
+	}
+	m := New(sim.NewState(3), sim.New(content.Catalog{SchemaVersion: 1, Upgrades: upgrades}, 3), "")
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = updated.(Model)
+	m.screen = "upgrades"
+	lines := strings.Split(strings.TrimSuffix(m.View().Content, "\n"), "\n")
+	if len(lines) > 24 || !strings.Contains(m.View().Content, "SHOWING 1-7/14") || !strings.Contains(m.View().Content, "NEXT:") {
+		t.Fatalf("upgrade menu is not usable at 80x24: lines=%d view=%s", len(lines), m.View().Content)
+	}
+	for i := 0; i < 13; i++ {
+		updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "down", Code: tea.KeyDown}))
+		m = updated.(Model)
+	}
+	if !strings.Contains(m.View().Content, "SHOWING 8-14/14") || !strings.Contains(m.View().Content, "> Upgrade 13") {
+		t.Fatalf("upgrade menu did not scroll with selection: %s", m.View().Content)
 	}
 }
 

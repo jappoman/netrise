@@ -699,7 +699,11 @@ func resultNextHint(outcome string) string {
 
 func (m Model) researchView() string {
 	lines := fmt.Sprintf("NETRISE // RESEARCH\n\nDATA: %s / %d capacity\n\n", m.state.Resources.Data, m.state.Resources.DataCapacity)
-	for _, node := range m.engine.Catalog.Research {
+	start, end := visibleListRange(len(m.engine.Catalog.Research), 0, m.height, 2, 9)
+	if len(m.engine.Catalog.Research) > end-start {
+		lines += fmt.Sprintf("SHOWING %d-%d/%d\n", start+1, end, len(m.engine.Catalog.Research))
+	}
+	for _, node := range m.engine.Catalog.Research[start:end] {
 		state := "LOCKED"
 		cost := m.engine.ResearchCost(m.state, node.CostData)
 		if hasResearch(m.state, node.ID) {
@@ -734,9 +738,14 @@ func missingResearchPrerequisites(s game.State, prerequisites []string) string {
 
 func (m Model) upgradesView() string {
 	lines := fmt.Sprintf("NETRISE // UPGRADES\n\nCREDITS: %s\nSelect an upgrade, review its effect and press Enter to purchase.\n", m.state.Resources.Credits)
-	for i, upgrade := range m.engine.Catalog.Upgrades {
+	start, end := visibleListRange(len(m.engine.Catalog.Upgrades), m.selectedUpgrade, m.height, 2, 9)
+	if len(m.engine.Catalog.Upgrades) > end-start {
+		lines += fmt.Sprintf("SHOWING %d-%d/%d\n", start+1, end, len(m.engine.Catalog.Upgrades))
+	}
+	for i, upgrade := range m.engine.Catalog.Upgrades[start:end] {
+		catalogIndex := start + i
 		marker := "  "
-		if i == m.selectedUpgrade {
+		if catalogIndex == m.selectedUpgrade {
 			marker = "> "
 		}
 		state := fmt.Sprintf("AVAILABLE (%d CR)", upgrade.Cost)
@@ -752,6 +761,33 @@ func (m Model) upgradesView() string {
 		lines += fmt.Sprintf("%s%-22s %-18s\n  %s\n", marker, upgrade.Name, state, description)
 	}
 	return lines + "\n[up/down] select  [enter] purchase  [esc] overview\nNEXT: install only upgrades you can afford; installed upgrades cannot be repurchased."
+}
+
+func visibleListRange(total, selected, height, rowsPerItem, overhead int) (int, int) {
+	if total <= 0 {
+		return 0, 0
+	}
+	if selected < 0 {
+		selected = 0
+	}
+	if selected >= total {
+		selected = total - 1
+	}
+	if height <= 0 || rowsPerItem <= 0 {
+		return 0, total
+	}
+	capacity := (height - overhead) / rowsPerItem
+	if capacity < 1 || capacity >= total {
+		return 0, total
+	}
+	start := selected - capacity/2
+	if start < 0 {
+		start = 0
+	}
+	if start+capacity > total {
+		start = total - capacity
+	}
+	return start, start + capacity
 }
 
 func (m Model) automationView() string {

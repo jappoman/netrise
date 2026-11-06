@@ -485,3 +485,7 @@ running both faction simulations.
 The player-facing Bubble Tea view now opts into the terminal alternate buffer,
 so the shipped TUI is genuinely full-screen and automatically restores the
 previous terminal contents when the program exits.
+
+Long Runner catalog menus now use a height-aware scrolling window. At the
+standard 80x24 size the Upgrades screen keeps the selection, action rail and
+`NEXT:` guidance visible while `[up/down]` moves through the complete catalog.
