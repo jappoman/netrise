@@ -37,8 +37,9 @@ Start a fresh Runner campaign and note the time for each checkpoint:
    run recon before launching the first breach.
 4. Use preflight to compare at least two doctrines or commitment levels; record
    why the chosen option is affordable and reachable.
-5. Watch the battle playback, then inspect Result and Archive. Confirm the next
-   action is explicit after both victory and withdrawal.
+5. Watch the battle playback, then inspect Result and Archive. Use `[up/down]`
+   to browse older events and confirm the next action is explicit after both
+   victory and withdrawal.
 6. Enable one safe automation policy with a finite budget and verify it stops
    at the configured cap.
 

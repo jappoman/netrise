@@ -575,6 +575,26 @@ func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 	}
 }
 
+func TestEventArchiveViewBrowsesFullBoundedHistory(t *testing.T) {
+	state := sim.NewState(2)
+	for i := 0; i < 20; i++ {
+		state.EventLog = append(state.EventLog, game.Event{Tick: int64(i), Type: "Test", Message: fmt.Sprintf("event-%02d", i)})
+	}
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 2), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "l", Code: 'l'}))
+	m = updated.(Model)
+	if !strings.Contains(m.View().Content, "event-19") || !strings.Contains(m.View().Content, "SHOWING 9-20/20") {
+		t.Fatalf("archive did not open at the latest window: %s", m.View().Content)
+	}
+	for i := 0; i < 8; i++ {
+		updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "up", Code: tea.KeyUp}))
+		m = updated.(Model)
+	}
+	if !strings.Contains(m.View().Content, "event-00") || !strings.Contains(m.View().Content, "SHOWING 1-12/20") {
+		t.Fatalf("archive did not browse to the oldest window: %s", m.View().Content)
+	}
+}
+
 func TestHelpViewExplainsBothCampaigns(t *testing.T) {
 	runner := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	if !strings.Contains(runner.helpView(), "prepare, breach") || !strings.Contains(runner.helpView(), "[a] breach") {

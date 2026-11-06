@@ -77,7 +77,9 @@ The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.
 Player-facing events are retained in a bounded 200-entry archive, persisted in
-saves and available from the TUI with `[l] archive`.
+saves and available from the TUI with `[l] archive`. The archive window now
+supports `[up/down]` browsing across the full retained history while keeping
+the standard terminal viewport bounded.
 The content validator rejects missing links and cyclic research prerequisites;
 an integration script exercises 3,600 Runner ticks with automation enabled and
 asserts bounded resources, event history and recon progress.

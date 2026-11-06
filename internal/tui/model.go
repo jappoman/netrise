@@ -38,6 +38,7 @@ type Model struct {
 	doctrine         game.Doctrine
 	paused           bool
 	playbackSpeed    int64
+	archiveOffset    int
 }
 
 func New(s game.State, e *sim.Engine, dataDir string) Model {
@@ -188,7 +189,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.screen == "archive" {
-			if v.String() == "esc" || v.String() == "o" {
+			switch v.String() {
+			case "up":
+				if m.archiveOffset > 0 {
+					m.archiveOffset--
+				}
+			case "down":
+				maxOffset := archiveMaxOffset(len(m.state.EventLog))
+				if m.archiveOffset < maxOffset {
+					m.archiveOffset++
+				}
+			case "esc", "o":
 				m.screen = "overview"
 			}
 			return m, nil
@@ -249,6 +260,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "l" {
 			m.screen = "archive"
+			m.archiveOffset = archiveMaxOffset(len(m.state.EventLog))
 			return m, nil
 		}
 		if v.String() == "S" {
@@ -1003,17 +1015,35 @@ func upgradeEffectText(effects content.UpgradeEffects) string {
 
 func (m Model) archiveView() string {
 	lines := "NETRISE // EVENT ARCHIVE\n\n"
-	start := 0
-	if len(m.state.EventLog) > 12 {
-		start = len(m.state.EventLog) - 12
+	start := m.archiveOffset
+	maxOffset := archiveMaxOffset(len(m.state.EventLog))
+	if start < 0 {
+		start = 0
 	}
-	for _, event := range m.state.EventLog[start:] {
+	if start > maxOffset {
+		start = maxOffset
+	}
+	end := start + 12
+	if end > len(m.state.EventLog) {
+		end = len(m.state.EventLog)
+	}
+	if len(m.state.EventLog) > 12 {
+		lines += fmt.Sprintf("SHOWING %d-%d/%d\n", start+1, end, len(m.state.EventLog))
+	}
+	for _, event := range m.state.EventLog[start:end] {
 		lines += fmt.Sprintf("[t+%d] %s: %s\n", event.Tick, event.Type, event.Message)
 	}
 	if len(m.state.EventLog) == 0 {
 		lines += "No events recorded yet.\n"
 	}
-	return lines + "\n[esc] overview\nNEXT: inspect recent events, then return to the campaign overview."
+	return lines + "\n[up/down] browse  [esc] overview\nNEXT: inspect the archive window, then return to the campaign overview."
+}
+
+func archiveMaxOffset(total int) int {
+	if total <= 12 {
+		return 0
+	}
+	return total - 12
 }
 
 func (m Model) settingsView() string {
