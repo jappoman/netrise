@@ -389,7 +389,8 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		newState := NewState(s.WorldSeed)
 		newState.GhostKeys = ghostKeys
 		newState.PrestigeCount = s.PrestigeCount + 1
-		newState.Resources.Credits = mathx.New(25 + ghostKeys*5)
+		newState.Resources.Credits = mathx.New(RunnerStarterCredits(ghostKeys))
+		newState.Resources.BotCapacity = RunnerBotCapacity(ghostKeys)
 		newState.GameVersion = s.GameVersion
 		return newState, []game.Event{{Tick: s.LogicalTick, Type: "PrestigeCompleted", Message: fmt.Sprintf("Identity Burn complete. %d Ghost Keys retained.", ghostKeys), Amount: reward}}, nil
 	case game.CorpBuildAsset:
@@ -603,7 +604,8 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		newState := NewCorporationState(s.WorldSeed)
 		newState.GameVersion = s.GameVersion
 		newState.Corp.PatentShares = s.Corp.PatentShares + reward
-		newState.Corp.Capital = mathx.New(100 + newState.Corp.PatentShares*10)
+		newState.Corp.Capital = mathx.New(CorporationStarterCapital(newState.Corp.PatentShares))
+		newState.Corp.ICECapacity = CorporationICECapacity(newState.Corp.PatentShares)
 		newState.PrestigeCount = s.PrestigeCount + 1
 		return newState, []game.Event{{Tick: s.LogicalTick, Type: "RestructuringCompleted", Message: fmt.Sprintf("Restructuring complete. %d Patent Shares retained.", newState.Corp.PatentShares), Amount: reward}}, nil
 	default:
@@ -1206,6 +1208,55 @@ func integerSqrt(value int64) int64 {
 // IdentityBurnReward exposes the deterministic preview used by the TUI.
 func (e *Engine) IdentityBurnReward(s game.State) int64 {
 	return integerSqrt(s.RunExtractedData / 10000)
+}
+
+// RunnerBotCapacity returns the starting bot capacity granted by retained
+// Ghost Keys, with overflow-safe bounds for persisted state and previews.
+func RunnerBotCapacity(ghostKeys int64) int64 {
+	if ghostKeys < 0 {
+		ghostKeys = 0
+	}
+	if ghostKeys > (math.MaxInt64-20)/2 {
+		return math.MaxInt64
+	}
+	return 20 + ghostKeys*2
+}
+
+// RunnerStarterCredits returns the starting credits granted by retained Ghost
+// Keys, clamped to the representable Amount unit range.
+func RunnerStarterCredits(ghostKeys int64) int64 {
+	if ghostKeys < 0 {
+		ghostKeys = 0
+	}
+	if ghostKeys > (mathx.MaxUnits-25)/5 {
+		return mathx.MaxUnits
+	}
+	return 25 + ghostKeys*5
+}
+
+// CorporationICECapacity returns the starting ICE rack size granted by
+// retained Patent Shares, with overflow-safe bounds for persisted state.
+func CorporationICECapacity(patentShares int64) int64 {
+	if patentShares < 0 {
+		patentShares = 0
+	}
+	bonus := patentShares / 2
+	if bonus > math.MaxInt64-5 {
+		return math.MaxInt64
+	}
+	return 5 + bonus
+}
+
+// CorporationStarterCapital returns the starting capital granted by retained
+// Patent Shares, clamped to the representable Amount unit range.
+func CorporationStarterCapital(patentShares int64) int64 {
+	if patentShares < 0 {
+		patentShares = 0
+	}
+	if patentShares > (mathx.MaxUnits-100)/10 {
+		return mathx.MaxUnits
+	}
+	return 100 + patentShares*10
 }
 
 func (e *Engine) isReachable(s game.State, target content.Target) bool {

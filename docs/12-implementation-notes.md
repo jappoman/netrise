@@ -26,6 +26,11 @@ reinforcement, and persistent save/load. A save records UTC time and
 reconciles only safe production on startup, capped at eight hours.
 `--data-dir` overrides the default per-user configuration directory.
 
+Retained prestige currency now has mechanical identity: each Ghost Key adds
+two starting Runner bot-capacity slots, while every two Patent Shares add one
+starting Corporation ICE-capacity slot. The reset preview exposes both
+bonuses, and extreme retained values are clamped before arithmetic.
+
 The first Corporation slice is now playable through `netrise corp`: it has a
 separate campaign save, capital-producing client assets, reserve ICE,
 reputation/exposure meters, and a deterministic active-play NPC intrusion.

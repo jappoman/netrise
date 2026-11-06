@@ -5,6 +5,7 @@ import (
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -862,8 +863,40 @@ func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	if reset.GhostKeys != 1 || reset.PrestigeCount != 1 || reset.RunExtractedData != 0 || reset.Resources.Bots != 0 || len(reset.Generators) != 0 || len(reset.Research) != 0 {
 		t.Fatalf("identity burn did not reset run state: %#v", reset)
 	}
+	if reset.Resources.BotCapacity != 22 {
+		t.Fatalf("identity burn did not apply Ghost Key logistics bonus: %#v", reset.Resources)
+	}
 	if _, _, err := e.Apply(reset, game.Command{Kind: game.IdentityBurn}); err == nil {
 		t.Fatal("tiny reset unexpectedly granted a second reward")
+	}
+}
+
+func TestRestructuringAppliesPatentICECapacityBonus(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 34)
+	s := NewCorporationState(34)
+	s.Corp.RunValuation = 1000
+	s.Corp.PatentShares = 4
+	reset, _, err := e.Apply(s, game.Command{Kind: game.CorpRestructure})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reset.Corp == nil || reset.Corp.PatentShares != 5 || reset.Corp.ICECapacity != 7 || reset.Corp.ICE != 3 {
+		t.Fatalf("restructuring did not apply patent ICE capacity bonus: %#v", reset.Corp)
+	}
+}
+
+func TestPrestigeBonusesClampExtremeRetainedCurrencies(t *testing.T) {
+	if got := RunnerBotCapacity(math.MaxInt64); got != math.MaxInt64 {
+		t.Fatalf("Ghost Key capacity overflowed: %d", got)
+	}
+	if got := RunnerStarterCredits(math.MaxInt64); got != mathx.MaxUnits {
+		t.Fatalf("Ghost Key credit bonus overflowed: %d", got)
+	}
+	if got := CorporationICECapacity(math.MaxInt64); got != 5+math.MaxInt64/2 {
+		t.Fatalf("Patent ICE capacity overflowed: %d", got)
+	}
+	if got := CorporationStarterCapital(math.MaxInt64); got != mathx.MaxUnits {
+		t.Fatalf("Patent capital bonus overflowed: %d", got)
 	}
 }
 
