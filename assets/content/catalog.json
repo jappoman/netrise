@@ -11,6 +11,7 @@
     {"id":"street_contacts","name":"Street Contacts","cost":150,"description":"Unlocks reconnaissance."}
   ],
   "targets": [
-    {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90}
+    {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90},
+    {"id":"t_02","name":"Holloway Transit / Dispatch Vault","corporation":"Holloway Transit","reachable":false,"layers":[{"integrity":65,"ice":5,"counter":2},{"integrity":45,"ice":3,"counter":2}],"loot_credits":90,"loot_data":25,"time_limit":90}
   ]
 }

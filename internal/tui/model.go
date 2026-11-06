@@ -43,7 +43,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "u":
 			command = game.Command{Kind: game.BuyUpgrade, ID: "secondhand_compiler"}
 		case "a":
-			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: m.state.Resources.Bots, Doctrine: game.Balanced}
+			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Balanced}
+		case "1":
+			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Balanced}
+		case "2":
+			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Stealth}
+		case "3":
+			command = game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: attackCommitment(m.state.Resources.Bots), Doctrine: game.Overload}
+		case "r":
+			command = game.Command{Kind: game.ReinforceBattle, Quantity: 1}
 		case "w":
 			command = game.Command{Kind: game.WithdrawBattle}
 		}
@@ -80,7 +88,11 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nTICK %d\n%s\n\n[c] contract  [b] rig  [u] compiler  [f] bot  [a] attack  [w] withdraw  [q] quit\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.LogicalTick, battle, m.nextHint(), m.status)
+	controls := "[c] contract [b] rig [u] compiler [f] bot [1] balanced [2] stealth [3] overload [q] quit"
+	if m.state.ActiveBattle != nil {
+		controls = "[r] reinforce once [w] withdraw [q] quit"
+	}
+	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, controls, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
 }
 
@@ -116,6 +128,13 @@ func hasGenerator(s game.State, id string) bool {
 		}
 	}
 	return false
+}
+
+func attackCommitment(bots int64) int64 {
+	if bots <= 1 {
+		return bots
+	}
+	return (bots * 3) / 4
 }
 
 func (m *Model) saveNow() {

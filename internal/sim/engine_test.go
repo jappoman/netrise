@@ -1,6 +1,7 @@
 package sim
 
 import (
+	"encoding/json"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
@@ -102,6 +103,74 @@ func TestWithdrawReturnsSurvivors(t *testing.T) {
 	s, _, err = e.Apply(s, game.Command{Kind: game.WithdrawBattle})
 	if err != nil || s.ActiveBattle != nil || s.Resources.Bots != 4 {
 		t.Fatalf("withdraw did not return survivors: %#v, %v", s, err)
+	}
+}
+
+func TestBattleDeterminismIncludesEvents(t *testing.T) {
+	e1, e2 := New(catalog(), 77), New(catalog(), 77)
+	start := NewState(77)
+	start.Upgrades = []string{"secondhand_compiler"}
+	start.Resources.Bots = 12
+	a, eventsA, err := e1.Apply(start, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 10, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, eventsB, err := e2.Apply(start, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 10, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for a.ActiveBattle != nil || b.ActiveBattle != nil {
+		var ea, eb []game.Event
+		a, ea, err = e1.Apply(a, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil { t.Fatal(err) }
+		b, eb, err = e2.Apply(b, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil { t.Fatal(err) }
+		eventsA, eventsB = append(eventsA, ea...), append(eventsB, eb...)
+	}
+	aa, _ := json.Marshal(a)
+	bb, _ := json.Marshal(b)
+	if string(aa) != string(bb) {
+		t.Fatalf("same seed diverged:\n%s\n%s", aa, bb)
+	}
+	if len(eventsA) != len(eventsB) {
+		t.Fatalf("event streams differ: %d vs %d", len(eventsA), len(eventsB))
+	}
+}
+
+func TestReinforceIsAtomicAndSingleUse(t *testing.T) {
+	e := New(catalog(), 2)
+	s := NewState(2)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 5
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 3, Doctrine: game.Balanced})
+	if err != nil { t.Fatal(err) }
+	before := s.Resources.Bots
+	s, _, err = e.Apply(s, game.Command{Kind: game.ReinforceBattle, Quantity: 2})
+	if err != nil || s.Resources.Bots != 0 || s.ActiveBattle.CommittedBots != 5 {
+		t.Fatalf("reinforce failed: %#v, %v", s, err)
+	}
+	if _, _, err = e.Apply(s, game.Command{Kind: game.ReinforceBattle, Quantity: 1}); err == nil {
+		t.Fatal("second intervention accepted")
+	}
+	if before != 2 {
+		t.Fatalf("unexpected reserve before reinforcement: %d", before)
+	}
+}
+
+func TestBattleTimeoutReturnsSurvivorsWithoutLoot(t *testing.T) {
+	c := catalog()
+	c.Targets[0].Layers[0].Integrity = 100000
+	c.Targets[0].TimeLimit = 1
+	e := New(c, 4)
+	s := NewState(4)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 3
+	s, _, err := e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 2, Doctrine: game.Stealth})
+	if err != nil { t.Fatal(err) }
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.ActiveBattle != nil || s.Resources.Bots != 3 || s.Resources.Credits != mathx.New(25) {
+		t.Fatalf("timeout invariant failed: %#v, %v", s, err)
 	}
 }
 

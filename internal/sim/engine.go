@@ -217,7 +217,14 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	case game.Overload:
 		attackMultiplier, heatMultiplier = 125, 170
 	}
+	// Battle variation is deliberately bounded and comes from the persisted
+	// state stream. It cannot decide an otherwise impossible battle, but keeps
+	// equal commitments from producing identical-looking ticks.
+	s.RNGState ^= s.RNGState << 7
+	s.RNGState ^= s.RNGState >> 9
+	variationBP := int64(9500 + s.RNGState%1001)
 	damage := b.LiveBots * attackMultiplier / (100 + b.DefenderICE)
+	damage = damage * variationBP / 10000
 	if damage < 1 {
 		damage = 1
 	}
@@ -232,6 +239,10 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	b.TraceBP += heatMultiplier
 	if b.TraceBP > 10000 {
 		b.TraceBP = 10000
+	}
+	s.HeatBP += heatMultiplier
+	if s.HeatBP > 10000 {
+		s.HeatBP = 10000
 	}
 	if layer.Counter > 0 && b.ElapsedTicks%3 == 0 && b.LiveBots > 0 {
 		b.LiveBots--

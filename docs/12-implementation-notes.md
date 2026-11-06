@@ -1,16 +1,21 @@
 # 12. Implementation notes
 
-The first implementation slice covers M0 and the economy portion of M1: a
-Runner state, validated starter content, deterministic 1 Hz resource
-production, contracts, generator purchases, bot fabrication, versioned atomic
-JSON saves, capped safe offline reconciliation, a headless report, and a
-minimal Bubble Tea v2 terminal adapter.
+The current implementation covers M0, the economy portion of M1, and the
+first M2 combat slice: a Runner state, validated starter content,
+deterministic 1 Hz resource production, contracts, generator purchases, bot
+fabrication, versioned atomic JSON saves, capped safe offline reconciliation,
+a headless report, and a minimal Bubble Tea v2 terminal adapter. The combat
+slice now includes two data-driven Corporation targets, bounded seeded damage
+variation, doctrine selection, heat, timeout handling, and one atomic battle
+reinforcement.
 
-The battle model, Corporation campaign, recon, and research remain M2/M3 work.
-The TUI now exposes contract collection, Salvaged Rig purchase, one-bot
-fabrication, and persistent save/load. A save records UTC time and reconciles
-only safe production on startup, capped at eight hours. `--data-dir` overrides
-the default per-user configuration directory.
+The full M2 target browser, richer preflight and result/archive screens,
+Corporation campaign, recon, and research remain later work. The TUI now
+exposes contract collection, Salvaged Rig purchase, one-bot fabrication,
+three attack doctrines, a 75% default commitment, one reserve-bot
+reinforcement, and persistent save/load. A save records UTC time and
+reconciles only safe production on startup, capped at eight hours.
+`--data-dir` overrides the default per-user configuration directory.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
