@@ -79,6 +79,7 @@ func TestPlayerScreensFitStandardTerminalWidth(t *testing.T) {
 		Targets:       []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 10}}, TimeLimit: 30}},
 		Research:      []content.ResearchNode{{ID: "research", Name: "Research", Description: "A catalogued research option."}},
 		Upgrades:      []content.Upgrade{{ID: "upgrade", Name: "Upgrade", Description: "A catalogued upgrade option.", Cost: 1}},
+		CorpMarkets:   []content.CorpMarketExpansion{{ID: "metro_contracts", Name: "Metro Contracts", CostCapital: 150, DemandBonusBP: 1000}},
 	}
 	tests := []struct {
 		name   string
