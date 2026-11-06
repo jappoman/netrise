@@ -48,6 +48,8 @@ try {
     Compress-Archive -Path $staging -DestinationPath $archive -Force
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash.ToLowerInvariant()
     "$hash  $([IO.Path]::GetFileName($archive))" | Set-Content -LiteralPath $checksum -Encoding ascii
+    $recordedHash = (Get-Content -LiteralPath $checksum -Raw).Split(' ', [StringSplitOptions]::RemoveEmptyEntries)[0]
+    if ($recordedHash -ne $hash) { throw 'Generated archive checksum did not round-trip.' }
 
     New-Item -ItemType Directory -Force -Path $verify | Out-Null
     Expand-Archive -LiteralPath $archive -DestinationPath $verify -Force
@@ -56,12 +58,30 @@ try {
     if (!(Test-Path -LiteralPath (Join-Path $verify "$PackageName-bundle/assets/content/catalog.json"))) {
         throw 'Packaged catalog is missing.'
     }
+    & $verifiedBinary --version *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged version command failed with exit code ${LASTEXITCODE}." }
+    & $verifiedBinary --help *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged help command failed with exit code ${LASTEXITCODE}." }
+    & $verifiedBinary corp --help *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged Corporation help failed with exit code ${LASTEXITCODE}." }
     & $verifiedBinary validate-content
     if ($LASTEXITCODE -ne 0) { throw "Packaged validation failed with exit code ${LASTEXITCODE}." }
     & $verifiedBinary playtest --faction runner --seed 17 *> $null
     if ($LASTEXITCODE -ne 0) { throw "Packaged Runner playtest failed with exit code ${LASTEXITCODE}." }
     & $verifiedBinary playtest --faction corp --seed 17 *> $null
     if ($LASTEXITCODE -ne 0) { throw "Packaged Corporation playtest failed with exit code ${LASTEXITCODE}." }
+    & $verifiedBinary balance --seed-from 1 --seed-to 2 *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged balance command failed with exit code ${LASTEXITCODE}." }
+    & $verifiedBinary simulate --faction runner --seed 17 --ticks 600 *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged Runner simulation failed with exit code ${LASTEXITCODE}." }
+    & $verifiedBinary simulate --faction corp --seed 17 --ticks 600 *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Packaged Corporation simulation failed with exit code ${LASTEXITCODE}." }
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & $verifiedBinary unknown-command *> $null
+    $unknownExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    if ($unknownExitCode -eq 0) { throw 'Packaged unknown command unexpectedly succeeded.' }
 
     Write-Host "NETRISE Windows package created and verified: $archive"
     Write-Host "SHA256: $checksum"
