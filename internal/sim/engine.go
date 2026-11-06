@@ -25,7 +25,15 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	if elapsedTicks > OfflineCapTicks {
 		elapsedTicks = OfflineCapTicks
 	}
-	return e.Advance(s, elapsedTicks), elapsedTicks
+	// Offline time only resolves safe production. Preserve hostile state and
+	// the battle RNG stream so closing the game cannot decide an attack.
+	activeBattle := s.ActiveBattle
+	rngState := s.RNGState
+	s.ActiveBattle = nil
+	s = e.Advance(s, elapsedTicks)
+	s.ActiveBattle = activeBattle
+	s.RNGState = rngState
+	return s, elapsedTicks
 }
 
 func New(c content.Catalog, seed int64) *Engine {

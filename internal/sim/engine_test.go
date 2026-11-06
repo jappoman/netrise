@@ -216,3 +216,25 @@ func TestOfflineCapAndClockReversal(t *testing.T) {
 		t.Fatal("clock reversal advanced the simulation")
 	}
 }
+
+func TestOfflineReconciliationDoesNotResolveBattle(t *testing.T) {
+	e := New(catalog(), 12)
+	s := NewState(12)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 10
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil { t.Fatal(err) }
+	before := *s.ActiveBattle
+	rngBefore := s.RNGState
+	got, applied := e.ReconcileOffline(s, 600)
+	if applied != 600 || got.ActiveBattle == nil {
+		t.Fatalf("offline reconciliation resolved battle: %#v", got)
+	}
+	if *got.ActiveBattle != before || got.RNGState != rngBefore {
+		t.Fatalf("offline reconciliation changed hostile state: before=%#v after=%#v", before, *got.ActiveBattle)
+	}
+	if got.LogicalTick != 600 {
+		t.Fatalf("safe production did not advance: %d", got.LogicalTick)
+	}
+}
