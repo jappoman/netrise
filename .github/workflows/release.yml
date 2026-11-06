@@ -44,6 +44,11 @@ jobs:
           mkdir -p "dist/${bundle}/assets/content"
           go build -trimpath -ldflags="-s -w" -o "dist/${bundle}/${name}" ./cmd/netrise
           cp assets/content/catalog.json "dist/${bundle}/assets/content/catalog.json"
+          if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "amd64" ]; then
+            (cd "dist/${bundle}" && "./${name}" --version)
+            (cd "dist/${bundle}" && "./${name}" validate-content)
+            (cd "dist/${bundle}" && "./${name}" simulate --faction corp --seed 17 --ticks 600 >/dev/null)
+          fi
           if [ "$GOOS" = "windows" ]; then
             (cd dist && zip -qr "${bundle}.zip" "${bundle}")
             (cd dist && sha256sum "${bundle}.zip" > "${bundle}.zip.sha256" && sha256sum -c "${bundle}.zip.sha256")

@@ -194,6 +194,10 @@ costs and demand gain.
 Save tests cover round-tripping market tiers and demand above 100%, defaulting
 the new tier field for legacy Corporation JSON and rejecting impossible demand
 values at the persistence boundary.
+CI now runs the player-facing CLI smoke flow for both factions on every platform
+job. The release workflow also executes the Linux amd64 binary from its bundled
+directory, outside the repository working directory, before publishing the
+archive and checksum.
 
 Prestige confirmation screens now expose their lock reason before confirmation:
 Runner Identity Burn states the 10,000-data threshold, while Corporation

@@ -32,3 +32,9 @@ jobs:
         run: go test -race ./...
       - name: Build
         run: go build ./cmd/netrise
+      - name: CLI smoke flow
+        run: |
+          go run ./cmd/netrise --version
+          go run ./cmd/netrise validate-content
+          go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
+          go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
