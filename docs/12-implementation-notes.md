@@ -55,6 +55,8 @@ When no battle, timer, automation or policy job is active, offline passive
 production now aggregates directly over elapsed ticks instead of iterating each
 second; equivalence tests keep the result identical to the authoritative tick
 path, while queued safe jobs retain the detailed reconciliation path.
+Seed fuzz harnesses cover arbitrary save payloads and unknown command kinds,
+checking that malformed inputs cannot panic or partially mutate a snapshot.
 The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.
