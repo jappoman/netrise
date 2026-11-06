@@ -951,16 +951,45 @@ func (e *Engine) CorporationGrossRate(s game.State) int64 {
 		demand = 10000
 	}
 	rate = rate * demand / 10000
-	reputationFactor := int64(10000)
-	if s.Corp.ReputationBP < 5000 {
-		reputationFactor = 5000 + maxInt64(0, s.Corp.ReputationBP)
+	reputationFactor, exposureFactor := corporationRevenueFactors(s.Corp)
+	rate = rate * reputationFactor / 10000
+	return rate * exposureFactor / 10000
+}
+
+// CorporationRevenueFactor returns the effective percentage of demand-adjusted
+// revenue retained after reputation and exposure risk.
+func (e *Engine) CorporationRevenueFactor(s game.State) int64 {
+	if s.Corp == nil {
+		return 0
 	}
-	exposureFactor := 10000 - s.Corp.ExposureBP/2
+	reputationFactor, exposureFactor := corporationRevenueFactors(s.Corp)
+	return reputationFactor * exposureFactor / 1000000
+}
+
+func corporationRevenueFactors(corp *game.CorpState) (int64, int64) {
+	reputation := corp.ReputationBP
+	if reputation < 0 {
+		reputation = 0
+	}
+	if reputation > 10000 {
+		reputation = 10000
+	}
+	exposure := corp.ExposureBP
+	if exposure < 0 {
+		exposure = 0
+	}
+	if exposure > 10000 {
+		exposure = 10000
+	}
+	reputationFactor := int64(10000)
+	if reputation < 5000 {
+		reputationFactor = 5000 + reputation
+	}
+	exposureFactor := 10000 - exposure/2
 	if exposureFactor < 5000 {
 		exposureFactor = 5000
 	}
-	rate = rate * reputationFactor / 10000
-	return rate * exposureFactor / 10000
+	return reputationFactor, exposureFactor
 }
 
 // CorporationUpkeepRate returns current operational upkeep after completed

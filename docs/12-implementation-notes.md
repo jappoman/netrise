@@ -159,6 +159,8 @@ Corporation gross revenue now derives from demand, reputation and exposure in
 the shared engine. Reputation below 50% and exposure above zero apply bounded
 integer penalties, so the Economic Report and active production expose the same
 operating-risk tradeoff without floating-point accountancy.
+The report now prints reputation, exposure and the effective revenue factor so
+the penalty is explainable to the player rather than hidden in the rate.
 
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It

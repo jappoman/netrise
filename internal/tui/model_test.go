@@ -197,7 +197,7 @@ func TestCorporationReportShowsDerivedMarginAndProjection(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "v", Code: 'v'}))
 	m = updated.(Model)
 	view := m.View().Content
-	for _, expected := range []string{"CORPORATION REPORT", "GROSS REVENUE: +3/tick", "UPKEEP: -0/tick", "OPERATING MARGIN: +3/tick", "NEXT TICK PROJECTION", "MAINTENANCE: ON"} {
+	for _, expected := range []string{"CORPORATION REPORT", "GROSS REVENUE: +3/tick", "UPKEEP: -0/tick", "OPERATING MARGIN: +3/tick", "REPUTATION: 80%  EXPOSURE: 0%", "REVENUE FACTOR: 100%", "NEXT TICK PROJECTION", "MAINTENANCE: ON"} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("Corporation report omitted %q: %s", expected, view)
 		}

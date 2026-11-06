@@ -582,6 +582,9 @@ func TestCorporationReputationAndExposureBoundRevenue(t *testing.T) {
 	crisis := NewCorporationState(100)
 	crisis.Corp.ReputationBP = 4000
 	crisis.Corp.ExposureBP = 10000
+	if e.CorporationRevenueFactor(healthy) != 100 || e.CorporationRevenueFactor(lowReputation) != 90 || e.CorporationRevenueFactor(exposed) != 50 || e.CorporationRevenueFactor(crisis) != 45 {
+		t.Fatalf("unexpected revenue factors: healthy=%d low_rep=%d exposed=%d crisis=%d", e.CorporationRevenueFactor(healthy), e.CorporationRevenueFactor(lowReputation), e.CorporationRevenueFactor(exposed), e.CorporationRevenueFactor(crisis))
+	}
 	if base <= e.CorporationGrossRate(lowReputation) || base <= e.CorporationGrossRate(exposed) || e.CorporationGrossRate(lowReputation) <= e.CorporationGrossRate(crisis) || e.CorporationGrossRate(exposed) <= e.CorporationGrossRate(crisis) {
 		t.Fatalf("reputation/exposure did not produce monotonic bounded revenue: healthy=%d low_rep=%d exposed=%d crisis=%d", base, e.CorporationGrossRate(lowReputation), e.CorporationGrossRate(exposed), e.CorporationGrossRate(crisis))
 	}

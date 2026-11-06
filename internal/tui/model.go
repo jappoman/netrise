@@ -961,7 +961,7 @@ func (m Model) corpReportView() string {
 		projectedCapital -= 10
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.Compute, corp.Research, m.corpTechnologySummary(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
 }
 
 func (m Model) offlineLine() string {
