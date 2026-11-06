@@ -31,6 +31,15 @@ func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
 	}
 }
 
+func TestOfflineSummaryExplainsCapInOverview(t *testing.T) {
+	state := sim.NewState(409)
+	state.OfflineSummary = &game.OfflineSummary{Ticks: sim.OfflineCapTicks, Capped: true}
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 409), "")
+	if !strings.Contains(m.offlineLine(), "capped at 8h") {
+		t.Fatalf("offline cap warning was not player-visible: %s", m.offlineLine())
+	}
+}
+
 func TestQuitPersistsActiveBattleForResume(t *testing.T) {
 	catalog := content.Catalog{
 		SchemaVersion: 1,

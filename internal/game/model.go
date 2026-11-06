@@ -104,6 +104,7 @@ type OfflineSummary struct {
 	Ticks           int64        `json:"ticks"`
 	ComputeProduced mathx.Amount `json:"compute_produced"`
 	CapitalProduced mathx.Amount `json:"capital_produced"`
+	Capped          bool         `json:"capped,omitempty"`
 }
 
 type Automation struct {

@@ -320,7 +320,7 @@ func TestOfflineCapAndClockReversal(t *testing.T) {
 	e := New(catalog(), 1)
 	s := NewState(1)
 	got, applied := e.ReconcileOffline(s, OfflineCapTicks+100)
-	if applied != OfflineCapTicks || got.LogicalTick != OfflineCapTicks || got.OfflineSummary == nil || got.OfflineSummary.Ticks != OfflineCapTicks {
+	if applied != OfflineCapTicks || got.LogicalTick != OfflineCapTicks || got.OfflineSummary == nil || got.OfflineSummary.Ticks != OfflineCapTicks || !got.OfflineSummary.Capped {
 		t.Fatalf("offline cap failed: ticks=%d state=%d", applied, got.LogicalTick)
 	}
 	got, applied = e.ReconcileOffline(s, -1)

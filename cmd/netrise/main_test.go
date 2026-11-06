@@ -56,3 +56,20 @@ func TestLoadStateDoesNotAdvanceOnClockReversal(t *testing.T) {
 		t.Fatalf("clock reversal advanced state: %#v", got)
 	}
 }
+
+func TestLoadStatePersistsOfflineCapWarning(t *testing.T) {
+	dir := t.TempDir()
+	saved := time.Date(2026, time.November, 6, 10, 0, 0, 0, time.UTC)
+	state := sim.NewState(18)
+	state.SavedAtUTC = saved.Format(time.RFC3339Nano)
+	if err := save.Write(dir, state); err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(content.Catalog{SchemaVersion: 1}, 18)
+	got := loadStateAt(dir, e, game.Runner, func() time.Time {
+		return saved.Add(time.Duration(sim.OfflineCapTicks+100) * time.Second)
+	})
+	if got.OfflineSummary == nil || !got.OfflineSummary.Capped || got.OfflineSummary.Ticks != sim.OfflineCapTicks {
+		t.Fatalf("offline startup did not preserve cap warning: %#v", got.OfflineSummary)
+	}
+}

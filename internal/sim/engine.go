@@ -23,11 +23,16 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	if elapsedTicks < 0 {
 		return s, 0
 	}
+	capped := elapsedTicks > OfflineCapTicks
 	if elapsedTicks > OfflineCapTicks {
 		elapsedTicks = OfflineCapTicks
 	}
 	if e.canAggregateOffline(s, elapsedTicks) {
-		return e.aggregateOffline(s, elapsedTicks), elapsedTicks
+		aggregated := e.aggregateOffline(s, elapsedTicks)
+		if aggregated.OfflineSummary != nil {
+			aggregated.OfflineSummary.Capped = capped
+		}
+		return aggregated, elapsedTicks
 	}
 	// Offline time only resolves safe production. Preserve hostile state and
 	// the battle RNG stream so closing the game cannot decide an attack.
@@ -47,7 +52,7 @@ func (e *Engine) ReconcileOffline(s game.State, elapsedTicks int64) (game.State,
 	if s.Corp != nil {
 		capitalProduced, _ = s.Corp.Capital.Add(-beforeCapital)
 	}
-	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced}
+	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced, Capped: capped}
 	return s, elapsedTicks
 }
 
@@ -119,7 +124,7 @@ func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
 	if s.Corp != nil {
 		capitalProduced, _ = s.Corp.Capital.Add(-beforeCapital)
 	}
-	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced}
+	s.OfflineSummary = &game.OfflineSummary{Ticks: elapsedTicks, ComputeProduced: computeProduced, CapitalProduced: capitalProduced, Capped: false}
 	return s
 }
 

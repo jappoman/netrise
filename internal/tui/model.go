@@ -1034,10 +1034,14 @@ func (m Model) offlineLine() string {
 		return ""
 	}
 	summary := m.state.OfflineSummary
-	if m.state.Faction == game.Corporation {
-		return fmt.Sprintf("OFFLINE: %d safe ticks / +%s capital", summary.Ticks, summary.CapitalProduced)
+	suffix := ""
+	if summary.Capped {
+		suffix = " / capped at 8h"
 	}
-	return fmt.Sprintf("OFFLINE: %d safe ticks / +%s compute", summary.Ticks, summary.ComputeProduced)
+	if m.state.Faction == game.Corporation {
+		return fmt.Sprintf("OFFLINE: %d safe ticks / +%s capital%s", summary.Ticks, summary.CapitalProduced, suffix)
+	}
+	return fmt.Sprintf("OFFLINE: %d safe ticks / +%s compute%s", summary.Ticks, summary.ComputeProduced, suffix)
 }
 
 func (m Model) restructureView() string {
