@@ -499,6 +499,9 @@ settings and progression guidance, so secondary screens remain readable at
 The Corporation Report uses a concise market tier label at 80x24 so its
 projection and `NEXT:` rail remain visible together with the full economic
 metrics.
+The same renderer now uses the actual terminal width below 76 columns, so
+compact 40-column sessions wrap action rails and guidance instead of allowing
+the standard-width safety margin to overflow a narrow terminal.
 
 The headless balance report now reuses the production combat engine for a
 deterministic target/doctrine/commitment matrix, emitting outcomes, duration,

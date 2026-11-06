@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"fmt"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
@@ -20,6 +21,27 @@ func TestCompactResizeDoesNotPanic(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
 	if updated == nil {
 		t.Fatal("nil model")
+	}
+}
+
+func TestNarrowTerminalWrapsToActualWidth(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	for _, faction := range []game.Faction{game.Runner, game.Corporation} {
+		state := sim.NewState(6)
+		if faction == game.Corporation {
+			state = sim.NewCorporationState(6)
+		}
+		m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 6), "")
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 10})
+		view := updated.(Model).View().Content
+		for _, line := range strings.Split(view, "\n") {
+			if lipgloss.Width(line) > 40 {
+				t.Fatalf("%s narrow view line exceeds actual width (%d): %q", faction, lipgloss.Width(line), line)
+			}
+		}
+		if !strings.Contains(view, "NEXT:") || !strings.Contains(view, "[q] quit") {
+			t.Fatalf("%s narrow view lost player guidance: %s", faction, view)
+		}
 	}
 }
 

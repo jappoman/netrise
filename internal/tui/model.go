@@ -389,59 +389,59 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() tea.View {
 	if m.screen == "battle" {
 		if m.compact() {
-			return terminalView(m.compactBattleView())
+			return terminalView(m.compactBattleView(), m.width)
 		}
-		return terminalView(m.battleView())
+		return terminalView(m.battleView(), m.width)
 	}
 	if m.compact() && m.screen == "overview" {
-		return terminalView(m.compactView())
+		return terminalView(m.compactView(), m.width)
 	}
 	titleStyle := terminalTitleStyle()
 	title := titleStyle.Render("NETRISE // RUNNER TERMINAL")
 	if m.screen == "targets" {
-		return terminalView(m.targetsView())
+		return terminalView(m.targetsView(), m.width)
 	}
 	if m.screen == "preflight" {
-		return terminalView(m.preflightView())
+		return terminalView(m.preflightView(), m.width)
 	}
 	if m.screen == "result" {
-		return terminalView(m.resultView())
+		return terminalView(m.resultView(), m.width)
 	}
 	if m.screen == "research" {
-		return terminalView(m.researchView())
+		return terminalView(m.researchView(), m.width)
 	}
 	if m.screen == "upgrades" {
-		return terminalView(m.upgradesView())
+		return terminalView(m.upgradesView(), m.width)
 	}
 	if m.screen == "automation" {
 		if m.state.Faction == game.Corporation {
-			return terminalView(m.corpMaintenanceView())
+			return terminalView(m.corpMaintenanceView(), m.width)
 		}
-		return terminalView(m.automationView())
+		return terminalView(m.automationView(), m.width)
 	}
 	if m.screen == "corp-report" {
-		return terminalView(m.corpReportView())
+		return terminalView(m.corpReportView(), m.width)
 	}
 	if m.screen == "archive" {
-		return terminalView(m.archiveView())
+		return terminalView(m.archiveView(), m.width)
 	}
 	if m.screen == "settings" {
-		return terminalView(m.settingsView())
+		return terminalView(m.settingsView(), m.width)
 	}
 	if m.screen == "prestige" {
-		return terminalView(m.prestigeView())
+		return terminalView(m.prestigeView(), m.width)
 	}
 	if m.screen == "restructure" {
-		return terminalView(m.restructureView())
+		return terminalView(m.restructureView(), m.width)
 	}
 	if m.screen == "help" {
-		return terminalView(m.helpView())
+		return terminalView(m.helpView(), m.width)
 	}
 	if m.screen == "tutorial" {
-		return terminalView(m.tutorialView())
+		return terminalView(m.tutorialView(), m.width)
 	}
 	if m.state.Faction == game.Corporation {
-		return terminalView(m.corpOverviewView())
+		return terminalView(m.corpOverviewView(), m.width)
 	}
 	battle := "NO ACTIVE BATTLE"
 	if m.state.ActiveBattle != nil {
@@ -451,12 +451,12 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
-	controls = wrapActionRail(controls)
+	controls = wrapActionRail(controls, m.width)
 	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nDATA %s/%d\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Data, m.state.Resources.DataCapacity, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.automationSummary(), m.offlineLine(), controls, m.nextHint(), m.status)
-	return terminalView(title + "\n\n" + body + "\n")
+	return terminalView(title+"\n\n"+body+"\n", m.width)
 }
 
-func terminalView(content string) tea.View {
+func terminalView(content string, widths ...int) tea.View {
 	if os.Getenv("NETRISE_ASCII") != "" {
 		content = strings.Map(func(r rune) rune {
 			if r > 127 {
@@ -465,7 +465,11 @@ func terminalView(content string) tea.View {
 			return r
 		}, content)
 	}
-	content = wrapTerminalContent(content, 76)
+	width := 76
+	if len(widths) > 0 && widths[0] > 0 && widths[0] < width {
+		width = widths[0]
+	}
+	content = wrapTerminalContent(content, width)
 	view := tea.NewView(content)
 	view.AltScreen = true
 	return view
@@ -522,14 +526,14 @@ func (m Model) compactView() string {
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [x] isolate asset [q] quit"
 		}
-		controls = wrapActionRail(controls)
+		controls = wrapActionRail(controls, m.width)
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\n%s\nREP %d%%  EXPOSURE %d%%\nMARKET %s\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.corpIncursionSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.corpMarketSummary(), m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
 	controls := "[c] contract [b] rig [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [S] settings [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
-	controls = wrapActionRail(controls)
+	controls = wrapActionRail(controls, m.width)
 	return fmt.Sprintf("NETRISE // RUNNER (COMPACT)\nCREDITS %s  COMPUTE %s\nDATA %s/%d  BOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.state.Resources.Data, m.state.Resources.DataCapacity, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, compactBattle(m.state), m.reconLine(), m.nextHint(), controls)
 }
 
@@ -1156,12 +1160,15 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [x] isolate asset [q] quit"
 	}
-	controls = wrapActionRail(controls)
+	controls = wrapActionRail(controls, m.width)
 	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nMARKET %s\nASSETS %s\nDETAIL %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), m.corpIncursionSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpMarketSummary(), m.corpAssetSummary(), m.corpAssetDetails(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
-func wrapActionRail(value string) string {
-	const width = 76
+func wrapActionRail(value string, widths ...int) string {
+	width := 76
+	if len(widths) > 0 && widths[0] > 0 && widths[0] < width {
+		width = widths[0]
+	}
 	words := strings.Fields(value)
 	if len(words) == 0 {
 		return ""
