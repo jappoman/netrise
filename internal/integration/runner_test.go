@@ -113,6 +113,41 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 	}
 }
 
+func TestEightHourOfflineReconciliationIsCappedForBothFactions(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 704)
+	cases := []struct {
+		name  string
+		state game.State
+	}{
+		{name: "runner", state: sim.NewState(704)},
+		{name: "corporation", state: sim.NewCorporationState(704)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			before := tc.state
+			got, applied := e.ReconcileOffline(tc.state, sim.OfflineCapTicks+100)
+			if applied != sim.OfflineCapTicks || got.LogicalTick != sim.OfflineCapTicks || got.OfflineSummary == nil || !got.OfflineSummary.Capped {
+				t.Fatalf("eight-hour offline cap failed: applied=%d tick=%d summary=%#v", applied, got.LogicalTick, got.OfflineSummary)
+			}
+			if got.ActiveBattle != nil || got.HeatBP != before.HeatBP || len(got.EventLog) != len(before.EventLog) || len(got.EventLog) > game.EventLogLimit {
+				t.Fatalf("offline reconciliation performed hostile work: before=%#v after=%#v", before, got)
+			}
+			if got.Resources.Credits < 0 || got.Resources.Compute < 0 || got.Resources.Data < 0 || got.Resources.Bots < 0 || got.Corp != nil && (got.Corp.Capital < 0 || got.Corp.Compute < 0 || got.Corp.Research < 0 || got.Corp.ExposureBP != before.Corp.ExposureBP) {
+				t.Fatalf("offline invariant failed: %#v", got)
+			}
+		})
+	}
+}
+
 func TestActiveBattleSaveReopenResumesIdentically(t *testing.T) {
 	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
 	if err != nil {

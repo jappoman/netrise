@@ -454,6 +454,10 @@ Runner and Corporation load/reopen paths.
 Top-level CLI validation now rejects unknown commands and extra arguments to
 `validate-content` instead of falling through to an interactive TUI session.
 
+Integration coverage now exercises the full eight-hour offline cap against the
+shipped catalog for both factions, asserting bounded resources and no hostile
+events or state changes while the game is closed.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.
