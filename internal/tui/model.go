@@ -36,10 +36,12 @@ type Model struct {
 	automationPolicy int
 	automationBudget int64
 	doctrine         game.Doctrine
+	paused           bool
+	playbackSpeed    int64
 }
 
 func New(s game.State, e *sim.Engine, dataDir string) Model {
-	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced, commitmentPct: 75, automationBudget: sim.DefaultAutomationBudget}
+	return Model{state: s, engine: e, dataDir: dataDir, screen: "overview", doctrine: game.Balanced, commitmentPct: 75, automationBudget: sim.DefaultAutomationBudget, playbackSpeed: 1}
 }
 func (m Model) Init() tea.Cmd { return tea.Tick(1e9, func(time.Time) tea.Msg { return tickMsg{} }) }
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -54,6 +56,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen = "overview"
 			}
 			return m, nil
+		}
+		if m.screen == "battle" {
+			switch v.String() {
+			case "space":
+				m.paused = !m.paused
+				if m.paused {
+					m.status = "battle playback paused"
+					return m, nil
+				}
+				m.status = fmt.Sprintf("battle playback resumed at %dx", m.playbackSpeed)
+				return m, m.Init()
+			case "1", "2", "4":
+				m.playbackSpeed = int64(v.String()[0] - '0')
+				m.status = fmt.Sprintf("playback speed %dx", m.playbackSpeed)
+				return m, nil
+			}
 		}
 		if v.String() == "?" {
 			m.screen = "help"
@@ -286,8 +304,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.applyCommand(command)
 		}
 	case tickMsg:
+		if m.paused {
+			return m, nil
+		}
 		var events []game.Event
-		m.state, events, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		ticks := m.playbackSpeed
+		if ticks < 1 {
+			ticks = 1
+		}
+		m.state, events, _ = m.engine.Apply(m.state, game.Command{Kind: game.AdvanceTicks, Ticks: ticks})
 		if len(events) > 0 {
 			m.status = events[len(events)-1].Message
 		}
@@ -405,11 +430,11 @@ func (m Model) compactBattleView() string {
 		return "NETRISE // BATTLE\n\nNo active battle.\n[o] overview"
 	}
 	b := m.state.ActiveBattle
-	controls := "[r] reinforce  [w] withdraw  [q] quit"
+	controls := "[space] pause  [1/2/4] speed  [r] reinforce  [w] withdraw  [q] quit"
 	if m.state.Faction == game.Corporation {
-		controls = "[e] deploy ICE  [q] quit"
+		controls = "[space] pause  [1/2/4] speed  [e] deploy ICE  [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // BATTLE\n%s\nLAYER %d | BOTS %d | INTEGRITY %d\nICE %d | TRACE %d%% | TICK %d/%d\n%s\nNEXT: %s", battleTargetName(m.engine, b.TargetID), b.LayerIndex+1, b.LiveBots, b.LayerIntegrity, b.DefenderICE, b.TraceBP/100, b.ElapsedTicks, b.TimeLimit, controls, m.battleNextHint())
+	return fmt.Sprintf("NETRISE // BATTLE\n%s\nLAYER %d | BOTS %d | INTEGRITY %d\nICE %d | TRACE %d%% | TICK %d/%d\nPLAYBACK: %s\n%s\nNEXT: %s", battleTargetName(m.engine, b.TargetID), b.LayerIndex+1, b.LiveBots, b.LayerIntegrity, b.DefenderICE, b.TraceBP/100, b.ElapsedTicks, b.TimeLimit, m.playbackStatus(), controls, m.battleNextHint())
 }
 
 func (m Model) battleView() string {
@@ -435,11 +460,11 @@ func (m Model) battleView() string {
 	for _, event := range events {
 		lines += fmt.Sprintf("  [t+%d] %s\n", event.Tick, event.Message)
 	}
-	controls := "[r] reinforce once  [w] withdraw  [q] quit"
+	controls := "[space] pause  [1/2/4] speed  [r] reinforce once  [w] withdraw  [q] quit"
 	if m.state.Faction == game.Corporation {
-		controls = "[e] deploy reserve ICE  [q] quit"
+		controls = "[space] pause  [1/2/4] speed  [e] deploy reserve ICE  [q] quit"
 	}
-	return lines + "\n" + controls + "\nNEXT: " + m.battleNextHint()
+	return lines + "\n" + controls + "\nPLAYBACK: " + m.playbackStatus() + "\nNEXT: " + m.battleNextHint()
 }
 
 func battleTargetName(engine *sim.Engine, id string) string {
@@ -466,10 +491,20 @@ func recentBattleEvents(events []game.Event) []game.Event {
 }
 
 func (m Model) battleNextHint() string {
+	if m.paused {
+		return "playback paused; press [space] to resume"
+	}
 	if m.state.Faction == game.Corporation {
 		return "watch exposure and deploy reserve ICE only when the incursion needs it"
 	}
 	return "watch layer integrity; reinforce once if needed or withdraw to save surviving bots"
+}
+
+func (m Model) playbackStatus() string {
+	if m.paused {
+		return "PAUSED"
+	}
+	return fmt.Sprintf("RUNNING at %dx", m.playbackSpeed)
 }
 
 func (m Model) targetsView() string {

@@ -128,5 +128,10 @@ all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and
 non-negative resources for every case without bypassing the production engine.
 
+Battle playback controls now support pause with `[space]` and 1x/2x/4x display
+speed. These controls live entirely in the TUI: each update still advances the
+shared engine through deterministic `AdvanceTicks` commands, and paused playback
+cannot mutate simulation state.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

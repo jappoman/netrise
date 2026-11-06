@@ -236,10 +236,47 @@ func TestBattlePlaybackShowsCountersAndRecentEvents(t *testing.T) {
 	m := New(state, sim.New(catalog, 3), "")
 	m.screen = "battle"
 	view := m.View().Content
-	for _, expected := range []string{"BATTLE PLAYBACK", "LAYER: 1/2", "LIVE BOTS: 6/8", "TRACE: 18%", "Countermeasure destroyed one bot", "[r] reinforce once", "withdraw"} {
+	for _, expected := range []string{"BATTLE PLAYBACK", "LAYER: 1/2", "LIVE BOTS: 6/8", "TRACE: 18%", "Countermeasure destroyed one bot", "[space] pause", "[1/2/4] speed", "[r] reinforce once", "withdraw", "RUNNING at 1x"} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("battle playback omitted %q: %s", expected, view)
 		}
+	}
+}
+
+func TestBattlePlaybackPauseSpeedAndResume(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Layers: []content.Layer{{Integrity: 30, ICE: 2}}, TimeLimit: 30}},
+	}
+	state := sim.NewState(12)
+	state.ActiveBattle = &game.Battle{TargetID: "target", Doctrine: game.Balanced, CommittedBots: 8, LiveBots: 8, LayerIntegrity: 30, DefenderICE: 2, TimeLimit: 30}
+	m := New(state, sim.New(catalog, 12), "")
+	m.screen = "battle"
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: " ", Code: tea.KeySpace}))
+	m = updated.(Model)
+	if !m.paused || !strings.Contains(m.battleView(), "PAUSED") {
+		t.Fatalf("space did not pause playback: paused=%v view=%s", m.paused, m.battleView())
+	}
+	before := m.state.LogicalTick
+	updated, _ = m.Update(tickMsg{})
+	m = updated.(Model)
+	if m.state.LogicalTick != before {
+		t.Fatalf("paused playback advanced simulation: before=%d after=%d", before, m.state.LogicalTick)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "4", Code: '4'}))
+	m = updated.(Model)
+	if m.playbackSpeed != 4 {
+		t.Fatalf("speed control did not select 4x: %d", m.playbackSpeed)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: " ", Code: tea.KeySpace}))
+	m = updated.(Model)
+	if m.paused {
+		t.Fatal("space did not resume playback")
+	}
+	updated, _ = m.Update(tickMsg{})
+	m = updated.(Model)
+	if m.state.LogicalTick != before+4 {
+		t.Fatalf("4x playback advanced %d ticks, want 4", m.state.LogicalTick-before)
 	}
 }
 
