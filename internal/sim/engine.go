@@ -1395,20 +1395,20 @@ func (e *Engine) CorporationGrossRate(s game.State) int64 {
 		return 0
 	}
 	effects := e.corpResearchEffects(s)
-	rate := int64(2) + effects.CapitalPerTickBonus
+	rate := AddNonNegativeSaturated(2, effects.CapitalPerTickBonus)
 	for _, asset := range s.Corp.Assets {
 		if asset.Operational && asset.IsolatedUntilTick <= s.LogicalTick {
-			rate += asset.CapitalPerTick
+			rate = AddNonNegativeSaturated(rate, asset.CapitalPerTick)
 		}
 	}
 	demand := s.Corp.DemandBP
 	if demand <= 0 {
 		demand = 10000
 	}
-	rate = rate * demand / 10000
+	rate = mulDivNonNegative(rate, demand, 10000)
 	reputationFactor, exposureFactor := corporationRevenueFactors(s.Corp)
-	rate = rate * reputationFactor / 10000
-	return rate * exposureFactor / 10000
+	rate = mulDivNonNegative(rate, reputationFactor, 10000)
+	return mulDivNonNegative(rate, exposureFactor, 10000)
 }
 
 // CorporationRevenueFactor returns the effective percentage of demand-adjusted
@@ -1456,11 +1456,11 @@ func (e *Engine) CorporationUpkeepRate(s game.State) int64 {
 	upkeep := int64(0)
 	for _, asset := range s.Corp.Assets {
 		if asset.Operational && asset.IsolatedUntilTick <= s.LogicalTick {
-			upkeep += asset.UpkeepPerTick
+			upkeep = AddNonNegativeSaturated(upkeep, asset.UpkeepPerTick)
 		}
 	}
 	reduction := e.corpResearchEffects(s).UpkeepReductionPercent
-	return upkeep * (100 - reduction) / 100
+	return mulDivNonNegative(upkeep, 100-reduction, 100)
 }
 
 // EstimateBattle provides a deterministic, intentionally conservative preflight

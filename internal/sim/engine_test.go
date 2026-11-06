@@ -930,6 +930,18 @@ func TestBattleArithmeticHandlesExtremeInputs(t *testing.T) {
 	}
 }
 
+func TestCorporationRatesSaturateExtremeAssets(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 38)
+	s := NewCorporationState(38)
+	s.Corp.DemandBP = 20000
+	s.Corp.Assets = []game.CorpAsset{{ID: "extreme", CapitalPerTick: math.MaxInt64, UpkeepPerTick: math.MaxInt64, Operational: true, IsolatedUntilTick: 0}}
+	gross := e.CorporationGrossRate(s)
+	upkeep := e.CorporationUpkeepRate(s)
+	if gross < 0 || upkeep < 0 || gross > math.MaxInt64 || upkeep > math.MaxInt64 {
+		t.Fatalf("Corporation rate arithmetic escaped bounds: gross=%d upkeep=%d", gross, upkeep)
+	}
+}
+
 func TestPrestigeCountersSaturateAtInt64Maximum(t *testing.T) {
 	e := New(content.Catalog{SchemaVersion: 1}, 36)
 	runner := NewState(36)

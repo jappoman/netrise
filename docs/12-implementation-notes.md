@@ -335,3 +335,7 @@ Battle and preflight damage calculations now use checked non-negative
 multiply/divide helpers and safe ceiling division, preventing extreme but
 validated content or resumed battle state from overflowing intermediate
 values.
+
+Corporation gross revenue and upkeep now use the same saturating additions and
+checked multiply/divide path when aggregating assets and applying demand,
+reputation and exposure factors.
