@@ -397,3 +397,7 @@ player, preventing progression-counter wraparound and preserving command atomici
 The Corporation Economic Report now uses saturating projections for capital and
 compute, and overflow-safe budget deductions, so extreme but valid state values
 remain readable in the player-facing TUI.
+
+Target ICE and loot estimates now saturate both multi-layer aggregation and
+uncertainty multiplication, keeping the Target screen safe for extreme catalog
+values without changing the underlying simulation.

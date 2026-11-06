@@ -1238,7 +1238,7 @@ func targetICESummary(target content.Target, intel int64) string {
 	total := int64(0)
 	for _, layer := range target.Layers {
 		if layer.ICE > 0 {
-			total += layer.ICE
+			total = sim.AddNonNegativeSaturated(total, layer.ICE)
 		}
 	}
 	return estimateRange(total, intel)
@@ -1259,8 +1259,12 @@ func estimateRange(total, intel int64) string {
 		intel = 100
 	}
 	uncertaintyBP := (100 - intel) * 25
-	low := total * (10000 - uncertaintyBP) / 10000
-	high := (total*(10000+uncertaintyBP) + 9999) / 10000
+	low := saturatingProduct(total, 10000-uncertaintyBP) / 10000
+	highProduct := saturatingProduct(total, 10000+uncertaintyBP)
+	high := highProduct / 10000
+	if highProduct%10000 != 0 && high < int64(^uint64(0)>>1) {
+		high++
+	}
 	if low < 1 {
 		low = 1
 	}
@@ -1271,6 +1275,17 @@ func estimateRange(total, intel int64) string {
 		return fmt.Sprintf("%d", low)
 	}
 	return fmt.Sprintf("%d-%d", low, high)
+}
+
+func saturatingProduct(a, b int64) int64 {
+	if a <= 0 || b <= 0 {
+		return 0
+	}
+	maxInt := int64(^uint64(0) >> 1)
+	if a > maxInt/b {
+		return maxInt
+	}
+	return a * b
 }
 
 func targetReconStatus(s game.State, target content.Target) string {

@@ -598,6 +598,15 @@ func TestCorporationReportSaturatesExtremeProjection(t *testing.T) {
 	}
 }
 
+func TestTargetEstimatesSaturateExtremeCatalogValues(t *testing.T) {
+	target := content.Target{LootCredits: math.MaxInt64, LootData: math.MaxInt64, Layers: []content.Layer{{ICE: math.MaxInt64}, {ICE: math.MaxInt64}}}
+	ice := targetICESummary(target, 0)
+	loot := targetLootSummary(target, 0)
+	if !strings.Contains(ice, "922337203685477") || !strings.Contains(loot, "922337203685477") {
+		t.Fatalf("extreme target estimates were not rendered safely: ice=%q loot=%q", ice, loot)
+	}
+}
+
 func TestPrestigeScreensExplainLockedAndReadyStates(t *testing.T) {
 	corp := New(sim.NewCorporationState(11), sim.New(content.Catalog{SchemaVersion: 1}, 11), "")
 	updated, _ := corp.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
