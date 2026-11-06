@@ -46,10 +46,10 @@ jobs:
           cp assets/content/catalog.json "dist/${bundle}/assets/content/catalog.json"
           if [ "$GOOS" = "windows" ]; then
             (cd dist && zip -qr "${bundle}.zip" "${bundle}")
-            sha256sum "dist/${bundle}.zip" > "dist/${bundle}.zip.sha256"
+            (cd dist && sha256sum "${bundle}.zip" > "${bundle}.zip.sha256" && sha256sum -c "${bundle}.zip.sha256")
           else
             tar -C dist -czf "dist/${bundle}.tar.gz" "${bundle}"
-            sha256sum "dist/${bundle}.tar.gz" > "dist/${bundle}.tar.gz.sha256"
+            (cd dist && sha256sum "${bundle}.tar.gz" > "${bundle}.tar.gz.sha256" && sha256sum -c "${bundle}.tar.gz.sha256")
           fi
       - uses: actions/upload-artifact@v4
         with:
