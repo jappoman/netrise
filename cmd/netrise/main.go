@@ -30,7 +30,7 @@ func main() {
 		fmt.Println("content: valid")
 		return
 	}
-	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h" || args[0] == "corp" && len(args) > 1 && (args[1] == "--help" || args[1] == "-h")) {
 		fmt.Println("netrise [--data-dir DIR]\nnetrise corp [--data-dir DIR]\nnetrise simulate --faction runner|corp --seed N --ticks N\nnetrise validate-content\n\nA deterministic fictional Runner/Corporation strategy game.")
 		return
 	}

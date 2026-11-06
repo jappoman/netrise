@@ -437,3 +437,6 @@ generator labels, closing indirect TUI injection paths through resumed state.
 
 The headless `simulate --help` path now exits successfully after printing its
 flags, matching the top-level CLI help behavior instead of reporting an error.
+
+The `corp --help` alias now follows the same clean help path and never starts a
+TUI session when a user is asking for command usage.
