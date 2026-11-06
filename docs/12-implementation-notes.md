@@ -339,3 +339,7 @@ values.
 Corporation gross revenue and upkeep now use the same saturating additions and
 checked multiply/divide path when aggregating assets and applying demand,
 reputation and exposure factors.
+
+Logical ticks, fabrication/intel gains, extracted data, demand and aggregated
+technology effects also use bounded increments, preserving capacity and meter
+invariants when resuming unusually large but structurally valid state.

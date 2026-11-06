@@ -101,7 +101,7 @@ func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
 			s.TargetCooldowns[id] = remaining - elapsedTicks
 		}
 	}
-	s.LogicalTick += elapsedTicks
+	s.LogicalTick = AddNonNegativeSaturated(s.LogicalTick, elapsedTicks)
 	if s.Corp == nil {
 		rate := e.ComputeRate(s)
 		gain, _ := mathx.New(rate).MulUnits(elapsedTicks)
@@ -557,7 +557,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Corp.Capital -= cost
 		s.Corp.Influence -= influenceCost
 		s.Corp.Influence = mathx.AddSaturated(s.Corp.Influence, mathx.New(market.InfluenceGain))
-		s.Corp.DemandBP += market.DemandBonusBP
+		s.Corp.DemandBP = minInt64(20000, AddNonNegativeSaturated(s.Corp.DemandBP, market.DemandBonusBP))
 		s.Corp.MarketTier++
 		s.Corp.RunValuation = AddNonNegativeSaturated(s.Corp.RunValuation, market.ValuationGain)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: fmt.Sprintf("%s secured: demand +%d%%.", market.Name, market.DemandBonusBP/100)}}, nil
@@ -654,7 +654,7 @@ func (e *Engine) Advance(s game.State, ticks int64) game.State {
 func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.State, []game.Event) {
 	var events []game.Event
 	for i := int64(0); i < ticks; i++ {
-		s.LogicalTick++
+		s.LogicalTick = AddNonNegativeSaturated(s.LogicalTick, 1)
 		for id, remaining := range s.TargetCooldowns {
 			if remaining <= 1 {
 				delete(s.TargetCooldowns, id)
@@ -690,7 +690,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		if s.Fabrication != nil {
 			s.Fabrication.RemainingTicks--
 			if s.Fabrication.RemainingTicks <= 0 {
-				s.Resources.Bots += s.Fabrication.Quantity
+				s.Resources.Bots = minInt64(s.Resources.BotCapacity, AddNonNegativeSaturated(s.Resources.Bots, s.Fabrication.Quantity))
 				s.Fabrication = nil
 			}
 		}
@@ -702,10 +702,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 					s.Intel = map[string]int64{}
 				}
 				if target, ok := e.target(s.Recon.TargetID); ok {
-					s.Intel[target.ID] += target.IntelGain
-					if s.Intel[target.ID] > 100 {
-						s.Intel[target.ID] = 100
-					}
+					s.Intel[target.ID] = minInt64(100, AddNonNegativeSaturated(s.Intel[target.ID], target.IntelGain))
 					events = append(events, game.Event{Tick: s.LogicalTick, Type: "ReconCompleted", Message: fmt.Sprintf("Recon complete: %s intel %d%%.", target.Name, s.Intel[target.ID])})
 				}
 				s.Recon = nil
@@ -905,8 +902,8 @@ func (e *Engine) corpResearchEffects(s game.State) content.CorpResearchEffects {
 		if !contains(s.Corp.CompletedResearch, node.ID) {
 			continue
 		}
-		effects.CapitalPerTickBonus += node.Effects.CapitalPerTickBonus
-		effects.UpkeepReductionPercent += node.Effects.UpkeepReductionPercent
+		effects.CapitalPerTickBonus = AddNonNegativeSaturated(effects.CapitalPerTickBonus, node.Effects.CapitalPerTickBonus)
+		effects.UpkeepReductionPercent = AddNonNegativeSaturated(effects.UpkeepReductionPercent, node.Effects.UpkeepReductionPercent)
 	}
 	if effects.UpkeepReductionPercent > 100 {
 		effects.UpkeepReductionPercent = 100
@@ -1103,7 +1100,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			if dataLooted > 0 {
 				s.Resources.Data = mathx.AddSaturated(s.Resources.Data, mathx.New(dataLooted))
 			}
-			s.RunExtractedData += dataLooted
+			s.RunExtractedData = AddNonNegativeSaturated(s.RunExtractedData, dataLooted)
 			setTargetCooldown(&s, target)
 			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, dataLooted, s.HeatBP)
 			if !contains(s.CompletedTargets, target.ID) {
@@ -1505,13 +1502,13 @@ func (e *Engine) upgradeEffects(s game.State) content.UpgradeEffects {
 		if !hasUpgrade(s, upgrade.ID) {
 			continue
 		}
-		effects.ComputePerSecondBonus += upgrade.Effects.ComputePerSecondBonus
-		effects.HeatReductionPercent += upgrade.Effects.HeatReductionPercent
-		effects.StealthAttackBonusPercent += upgrade.Effects.StealthAttackBonusPercent
-		effects.BotCapacityBonus += upgrade.Effects.BotCapacityBonus
-		effects.FabricationTicksReduction += upgrade.Effects.FabricationTicksReduction
-		effects.ReconTicksReduction += upgrade.Effects.ReconTicksReduction
-		effects.ResearchDiscountPercent += upgrade.Effects.ResearchDiscountPercent
+		effects.ComputePerSecondBonus = AddNonNegativeSaturated(effects.ComputePerSecondBonus, upgrade.Effects.ComputePerSecondBonus)
+		effects.HeatReductionPercent = AddNonNegativeSaturated(effects.HeatReductionPercent, upgrade.Effects.HeatReductionPercent)
+		effects.StealthAttackBonusPercent = AddNonNegativeSaturated(effects.StealthAttackBonusPercent, upgrade.Effects.StealthAttackBonusPercent)
+		effects.BotCapacityBonus = AddNonNegativeSaturated(effects.BotCapacityBonus, upgrade.Effects.BotCapacityBonus)
+		effects.FabricationTicksReduction = AddNonNegativeSaturated(effects.FabricationTicksReduction, upgrade.Effects.FabricationTicksReduction)
+		effects.ReconTicksReduction = AddNonNegativeSaturated(effects.ReconTicksReduction, upgrade.Effects.ReconTicksReduction)
+		effects.ResearchDiscountPercent = AddNonNegativeSaturated(effects.ResearchDiscountPercent, upgrade.Effects.ResearchDiscountPercent)
 	}
 	return effects
 }
@@ -1556,10 +1553,10 @@ func (e *Engine) researchEffects(s game.State) content.ResearchEffects {
 		if !contains(s.Research, node.ID) {
 			continue
 		}
-		effects.ComputePerSecondBonus += node.Effects.ComputePerSecondBonus
-		effects.AttackBonusPercent += node.Effects.AttackBonusPercent
-		effects.StealthHeatReductionPercent += node.Effects.StealthHeatReductionPercent
-		effects.AutomationIntervalReduction += node.Effects.AutomationIntervalReduction
+		effects.ComputePerSecondBonus = AddNonNegativeSaturated(effects.ComputePerSecondBonus, node.Effects.ComputePerSecondBonus)
+		effects.AttackBonusPercent = AddNonNegativeSaturated(effects.AttackBonusPercent, node.Effects.AttackBonusPercent)
+		effects.StealthHeatReductionPercent = AddNonNegativeSaturated(effects.StealthHeatReductionPercent, node.Effects.StealthHeatReductionPercent)
+		effects.AutomationIntervalReduction = AddNonNegativeSaturated(effects.AutomationIntervalReduction, node.Effects.AutomationIntervalReduction)
 	}
 	return effects
 }
