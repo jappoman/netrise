@@ -93,7 +93,7 @@ func TestCompilerUnlockAndBattleResolution(t *testing.T) {
 
 func TestTargetCooldownPreventsRepeatedLootUntilElapsed(t *testing.T) {
 	c := catalog()
-	c.Targets = []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 1, ICE: 0}}, LootCredits: 5, TimeLimit: 10, CooldownTicks: 3}}
+	c.Targets = []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 1, ICE: 0}}, LootCredits: 5, TimeLimit: 10, CooldownTicks: 3, ReconCost: 10, ReconTicks: 1, IntelGain: 10}}
 	e := New(c, 99)
 	s := NewState(99)
 	s.Upgrades = []string{"secondhand_compiler"}
@@ -115,6 +115,12 @@ func TestTargetCooldownPreventsRepeatedLootUntilElapsed(t *testing.T) {
 	}
 	if s.Resources.Credits != credits || s.Resources.Bots != bots {
 		t.Fatal("cooldown rejection partially changed resources")
+	}
+	s.Upgrades = append(s.Upgrades, "street_contacts")
+	reconCredits := s.Resources.Credits
+	_, _, err = e.Apply(s, game.Command{Kind: game.StartRecon, ID: "target"})
+	if err == nil || err.(*game.CommandError).Reason != game.ReasonTargetCooldown || s.Resources.Credits != reconCredits {
+		t.Fatalf("cooldown recon was not rejected atomically: err=%v state=%#v", err, s)
 	}
 	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 3})
 	if err != nil || len(s.TargetCooldowns) != 0 {

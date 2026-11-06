@@ -226,6 +226,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if !ok {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown target"}
 		}
+		if remaining := s.TargetCooldowns[target.ID]; remaining > 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonTargetCooldown, Detail: fmt.Sprintf("target is cooling down for %d ticks", remaining)}
+		}
 		if !e.isReachable(s, target) {
 			return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "target route is not reachable"}
 		}
@@ -533,7 +536,7 @@ func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.Stat
 		}
 	}
 	if s.Automation.ReconTargetID != "" && s.Recon == nil {
-		if target, ok := e.target(s.Automation.ReconTargetID); ok && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
+		if target, ok := e.target(s.Automation.ReconTargetID); ok && s.TargetCooldowns[target.ID] <= 0 && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
 			if s.Automation.ReconSpent+target.ReconCost > s.Automation.ReconBudget {
 				s.Automation.ReconTargetID = ""
 				events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationStopped", Message: "Signal Profiler stopped: recon budget reached."})

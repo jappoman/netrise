@@ -143,9 +143,10 @@ shows the operational asset ratio plus a recovery hint.
 
 Runner target loot now respects catalog-defined cooldowns. A resolved raid
 stores the target cooldown before returning loot, a repeated launch is rejected
-atomically with `target_cooldown`, and logical ticks expire the lock. Targets
-and preflight display the remaining cooldown so the next useful action is
-explicit rather than an unexplained failed command.
+atomically with `target_cooldown`, and logical ticks expire the lock. Recon and
+recon automation respect the same lock. Targets and preflight display the
+remaining cooldown so the next useful action is explicit rather than an
+unexplained failed command.
 
 The integration suite now covers a deterministic 3,600-tick Corporation
 campaign with all starter assets, security, maintenance and automated R&D. It
