@@ -390,3 +390,6 @@ the simulation even when their JSON is syntactically valid.
 The same boundary now rejects non-representable data capacities and Corporation
 asset economic, integrity and isolation-cost values before they reach fixed-point
 arithmetic paths.
+
+Generator purchases now reject a saturated generator count before charging the
+player, preventing progression-counter wraparound and preserving command atomicity.

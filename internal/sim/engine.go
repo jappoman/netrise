@@ -200,6 +200,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if g == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown generator"}
 		}
+		if generatorCount(s, c.ID) >= math.MaxInt64 {
+			return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "generator count is at capacity"}
+		}
 		cost := generatorCost(g.Cost, generatorCount(s, c.ID))
 		if s.Resources.Credits < mathx.New(cost) {
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d credits", cost)}
@@ -1626,7 +1629,7 @@ func generatorCount(s game.State, id string) int64 {
 func upsertGenerator(s *game.State, id string) {
 	for i := range s.Generators {
 		if s.Generators[i].ID == id {
-			s.Generators[i].Count++
+			s.Generators[i].Count = AddNonNegativeSaturated(s.Generators[i].Count, 1)
 			return
 		}
 	}

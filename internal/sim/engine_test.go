@@ -1092,6 +1092,19 @@ func TestComputeRateSaturatesForExtremeGeneratorCounts(t *testing.T) {
 	}
 }
 
+func TestGeneratorPurchaseAtMaximumCountIsAtomic(t *testing.T) {
+	c := content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", Cost: 1}}}
+	e := New(c, 45)
+	s := NewState(45)
+	s.Resources.Credits = mathx.New(mathx.MaxUnits)
+	s.Generators = []game.Generator{{ID: "rig", Count: math.MaxInt64}}
+	before := s
+	updated, _, err := e.Apply(s, game.Command{Kind: game.BuyGenerator, ID: "rig"})
+	if err == nil || updated.Generators[0].Count != before.Generators[0].Count || updated.Resources.Credits != before.Resources.Credits {
+		t.Fatalf("maximum generator purchase was not rejected atomically: before=%#v after=%#v err=%v", before, updated, err)
+	}
+}
+
 func TestResearchEffectsChangeSimulationThroughCatalogData(t *testing.T) {
 	c := catalog()
 	c.Research[0].Effects.ComputePerSecondBonus = 2
