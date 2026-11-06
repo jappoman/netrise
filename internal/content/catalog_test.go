@@ -19,6 +19,13 @@ func TestValidateRejectsResearchCycles(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsTargetRouteCycles(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"a","name":"A","requires_target_id":"b","layers":[{"integrity":1}],"time_limit":1},{"id":"b","name":"B","requires_target_id":"a","layers":[{"integrity":1}],"time_limit":1}]}`))
+	if err == nil {
+		t.Fatal("target route cycle accepted")
+	}
+}
+
 func TestValidateRejectsNegativeResearchEffects(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"research":[{"id":"a","name":"A","effects":{"compute_per_second_bonus":-1}}]}`))
 	if err == nil {

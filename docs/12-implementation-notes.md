@@ -296,3 +296,6 @@ verifying the final target without bypassing engine reachability checks.
 Generator counts are validated at the save boundary and passive production
 uses saturating fixed-point addition, preventing extreme but syntactically
 valid state from wrapping a resource to zero on the next tick.
+
+Content validation now rejects cyclic target-route prerequisites as well as
+missing links, preventing catalog-authored progression softlocks.

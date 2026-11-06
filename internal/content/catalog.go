@@ -233,6 +233,32 @@ func Validate(c Catalog) error {
 			return fmt.Errorf("content: target %q has incomplete recon definition", t.ID)
 		}
 	}
+	requires := make(map[string]string, len(c.Targets))
+	for _, t := range c.Targets {
+		requires[t.ID] = t.RequiresTargetID
+	}
+	visited, active = map[string]bool{}, map[string]bool{}
+	var visitRoute func(string) bool
+	visitRoute = func(id string) bool {
+		if active[id] {
+			return false
+		}
+		if visited[id] {
+			return true
+		}
+		active[id] = true
+		if prerequisite := requires[id]; prerequisite != "" && !visitRoute(prerequisite) {
+			return false
+		}
+		active[id] = false
+		visited[id] = true
+		return true
+	}
+	for _, t := range c.Targets {
+		if !visitRoute(t.ID) {
+			return fmt.Errorf("content: target route prerequisites contain a cycle at %q", t.ID)
+		}
+	}
 	return nil
 }
 
