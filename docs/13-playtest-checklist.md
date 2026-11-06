@@ -13,6 +13,7 @@ go run ./cmd/netrise validate-content
 go run ./cmd/netrise playtest --faction runner --seed 17
 go run ./cmd/netrise playtest --faction corp --seed 17
 make smoke SEED=17 TICKS=600
+./scripts/smoke.ps1 -Seed 17 -Ticks 600
 go run ./cmd/netrise --data-dir ./tmp/playtest-runner
 go run ./cmd/netrise corp --data-dir ./tmp/playtest-corp
 ```
