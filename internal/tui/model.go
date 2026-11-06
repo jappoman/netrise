@@ -414,9 +414,11 @@ func (m Model) targetsView() string {
 		if targetAvailable(m.state, target) {
 			reach = "REACHABLE"
 		}
-		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n", marker, target.Name, reach, len(target.Layers))
+		intel := targetIntel(m.state, target.ID)
+		recon := targetReconStatus(m.state, target)
+		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n  %s | intel:%d%% (%s) | %s\n", marker, target.Name, reach, len(target.Layers), target.Corporation, intel, intelConfidence(intel), recon)
 	}
-	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview"
+	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview\nNEXT: unlock a route, then run recon to replace uncertainty with intel before launch."
 }
 
 func (m Model) preflightView() string {
@@ -430,7 +432,7 @@ func (m Model) preflightView() string {
 	}
 	commitment := commitmentBots(m.state.Resources.Bots, m.commitmentPct)
 	estimatedTicks, estimatedHeat := m.engine.EstimateBattle(m.state, target, m.doctrine, commitment)
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%%\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%% (%s)\nLAYERS: %d\nCOMMITMENT: %d bots (%d%%)\nDOCTRINE: %s\nBASELINE: ~%d ticks / max heat %d%%\n\n[+/- or left/right] commitment  [1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: reserve bots for intervention; review intel confidence, commitment, doctrine and baseline.", target.Name, reachability(targetAvailable(m.state, target)), intel, intelConfidence(intel), len(target.Layers), commitment, m.commitmentPct, m.doctrine, estimatedTicks, estimatedHeat/100)
 }
 
 func (m Model) reconLine() string {
@@ -706,6 +708,46 @@ func targetAvailable(s game.State, target content.Target) bool {
 		}
 	}
 	return false
+}
+
+func targetIntel(s game.State, id string) int64 {
+	if s.Intel == nil {
+		return 0
+	}
+	return s.Intel[id]
+}
+
+func intelConfidence(intel int64) string {
+	switch {
+	case intel >= 100:
+		return "full"
+	case intel >= 50:
+		return "strong"
+	case intel > 0:
+		return "partial"
+	default:
+		return "unknown"
+	}
+}
+
+func targetReconStatus(s game.State, target content.Target) string {
+	intel := targetIntel(s, target.ID)
+	if !targetAvailable(s, target) {
+		if target.RequiresTargetID != "" {
+			return "requires " + target.RequiresTargetID
+		}
+		return "route locked"
+	}
+	if intel >= 100 {
+		return "intel complete"
+	}
+	if s.Recon != nil {
+		if s.Recon.TargetID == target.ID {
+			return fmt.Sprintf("recon active: %d ticks", s.Recon.RemainingTicks)
+		}
+		return "recon occupied"
+	}
+	return fmt.Sprintf("recon ready: %d CR / %d ticks [i]", target.ReconCost, target.ReconTicks)
 }
 
 func (m *Model) applyCommand(command game.Command) {

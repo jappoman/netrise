@@ -87,5 +87,10 @@ Battle results now persist doctrine, committed bots, trace, heat before/after
 and heat delta. The Result screen turns those fields into an explicit reason,
 bot accounting, trace/heat summary, loot, duration and a next-action hint.
 
+The Target screen now exposes route prerequisites, corporation identity, intel
+confidence, recon cost/duration and whether recon is ready, active, occupied or
+complete. The same screen action starts recon through the engine command path;
+the TUI never mutates the simulation directly.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

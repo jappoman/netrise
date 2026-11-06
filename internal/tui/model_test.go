@@ -127,6 +127,27 @@ func TestPreflightAdjustsCommitmentAndLaunchesSelectedAmount(t *testing.T) {
 	}
 }
 
+func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Corporation: "Holloway Transit", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1}}, ReconCost: 10, ReconTicks: 5, IntelGain: 40}},
+	}
+	state := sim.NewState(5)
+	state.Upgrades = []string{"street_contacts"}
+	state.Resources.Credits = mathx.New(20)
+	m := New(state, sim.New(catalog, 5), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "t", Code: 't'}))
+	m = updated.(Model)
+	if !strings.Contains(m.targetsView(), "intel:0% (unknown)") || !strings.Contains(m.targetsView(), "recon ready: 10 CR / 5 ticks [i]") {
+		t.Fatalf("target screen omitted recon guidance: %s", m.targetsView())
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "i", Code: 'i'}))
+	m = updated.(Model)
+	if m.state.Recon == nil || !strings.Contains(m.targetsView(), "recon active: 5 ticks") {
+		t.Fatalf("target screen did not start recon: state=%#v view=%s", m.state, m.targetsView())
+	}
+}
+
 func TestBattlePlaybackShowsCountersAndRecentEvents(t *testing.T) {
 	catalog := content.Catalog{
 		SchemaVersion: 1,
