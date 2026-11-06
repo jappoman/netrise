@@ -34,5 +34,10 @@ The Corporation slice now also includes capital-funded R&D, market demand and
 influence expansion, upkeep-aware automated maintenance, and a separate
 `Restructuring` prestige that retains Patent Shares.
 
+The initial M5 quality layer is in place: `NO_COLOR` removes ANSI styling,
+terminals below 80×24 receive a compact safe view, CI verifies Linux/Windows/
+macOS builds, and Make targets expose Runner, Corporation, simulation, build,
+vet, test, and race workflows.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

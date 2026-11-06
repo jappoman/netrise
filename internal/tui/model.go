@@ -9,6 +9,7 @@ import (
 	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -200,7 +201,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 func (m Model) View() tea.View {
-	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("42")).Render("NETRISE // RUNNER TERMINAL")
+	if m.compact() {
+		return tea.NewView(m.compactView())
+	}
+	titleStyle := lipgloss.NewStyle()
+	if os.Getenv("NO_COLOR") == "" {
+		titleStyle = titleStyle.Bold(true).Foreground(lipgloss.Color("42"))
+	}
+	title := titleStyle.Render("NETRISE // RUNNER TERMINAL")
 	if m.screen == "targets" {
 		return tea.NewView(m.targetsView())
 	}
@@ -232,6 +240,22 @@ func (m Model) View() tea.View {
 	}
 	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, controls, m.nextHint(), m.status)
 	return tea.NewView(title + "\n\n" + body + "\n")
+}
+
+func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height > 0 && m.height < 24) }
+
+func (m Model) compactView() string {
+	if m.state.Faction == game.Corporation && m.state.Corp != nil {
+		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n[q] quit", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint())
+	}
+	return fmt.Sprintf("NETRISE // RUNNER (COMPACT)\nCREDITS %s  COMPUTE %s\nBOTS %d/%d  HEAT %d%%\nTICK %d\n%s\nNEXT: %s\n[q] quit", m.state.Resources.Credits, m.state.Resources.Compute, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, compactBattle(m.state), m.nextHint())
+}
+
+func compactBattle(s game.State) string {
+	if s.ActiveBattle == nil {
+		return "NO ACTIVE BATTLE"
+	}
+	return fmt.Sprintf("BATTLE %s | bots %d | integrity %d | ICE %d", s.ActiveBattle.TargetID, s.ActiveBattle.LiveBots, s.ActiveBattle.LayerIntegrity, s.ActiveBattle.DefenderICE)
 }
 
 func (m Model) targetsView() string {

@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/sim"
+	"strings"
 	"testing"
 )
 
@@ -24,5 +25,15 @@ func TestCorporationOverviewRendersAtCompactSize(t *testing.T) {
 	view := updated.(Model).View()
 	if view.Content == "" {
 		t.Fatal("empty Corporation view")
+	}
+}
+
+func TestNoColorOmitsANSIStyling(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	view := updated.(Model).View()
+	if strings.Contains(view.Content, "\x1b[") {
+		t.Fatal("NO_COLOR view contains ANSI escape")
 	}
 }
