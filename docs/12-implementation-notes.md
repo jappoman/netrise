@@ -460,6 +460,11 @@ Integration coverage now exercises the full eight-hour offline cap against the
 shipped catalog for both factions, asserting bounded resources and no hostile
 events or state changes while the game is closed.
 
+Interactive campaigns now acquire a faction-scoped advisory session lock before
+loading state. Unix builds use `Flock` and Windows builds use `LockFileEx`, so a
+second process receives a clear error while independent Runner and Corporation
+saves remain available; the lock is released when the TUI exits.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.

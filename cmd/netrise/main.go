@@ -57,6 +57,11 @@ func main() {
 	if len(args) > 0 && args[0] == "corp" {
 		faction = game.Corporation
 	}
+	lock, err := save.AcquireSessionLock(dataDir, faction)
+	if err != nil {
+		fatal(fmt.Errorf("open campaign: %w", err))
+	}
+	defer lock.Close()
 	s := loadState(dataDir, e, faction)
 	p := tea.NewProgram(tui.New(s, e, dataDir))
 	if _, err = p.Run(); err != nil {
