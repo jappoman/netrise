@@ -53,6 +53,26 @@ func TestCorporationUsesSeparateSaveFile(t *testing.T) {
 		t.Fatal("corporation save leaked into runner save")
 	}
 }
+
+func TestCorruptPrimaryRecoversLastValidBackup(t *testing.T) {
+	d := t.TempDir()
+	first := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 10}
+	second := first
+	second.LogicalTick = 20
+	if err := Write(d, first); err != nil {
+		t.Fatal(err)
+	}
+	if err := Write(d, second); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(Path(d), []byte("{"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Read(d)
+	if err != nil || got.LogicalTick != first.LogicalTick {
+		t.Fatalf("backup recovery failed: %#v, %v", got, err)
+	}
+}
 func TestMigrate(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"faction":"runner"}`), 0600); err != nil {

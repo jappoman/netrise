@@ -54,12 +54,20 @@ func Read(dir string) (game.State, error) {
 	return ReadFaction(dir, game.Runner)
 }
 func ReadFaction(dir string, faction game.Faction) (game.State, error) {
-	b, err := os.ReadFile(PathForFaction(dir, faction))
+	path := PathForFaction(dir, faction)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return game.State{}, err
 	}
 	var s game.State
 	if err = json.Unmarshal(b, &s); err != nil {
+		backup, backupErr := os.ReadFile(path + ".bak")
+		if backupErr == nil {
+			var recovered game.State
+			if recoverErr := json.Unmarshal(backup, &recovered); recoverErr == nil && recovered.SchemaVersion == game.CurrentSchema {
+				return recovered, nil
+			}
+		}
 		return s, fmt.Errorf("%w: %v", ErrCorrupt, err)
 	}
 	if s.SchemaVersion == 0 {

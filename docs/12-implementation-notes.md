@@ -38,6 +38,10 @@ The initial M5 quality layer is in place: `NO_COLOR` removes ANSI styling,
 terminals below 80×24 receive a compact safe view, CI verifies Linux/Windows/
 macOS builds, and Make targets expose Runner, Corporation, simulation, build,
 vet, test, and race workflows.
+Save reads now recover a valid `.bak` snapshot when the primary JSON is
+corrupted. A simulation benchmark covers 10,000 logical ticks, and tag-based
+release automation builds Linux, Windows, and macOS artifacts with SHA-256
+checksums.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
