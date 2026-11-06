@@ -18,7 +18,8 @@ prerequisites, a data-funded research command and TUI panel, plus the
 transactional Runner `Identity Burn` prestige reset with Ghost Keys and
 run-scoped extracted-data accounting.
 
-Richer prestige confirmation remains later work. The TUI now
+Prestige confirmation now quantifies the current run's losses, retained
+currency and next-run starting values for both factions. The TUI also
 exposes contract collection, Salvaged Rig purchase, one-bot fabrication,
 three attack doctrines, a 75% default commitment, one reserve-bot
 reinforcement, and persistent save/load. A save records UTC time and

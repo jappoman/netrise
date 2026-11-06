@@ -983,7 +983,8 @@ func (m Model) prestigeView() string {
 	if reward > 0 {
 		status = "READY // [enter] confirms Identity Burn"
 	}
-	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\nSTATUS: %s\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep building this run.\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, status, m.status)
+	nextKeys := m.state.GhostKeys + reward
+	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nGHOST KEYS: %d -> %d\nSTATUS: %s\n\nLOST NOW: %s credits | %d bots | %d rig types | %d intel targets | %d research | %d routes | %d%% heat\nKEPT: %d Ghost Keys | prestige count %d -> %d\nNEXT RUN: %s starter credits | data/heat/routes reset\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep building this run.\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, nextKeys, status, m.state.Resources.Credits, m.state.Resources.Bots, len(m.state.Generators), len(m.state.Intel), len(m.state.Research), len(m.state.CompletedTargets), m.state.HeatBP/100, nextKeys, m.state.PrestigeCount, m.state.PrestigeCount+1, mathx.New(25+nextKeys*5), m.status)
 }
 
 func (m Model) corpOverviewView() string {
@@ -1057,7 +1058,20 @@ func (m Model) restructureView() string {
 	if reward > 0 {
 		status = "READY // [enter] confirms Restructuring"
 	}
-	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\nSTATUS: %s\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep growing the Corporation.\n%s", corpValuation(m.state), reward, patents, status, m.status)
+	nextPatents := patents + reward
+	capital := "unavailable"
+	assets := 0
+	ice := int64(0)
+	demand := int64(0)
+	exposure := int64(0)
+	if m.state.Corp != nil {
+		capital = m.state.Corp.Capital.String()
+		assets = len(m.state.Corp.Assets)
+		ice = m.state.Corp.ICE
+		demand = m.state.Corp.DemandBP / 100
+		exposure = m.state.Corp.ExposureBP / 100
+	}
+	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nPATENT SHARES: %d -> %d\nSTATUS: %s\n\nLOST NOW: %s capital | %d assets | %d ICE | %d%% demand | %d%% exposure\nKEPT: %d Patent Shares | prestige count %d -> %d\nNEXT COMPANY: %s starting capital | reserve ICE and assets reset\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep growing the Corporation.\n%s", corpValuation(m.state), reward, patents, nextPatents, status, capital, assets, ice, demand, exposure, nextPatents, m.state.PrestigeCount, m.state.PrestigeCount+1, mathx.New(100+nextPatents*10), m.status)
 }
 
 func corpValuation(s game.State) int64 {

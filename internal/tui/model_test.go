@@ -561,12 +561,22 @@ func TestPrestigeScreensExplainLockedAndReadyStates(t *testing.T) {
 	if !strings.Contains(corp.restructureView(), "STATUS: READY // [enter] confirms Restructuring") || !strings.Contains(corp.corpNextHint(), "[p] to Restructure") {
 		t.Fatalf("ready Corporation prestige state was not explained: view=%s hint=%s", corp.restructureView(), corp.corpNextHint())
 	}
+	if !strings.Contains(corp.restructureView(), "PATENT SHARES: 0 -> 1") || !strings.Contains(corp.restructureView(), "LOST NOW:") {
+		t.Fatalf("Corporation prestige confirmation omitted before/after values: %s", corp.restructureView())
+	}
 
 	runner := New(sim.NewState(12), sim.New(content.Catalog{SchemaVersion: 1}, 12), "")
 	updated, _ = runner.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
 	runner = updated.(Model)
 	if !strings.Contains(runner.View().Content, "STATUS: LOCKED // extract at least 10,000 data") {
 		t.Fatalf("locked Runner prestige state was not explained: %s", runner.View().Content)
+	}
+	runner.state.RunExtractedData = 10000
+	runner.state.GhostKeys = 2
+	runner.state.PrestigeCount = 1
+	view := runner.prestigeView()
+	if !strings.Contains(view, "GHOST KEYS: 2 -> 3") || !strings.Contains(view, "LOST NOW:") || !strings.Contains(view, "NEXT RUN: 40 starter credits") {
+		t.Fatalf("Runner prestige confirmation omitted before/after values: %s", view)
 	}
 }
 
