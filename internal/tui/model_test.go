@@ -63,6 +63,23 @@ func TestHelpViewExplainsBothCampaigns(t *testing.T) {
 	}
 }
 
+func TestProgressionGuideExplainsNextStepForBothFactions(t *testing.T) {
+	runner := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	updated, _ := runner.Update(tea.KeyPressMsg(tea.Key{Text: "h", Code: 'h'}))
+	runnerView := updated.(Model).View().Content
+	for _, expected := range []string{"PROGRESSION GUIDE", "Install the bot compiler", "NEXT", "[g] upgrades"} {
+		if !strings.Contains(runnerView, expected) {
+			t.Fatalf("Runner guide omitted %q: %s", expected, runnerView)
+		}
+	}
+	corp := New(sim.NewCorporationState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
+	updated, _ = corp.Update(tea.KeyPressMsg(tea.Key{Text: "h", Code: 'h'}))
+	corpView := updated.(Model).View().Content
+	if !strings.Contains(corpView, "Build a second client asset") || !strings.Contains(corpView, "Security Desk") {
+		t.Fatalf("Corporation guide omitted campaign steps: %s", corpView)
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

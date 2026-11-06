@@ -92,5 +92,10 @@ confidence, recon cost/duration and whether recon is ready, active, occupied or
 complete. The same screen action starts recon through the engine command path;
 the TUI never mutates the simulation directly.
 
+The `[h]` progression guide now derives a concise first-loop checklist from
+live Runner or Corporation state. Completed steps, the current next step and
+later locked steps are shown separately, with actionable keys and no duplicate
+progress state outside the simulation/save model.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

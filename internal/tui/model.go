@@ -16,6 +16,12 @@ import (
 )
 
 type tickMsg struct{}
+type tutorialStep struct {
+	Title  string
+	Action string
+	Done   bool
+}
+
 type Model struct {
 	state           game.State
 	engine          *sim.Engine
@@ -49,6 +55,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "?" {
 			m.screen = "help"
+			return m, nil
+		}
+		if m.screen == "tutorial" {
+			if v.String() == "esc" || v.String() == "o" || v.String() == "h" {
+				m.screen = "overview"
+			}
 			return m, nil
 		}
 		if m.screen == "targets" {
@@ -174,6 +186,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = "archive"
 			return m, nil
 		}
+		if v.String() == "h" {
+			m.screen = "tutorial"
+			return m, nil
+		}
 		if v.String() == "p" {
 			if m.state.Faction == game.Corporation {
 				m.screen = "restructure"
@@ -292,6 +308,9 @@ func (m Model) View() tea.View {
 	if m.screen == "help" {
 		return tea.NewView(m.helpView())
 	}
+	if m.screen == "tutorial" {
+		return tea.NewView(m.tutorialView())
+	}
 	if m.state.Faction == game.Corporation {
 		return tea.NewView(m.corpOverviewView())
 	}
@@ -299,7 +318,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [g] upgrades [y] research [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [g] upgrades [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -317,7 +336,7 @@ func (m Model) compactView() string {
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
-	controls := "[c] contract [b] rig [t] targets [g] upgrades [y] research [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [t] targets [g] upgrades [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
@@ -577,9 +596,76 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
-	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [i] recon  [y] research  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
+}
+
+func (m Model) tutorialView() string {
+	steps := m.tutorialSteps()
+	current := len(steps)
+	for i, step := range steps {
+		if !step.Done {
+			current = i
+			break
+		}
+	}
+	lines := "NETRISE // PROGRESSION GUIDE\n\n"
+	if current == len(steps) {
+		lines += "LOOP ESTABLISHED: keep improving the campaign or open the prestige screen.\n\n"
+	}
+	for i, step := range steps {
+		marker := "[ ]"
+		state := "LOCKED"
+		if step.Done {
+			marker, state = "[x]", "DONE"
+		} else if i == current {
+			marker, state = ">", "NEXT"
+		}
+		lines += fmt.Sprintf("%s %d. %-28s %-6s\n    %s\n", marker, i+1, step.Title, state, step.Action)
+	}
+	return lines + "\n[h/esc] overview  [?] help\nNEXT: complete the first NEXT item; the guide updates from the live campaign state."
+}
+
+func (m Model) tutorialSteps() []tutorialStep {
+	if m.state.Faction == game.Corporation {
+		return []tutorialStep{
+			{Title: "Build a second client asset", Action: "press [b] to add Transit Hosting", Done: m.state.Corp != nil && len(m.state.Corp.Assets) >= 2},
+			{Title: "Invest in security", Action: "press [s] to install a Security Desk", Done: m.corpHasAsset("security_desk")},
+			{Title: "Fill the reserve ICE rack", Action: "press [i] until ICE reaches capacity", Done: m.state.Corp != nil && m.state.Corp.ICE >= m.state.Corp.ICECapacity},
+			{Title: "Survive an active-play incursion", Action: "advance active play and review the battle playback", Done: m.state.LastBattle != nil},
+			{Title: "Enable automated maintenance", Action: "press [M] after investing in R&D", Done: m.state.Corp != nil && m.state.Corp.MaintenanceAuto},
+		}
+	}
+	return []tutorialStep{
+		{Title: "Install the bot compiler", Action: "collect contracts with [c], then buy it in [g] upgrades", Done: hasUpgrade(m.state, "secondhand_compiler")},
+		{Title: "Bring compute online", Action: "press [b] to buy a Salvaged Rig", Done: hasGenerator(m.state, "salvaged_rig")},
+		{Title: "Fabricate your first bot", Action: "press [f] when compute and credits are available", Done: m.state.Resources.Bots > 0},
+		{Title: "Replace uncertainty with intel", Action: "open [t], select t_01 and press [i] for recon", Done: targetIntel(m.state, "t_01") >= 45},
+		{Title: "Complete the first breach", Action: "open [t], review preflight and press [enter] to launch", Done: containsID(m.state.CompletedTargets, "t_01")},
+		{Title: "Fund the next capability", Action: "open [y] research and buy an available node", Done: len(m.state.Research) > 0},
+	}
+}
+
+func (m Model) corpHasAsset(id string) bool {
+	if m.state.Corp == nil {
+		return false
+	}
+	for _, asset := range m.state.Corp.Assets {
+		if asset.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func containsID(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func (m Model) prestigeView() string {
