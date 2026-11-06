@@ -282,6 +282,8 @@ Runner target and research screens.
 Secondary TUI screens now all expose an explicit `NEXT:` rail, including Help,
 Archive, Research, prestige confirmation and the Corporation report, so the
 player can always return to an actionable campaign state without guessing.
+Empty battle/result states and Corporation recovery/error panels carry the
+same rail, so this remains true after a resume or an unavailable state.
 
 Offline reconciliation now persists whether the eight-hour safety cap was
 applied, and Runner/Corporation overviews show that cap warning alongside the

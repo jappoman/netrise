@@ -335,6 +335,24 @@ func TestSecondaryScreensExplainTheirNextAction(t *testing.T) {
 	}
 }
 
+func TestEmptyPlayerScreensExplainTheirNextAction(t *testing.T) {
+	runner := New(sim.NewState(410), sim.New(content.Catalog{SchemaVersion: 1}, 410), "")
+	for name, view := range map[string]string{
+		"compact battle": runner.compactBattleView(),
+		"battle":         runner.battleView(),
+		"result":         runner.resultView(),
+	} {
+		if !strings.Contains(view, "NEXT:") {
+			t.Fatalf("empty %s omitted next-action rail: %s", name, view)
+		}
+	}
+	corp := New(sim.NewCorporationState(411), sim.New(content.Catalog{SchemaVersion: 1}, 411), "")
+	corp.state.Corp = nil
+	if !strings.Contains(corp.corpOverviewView(), "NEXT:") || !strings.Contains(corp.corpReportView(), "NEXT:") || !strings.Contains(corp.corpMaintenanceView(), "NEXT:") {
+		t.Fatal("empty Corporation screens omitted next-action rail")
+	}
+}
+
 func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	state := sim.NewState(20)
 	state.CompletedTargets = []string{"t_01"}

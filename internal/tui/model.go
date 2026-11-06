@@ -467,7 +467,7 @@ func compactBattle(s game.State) string {
 
 func (m Model) compactBattleView() string {
 	if m.state.ActiveBattle == nil {
-		return "NETRISE // BATTLE\n\nNo active battle.\n[o] overview"
+		return "NETRISE // BATTLE\n\nNo active battle.\n[o] overview\nNEXT: return to the overview and choose the next safe action."
 	}
 	b := m.state.ActiveBattle
 	controls := "[space] pause  [1/2/4] speed  [r] reinforce  [w] withdraw  [q] quit"
@@ -479,7 +479,7 @@ func (m Model) compactBattleView() string {
 
 func (m Model) battleView() string {
 	if m.state.ActiveBattle == nil {
-		return "NETRISE // BATTLE PLAYBACK\n\nNo active battle.\n[o] overview"
+		return "NETRISE // BATTLE PLAYBACK\n\nNo active battle.\n[o] overview\nNEXT: return to the overview and prepare a battle before watching playback."
 	}
 	b := m.state.ActiveBattle
 	target := battleTargetName(m.engine, b.TargetID)
@@ -634,7 +634,7 @@ func (m Model) corpIncursionSummary() string {
 func (m Model) resultView() string {
 	r := m.state.LastBattle
 	if r == nil {
-		return "NETRISE // RESULT\n\nNo completed battle.\n[o] overview"
+		return "NETRISE // RESULT\n\nNo completed battle.\n[o] overview\nNEXT: return to the overview and start an operation."
 	}
 	return fmt.Sprintf("NETRISE // RESULT\n\nTARGET: %s\nOUTCOME: %s\nREASON: %s\nDOCTRINE: %s\nBOTS: %d committed / %d survived / %d lost\nTRACE: %d%%\nHEAT: +%d%% (total %d%%)\nLOOT: %d credits / %d data\nACCESS: %s\nELAPSED: %d ticks\n\nNEXT: %s\n\n[enter] overview  [t] targets", battleTargetName(m.engine, r.TargetID), r.Outcome, battleOutcomeReason(r.Outcome), r.Doctrine, r.CommittedBots, r.Survivors, r.BotsLost, r.TraceBP/100, r.HeatAddedBP/100, r.HeatAfterBP/100, r.CreditsLooted, r.DataLooted, targetAccessLabel(m.state, r.TargetID), r.ElapsedTicks, resultNextHint(r.Outcome))
 }
@@ -731,7 +731,7 @@ func (m Model) automationView() string {
 
 func (m Model) corpMaintenanceView() string {
 	if m.state.Corp == nil {
-		return "NETRISE // MAINTENANCE\n\nCorporation state unavailable.\n[esc] overview"
+		return "NETRISE // MAINTENANCE\n\nCorporation state unavailable.\n[esc] overview\nNEXT: return to the overview and reopen the Corporation campaign."
 	}
 	policies := []string{"maintenance budget", "R&D budget", "compute reserve"}
 	selected := policies[m.automationPolicy]
@@ -989,7 +989,7 @@ func (m Model) prestigeView() string {
 func (m Model) corpOverviewView() string {
 	corp := m.state.Corp
 	if corp == nil {
-		return "NETRISE // CORPORATION\n\nCampaign state unavailable.\n[q] quit"
+		return "NETRISE // CORPORATION\n\nCampaign state unavailable.\n[q] quit\nNEXT: quit and reopen the Corporation campaign save."
 	}
 	battle := "NO ACTIVE INCURSION"
 	if m.state.ActiveBattle != nil {
@@ -1005,7 +1005,7 @@ func (m Model) corpOverviewView() string {
 func (m Model) corpReportView() string {
 	corp := m.state.Corp
 	if corp == nil {
-		return "NETRISE // CORPORATION REPORT\n\nCorporation state unavailable.\n[esc] overview"
+		return "NETRISE // CORPORATION REPORT\n\nCorporation state unavailable.\n[esc] overview\nNEXT: return to the overview and reopen the Corporation campaign."
 	}
 	gross := m.engine.CorporationGrossRate(m.state)
 	upkeep := m.engine.CorporationUpkeepRate(m.state)
