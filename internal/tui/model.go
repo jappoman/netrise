@@ -679,6 +679,8 @@ func (m Model) researchView() string {
 			state = "COMPLETE"
 		} else if researchPrerequisitesMet(m.state, node.Prerequisites) {
 			state = fmt.Sprintf("AVAILABLE (%d data)", cost)
+		} else if missing := missingResearchPrerequisites(m.state, node.Prerequisites); missing != "" {
+			state = "LOCKED (requires " + missing + ")"
 		}
 		description := node.Description
 		if effects := researchEffectText(node.Effects); effects != "" {
@@ -687,6 +689,16 @@ func (m Model) researchView() string {
 		lines += fmt.Sprintf("%-22s %-18s %s\n  %s\n", node.Name, node.ID, state, description)
 	}
 	return lines + "\n[enter] buy next available node  [esc] overview\nNEXT: buy an AVAILABLE node when data and prerequisites are ready."
+}
+
+func missingResearchPrerequisites(s game.State, prerequisites []string) string {
+	missing := make([]string, 0, len(prerequisites))
+	for _, prerequisite := range prerequisites {
+		if !hasResearch(s, prerequisite) {
+			missing = append(missing, prerequisite)
+		}
+	}
+	return strings.Join(missing, ", ")
 }
 
 func (m Model) upgradesView() string {

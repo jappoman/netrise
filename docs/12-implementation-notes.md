@@ -343,3 +343,7 @@ reputation and exposure factors.
 Logical ticks, fabrication/intel gains, extracted data, demand and aggregated
 technology effects also use bounded increments, preserving capacity and meter
 invariants when resuming unusually large but structurally valid state.
+
+The Runner research panel now names missing prerequisite IDs beside locked
+nodes, keeping progression choices self-explanatory without requiring players
+to infer the research graph.

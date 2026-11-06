@@ -335,6 +335,21 @@ func TestSecondaryScreensExplainTheirNextAction(t *testing.T) {
 	}
 }
 
+func TestResearchScreenExplainsMissingPrerequisites(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Research: []content.ResearchNode{
+			{ID: "hardware", Name: "Hardware", CostData: 10},
+			{ID: "intrusion", Name: "Intrusion", CostData: 20, Prerequisites: []string{"hardware"}},
+		},
+	}
+	m := New(sim.NewState(409), sim.New(catalog, 409), "")
+	view := m.researchView()
+	if !strings.Contains(view, "LOCKED (requires hardware)") {
+		t.Fatalf("research screen hid missing prerequisite: %s", view)
+	}
+}
+
 func TestEmptyPlayerScreensExplainTheirNextAction(t *testing.T) {
 	runner := New(sim.NewState(410), sim.New(content.Catalog{SchemaVersion: 1}, 410), "")
 	for name, view := range map[string]string{
