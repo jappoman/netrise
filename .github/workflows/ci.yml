@@ -52,6 +52,17 @@ jobs:
           go run ./cmd/netrise validate-content
           go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
           go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
+      - name: Install Fish
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y fish
+      - name: Fish smoke flow
+        if: runner.os == 'Linux'
+        shell: fish {0}
+        run: |
+          go run ./cmd/netrise --version
+          go run ./cmd/netrise validate-content
+          go run ./cmd/netrise simulate --faction runner --seed 17 --ticks 600
+          go run ./cmd/netrise simulate --faction corp --seed 17 --ticks 600
       - name: CMD smoke flow
         if: runner.os == 'Windows'
         shell: cmd
