@@ -424,3 +424,7 @@ enforced at both engine append and save-load boundaries.
 Runner preflight commitment previews now avoid multiplying the full bot reserve
 before dividing by percentage, keeping the player-facing commitment selector safe
 for maximum-size persisted reserves.
+
+Event archive text is now rejected at the save boundary when it contains control
+characters, preventing untrusted JSON from injecting terminal escape sequences
+into the player-facing TUI.

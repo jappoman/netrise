@@ -8,6 +8,7 @@ import (
 	"github.com/jappoman/netrise/internal/mathx"
 	"os"
 	"path/filepath"
+	"unicode"
 )
 
 var ErrCorrupt = errors.New("save is corrupt")
@@ -183,7 +184,7 @@ func validateState(s game.State) error {
 		return errors.New("event log exceeds limit")
 	}
 	for _, event := range s.EventLog {
-		if event.Tick < 0 || event.Tick > s.LogicalTick || event.Type == "" {
+		if event.Tick < 0 || event.Tick > s.LogicalTick || !safeEventText(event.Type) || !safeEventText(event.Message) {
 			return errors.New("invalid event log")
 		}
 	}
@@ -199,6 +200,18 @@ func validateState(s game.State) error {
 		}
 	}
 	return nil
+}
+
+func safeEventText(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, r := range value {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func migrateV0(s game.State) (game.State, error) {

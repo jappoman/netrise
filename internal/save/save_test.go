@@ -198,6 +198,17 @@ func TestSaveRejectsOversizedEventLog(t *testing.T) {
 	}
 }
 
+func TestSaveRejectsTerminalControlSequencesInEvents(t *testing.T) {
+	d := t.TempDir()
+	payload := `{"schema_version":1,"faction":"runner","logical_tick":1,"event_log":[{"tick":1,"type":"Status","message":"\u001b[31mred"}]}`
+	if err := os.WriteFile(Path(d), []byte(payload), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("terminal control sequence was accepted: %v", err)
+	}
+}
+
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {
