@@ -879,7 +879,7 @@ func TestCorporationMarketExpansionUsesCatalogTiersAndIsAtomic(t *testing.T) {
 	c := catalog()
 	c.CorpMarkets = []content.CorpMarketExpansion{
 		{ID: "metro", Name: "Metro Contracts", CostCapital: 150, DemandBonusBP: 1000, InfluenceGain: 10, ValuationGain: 150},
-		{ID: "regional", Name: "Regional Exchange", CostCapital: 300, DemandBonusBP: 1000, InfluenceGain: 20, ValuationGain: 300},
+		{ID: "regional", Name: "Regional Exchange", CostCapital: 300, DemandBonusBP: 1000, InfluenceCost: 10, InfluenceGain: 20, ValuationGain: 300},
 	}
 	e := New(c, 104)
 	s := NewCorporationState(104)
@@ -909,7 +909,7 @@ func TestCorporationMarketExpansionUsesCatalogTiersAndIsAtomic(t *testing.T) {
 	}
 	got.Corp.Capital = mathx.New(300)
 	got, _, err = e.Apply(got, game.Command{Kind: game.CorpExpandMarket})
-	if err != nil || got.Corp.MarketTier != 2 || got.Corp.DemandBP != 12000 || got.Corp.Influence != mathx.New(30) {
+	if err != nil || got.Corp.MarketTier != 2 || got.Corp.DemandBP != 12000 || got.Corp.Influence != mathx.New(20) {
 		t.Fatalf("second market tier was not applied: state=%#v err=%v", got.Corp, err)
 	}
 	if _, _, err := e.Apply(got, game.Command{Kind: game.CorpExpandMarket}); err == nil {

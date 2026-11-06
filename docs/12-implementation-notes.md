@@ -187,9 +187,10 @@ the penalty is explainable to the player rather than hidden in the rate.
 Corporation market expansion is now a data-driven progression rather than a
 repeatable fixed-cost action. Catalogued tiers persist through `MarketTier`, add
 demand above the initial 100% service baseline, grant influence and valuation,
-and stop atomically when the next tier is unaffordable or the catalog is
-exhausted. Overview, compact mode, report and next-step hints show the next
-market name, cost and demand gain.
+and later tiers consume catalogued influence as well as capital. They stop
+atomically when the next tier is unaffordable or the catalog is exhausted.
+Overview, compact mode, report and next-step hints show the next market name,
+costs and demand gain.
 
 Corporation incursions now support the second specified emergency response:
 `[x] isolate asset`. The selected highest-value operational asset is suspended

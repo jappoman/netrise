@@ -1221,6 +1221,9 @@ func (m Model) corpNextHint() string {
 		return "restock reserve ICE before the next emergency audit"
 	}
 	if market := m.corpMarketNext(); market != nil {
+		if market.InfluenceCost > 0 {
+			return fmt.Sprintf("press [m] to secure %s for %d capital and %d influence", market.Name, market.CostCapital, market.InfluenceCost)
+		}
 		return fmt.Sprintf("press [m] to secure %s for %d capital", market.Name, market.CostCapital)
 	}
 	return "maintain capital and watch the next active-play intrusion"
@@ -1244,6 +1247,9 @@ func (m Model) corpMarketSummary() string {
 		return fmt.Sprintf("%d/%d complete", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets))
 	}
 	next := m.corpMarketNext()
+	if next.InfluenceCost > 0 {
+		return fmt.Sprintf("%d/%d | next %s (%d capital, %d influence, +%d%% demand)", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.InfluenceCost, next.DemandBonusBP/100)
+	}
 	return fmt.Sprintf("%d/%d | next %s (%d capital, +%d%% demand)", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.DemandBonusBP/100)
 }
 

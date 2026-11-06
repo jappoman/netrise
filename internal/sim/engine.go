@@ -532,7 +532,12 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.Corp.Capital < cost {
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("%s requires %d capital", market.Name, market.CostCapital)}
 		}
+		influenceCost := mathx.New(market.InfluenceCost)
+		if s.Corp.Influence < influenceCost {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientInfluence, Detail: fmt.Sprintf("%s requires %d influence", market.Name, market.InfluenceCost)}
+		}
 		s.Corp.Capital -= cost
+		s.Corp.Influence -= influenceCost
 		s.Corp.Influence, _ = s.Corp.Influence.Add(mathx.New(market.InfluenceGain))
 		s.Corp.DemandBP += market.DemandBonusBP
 		s.Corp.MarketTier++

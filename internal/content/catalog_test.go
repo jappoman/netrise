@@ -85,4 +85,8 @@ func TestValidateRejectsInvalidCorporationMarketExpansion(t *testing.T) {
 	if err == nil {
 		t.Fatal("negative Corporation market demand bonus accepted")
 	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_markets":[{"id":"metro","name":"Metro","cost_capital":10,"demand_bonus_bp":1000,"influence_cost":-1}]}`))
+	if err == nil {
+		t.Fatal("negative Corporation market influence cost accepted")
+	}
 }

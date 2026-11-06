@@ -70,6 +70,7 @@ type CorpMarketExpansion struct {
 	Name          string `json:"name"`
 	CostCapital   int64  `json:"cost_capital"`
 	DemandBonusBP int64  `json:"demand_bonus_bp"`
+	InfluenceCost int64  `json:"influence_cost"`
 	InfluenceGain int64  `json:"influence_gain"`
 	ValuationGain int64  `json:"valuation_gain"`
 }
@@ -195,7 +196,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, m := range c.CorpMarkets {
-		if m.ID == "" || seen[m.ID] || m.Name == "" || m.CostCapital <= 0 || m.DemandBonusBP <= 0 || m.InfluenceGain < 0 || m.ValuationGain < 0 {
+		if m.ID == "" || seen[m.ID] || m.Name == "" || m.CostCapital <= 0 || m.DemandBonusBP <= 0 || m.InfluenceCost < 0 || m.InfluenceGain < 0 || m.ValuationGain < 0 {
 			return fmt.Errorf("content: invalid corporation market expansion %q", m.ID)
 		}
 		seen[m.ID] = true

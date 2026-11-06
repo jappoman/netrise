@@ -33,9 +33,9 @@
     {"id":"security_desk","name":"Security Desk","cost_capital":90,"capital_per_tick":1,"upkeep_per_tick":1,"integrity":120,"ice_capacity_bonus":3,"isolation_cost_capital":10,"isolation_ticks":15}
   ],
   "corp_markets": [
-    {"id":"metro_contracts","name":"Metro Contracts","cost_capital":150,"demand_bonus_bp":1000,"influence_gain":10,"valuation_gain":150},
-    {"id":"regional_exchange","name":"Regional Exchange","cost_capital":300,"demand_bonus_bp":1000,"influence_gain":20,"valuation_gain":300},
-    {"id":"civic_grid","name":"Civic Grid","cost_capital":600,"demand_bonus_bp":1000,"influence_gain":40,"valuation_gain":600}
+    {"id":"metro_contracts","name":"Metro Contracts","cost_capital":150,"demand_bonus_bp":1000,"influence_cost":0,"influence_gain":10,"valuation_gain":150},
+    {"id":"regional_exchange","name":"Regional Exchange","cost_capital":300,"demand_bonus_bp":1000,"influence_cost":10,"influence_gain":20,"valuation_gain":300},
+    {"id":"civic_grid","name":"Civic Grid","cost_capital":600,"demand_bonus_bp":1000,"influence_cost":20,"influence_gain":40,"valuation_gain":600}
   ],
   "targets": [
     {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90,"cooldown_ticks":60,"recon_cost":10,"recon_ticks":15,"intel_gain":45,"asset_damage":20},
