@@ -76,6 +76,24 @@ func TestFreshRunnerCatalogVerticalSlice(t *testing.T) {
 	if s.TargetCooldowns["t_01"] != 60 {
 		t.Fatalf("first target cooldown was not persisted: %v", s.TargetCooldowns)
 	}
+	if s.Access["t_01"] != 180 {
+		t.Fatalf("first breach did not grant catalogued temporary access: %v", s.Access)
+	}
+	if s.Resources.Bots < 1 {
+		t.Fatal("first breach left no reserve bot for the adjacent route check")
+	}
+	apply(game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Stealth})
+	if s.ActiveBattle == nil {
+		t.Fatal("temporary access did not unlock the adjacent catalog target")
+	}
+	apply(game.Command{Kind: game.WithdrawBattle})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 180})
+	if s.Access["t_01"] != 0 {
+		t.Fatalf("active ticks did not expire first route access: %v", s.Access)
+	}
+	if _, _, err := e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_02", Quantity: 1, Doctrine: game.Stealth}); err == nil {
+		t.Fatal("expired catalogued access still unlocked the adjacent target")
+	}
 	apply(game.Command{Kind: game.BuyResearch, ID: "hardware_01"})
 	if len(s.Research) != 1 || s.Research[0] != "hardware_01" {
 		t.Fatalf("first research node was not completed: %v", s.Research)
