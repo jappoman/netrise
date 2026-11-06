@@ -112,3 +112,7 @@ jobs:
           $unknownExitCode = $LASTEXITCODE
           $ErrorActionPreference = $previousErrorActionPreference
           if ($unknownExitCode -eq 0) { throw 'unknown command unexpectedly succeeded' }
+      - name: Windows release package flow
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\scripts\package-windows.ps1 -OutputDirectory "$env:RUNNER_TEMP\netrise-package"
