@@ -434,3 +434,6 @@ descriptions and target labels before content can reach any TUI screen.
 
 Save validation extends that policy to persisted target, asset, research and
 generator labels, closing indirect TUI injection paths through resumed state.
+
+The headless `simulate --help` path now exits successfully after printing its
+flags, matching the top-level CLI help behavior instead of reporting an error.

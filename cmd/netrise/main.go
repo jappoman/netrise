@@ -109,10 +109,14 @@ func loadStateAt(dataDir string, e *sim.Engine, faction game.Faction, now func()
 }
 func simulate(args []string) {
 	fs := flag.NewFlagSet("simulate", flag.ContinueOnError)
+	fs.SetOutput(os.Stdout)
 	seed := fs.Int64("seed", 1, "world seed")
 	ticks := fs.Int64("ticks", 0, "logical seconds")
 	faction := fs.String("faction", "runner", "campaign faction: runner or corp")
 	if err := fs.Parse(args); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
 		fatal(err)
 	}
 	if *ticks < 0 {
