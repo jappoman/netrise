@@ -420,3 +420,7 @@ corrupted save.
 
 The 200-entry event archive limit is now defined in the shared game model and
 enforced at both engine append and save-load boundaries.
+
+Runner preflight commitment previews now avoid multiplying the full bot reserve
+before dividing by percentage, keeping the player-facing commitment selector safe
+for maximum-size persisted reserves.

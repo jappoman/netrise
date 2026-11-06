@@ -1564,7 +1564,7 @@ func commitmentBots(bots, percent int64) int64 {
 	if percent > 100 {
 		percent = 100
 	}
-	committed := bots * percent / 100
+	committed := (bots/100)*percent + ((bots%100)*percent)/100
 	if committed < 1 {
 		return 1
 	}

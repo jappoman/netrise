@@ -607,6 +607,14 @@ func TestTargetEstimatesSaturateExtremeCatalogValues(t *testing.T) {
 	}
 }
 
+func TestCommitmentPreviewSaturatesExtremeBotCounts(t *testing.T) {
+	maxBots := int64(math.MaxInt64)
+	want := (maxBots/100)*75 + ((maxBots%100)*75)/100
+	if got := commitmentBots(math.MaxInt64, 75); got != want {
+		t.Fatalf("extreme commitment overflowed: got=%d want=%d", got, want)
+	}
+}
+
 func TestPrestigeScreensExplainLockedAndReadyStates(t *testing.T) {
 	corp := New(sim.NewCorporationState(11), sim.New(content.Catalog{SchemaVersion: 1}, 11), "")
 	updated, _ := corp.Update(tea.KeyPressMsg(tea.Key{Text: "p", Code: 'p'}))
