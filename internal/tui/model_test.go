@@ -181,6 +181,28 @@ func TestReducedMotionResolvesBattleWithoutPlaybackFrames(t *testing.T) {
 	}
 }
 
+func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
+	state := sim.NewState(20)
+	state.CompletedTargets = []string{"t_01"}
+	state.Access = map[string]int64{"t_01": 30}
+	state.Resources.Bots = 1
+	state.Upgrades = []string{"secondhand_compiler"}
+	state.Generators = []game.Generator{{ID: "salvaged_rig", Count: 1}}
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 20), "")
+	guide := m.tutorialView()
+	if !strings.Contains(guide, "Use temporary access") || !strings.Contains(guide, "before the access window expires") {
+		t.Fatalf("guide omitted temporary access step: %s", guide)
+	}
+	if !strings.Contains(m.nextHint(), "before temporary access expires") {
+		t.Fatalf("next hint omitted active access window: %s", m.nextHint())
+	}
+	state.Access["t_01"] = 0
+	m.state = state
+	if !strings.Contains(m.nextHint(), "inspect adjacent routes") {
+		t.Fatalf("next hint omitted expired access recovery: %s", m.nextHint())
+	}
+}
+
 func TestEventArchiveViewShowsPersistedEvents(t *testing.T) {
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
 	m.state.EventLog = []game.Event{{Tick: 9, Type: "BattleEnded", Message: "Breach successful."}}

@@ -933,6 +933,7 @@ func (m Model) tutorialSteps() []tutorialStep {
 		{Title: "Fabricate your first bot", Action: "press [f] when compute and credits are available", Done: m.state.Resources.Bots > 0},
 		{Title: "Replace uncertainty with intel", Action: "open [t], select t_01 and press [i] for recon", Done: targetIntel(m.state, "t_01") >= 45},
 		{Title: "Complete the first breach", Action: "open [t], review preflight and press [enter] to launch", Done: containsID(m.state.CompletedTargets, "t_01")},
+		{Title: "Use temporary access", Action: "open [t] and launch t_02 before the access window expires", Done: containsID(m.state.CompletedTargets, "t_02")},
 		{Title: "Fund the next capability", Action: "open [y] research and buy an available node", Done: len(m.state.Research) > 0},
 	}
 }
@@ -1234,6 +1235,12 @@ func (m Model) nextHint() string {
 	}
 	if m.state.Resources.Bots == 0 {
 		return "press [f] when you have 10 compute and 2 credits"
+	}
+	if containsID(m.state.CompletedTargets, "t_01") && !containsID(m.state.CompletedTargets, "t_02") {
+		if m.state.Access["t_01"] > 0 {
+			return "open [t] and launch t_02 before temporary access expires"
+		}
+		return "open [t] to inspect adjacent routes and renew access"
 	}
 	return "press [a] to launch the tutorial breach with all bots"
 }
