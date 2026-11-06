@@ -192,6 +192,25 @@ func TestHighContrastModeIsSelectableAndNoColorWins(t *testing.T) {
 	}
 }
 
+func TestSettingsScreenShowsAccessibilityModesAndReturnsToOverview(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	t.Setenv("NETRISE_HIGH_CONTRAST", "1")
+	m := New(sim.NewState(21), sim.New(content.Catalog{SchemaVersion: 1}, 21), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "S", Code: 'S'}))
+	m = updated.(Model)
+	if m.screen != "settings" {
+		t.Fatalf("settings key did not open screen: %q", m.screen)
+	}
+	view := m.View().Content
+	if !strings.Contains(view, "NO_COLOR: ON") || !strings.Contains(view, "HIGH CONTRAST: ON") || !strings.Contains(view, "REDUCED MOTION: OFF") {
+		t.Fatalf("settings screen hid accessibility state: %s", view)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "esc", Code: tea.KeyEscape}))
+	if updated.(Model).screen != "overview" {
+		t.Fatal("settings screen did not return to overview")
+	}
+}
+
 func TestReducedMotionResolvesBattleWithoutPlaybackFrames(t *testing.T) {
 	t.Setenv("NETRISE_REDUCED_MOTION", "1")
 	catalog := content.Catalog{SchemaVersion: 1, Targets: []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 1}}, TimeLimit: 30}}}

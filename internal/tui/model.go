@@ -193,6 +193,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "settings" {
+			if v.String() == "esc" || v.String() == "o" || v.String() == "S" {
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if m.screen == "prestige" {
 			switch v.String() {
 			case "enter":
@@ -243,6 +249,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "l" {
 			m.screen = "archive"
+			return m, nil
+		}
+		if v.String() == "S" {
+			m.screen = "settings"
 			return m, nil
 		}
 		if v.String() == "h" {
@@ -403,6 +413,9 @@ func (m Model) View() tea.View {
 	if m.screen == "archive" {
 		return tea.NewView(m.archiveView())
 	}
+	if m.screen == "settings" {
+		return tea.NewView(m.settingsView())
+	}
 	if m.screen == "prestige" {
 		return tea.NewView(m.prestigeView())
 	}
@@ -422,7 +435,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [S] settings [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -445,13 +458,13 @@ func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height 
 
 func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
-		controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [r] repair [v] report [l] archive [p] restructure [q] quit"
+		controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [r] repair [v] report [l] archive [S] settings [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [x] isolate asset [q] quit"
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\n%s\nREP %d%%  EXPOSURE %d%%\nMARKET %s\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.corpIncursionSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.corpMarketSummary(), m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
-	controls := "[c] contract [b] rig [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [S] settings [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
@@ -917,11 +930,22 @@ func (m Model) archiveView() string {
 	return lines + "\n[esc] overview\nNEXT: inspect recent events, then return to the campaign overview."
 }
 
+func (m Model) settingsView() string {
+	return fmt.Sprintf("NETRISE // SETTINGS\n\nACCESSIBILITY\nNO_COLOR: %s\nHIGH CONTRAST: %s\nREDUCED MOTION: %s\n\nThese display preferences are read from the environment when NETRISE starts.\nSet NO_COLOR=1, NETRISE_HIGH_CONTRAST=1, or NETRISE_REDUCED_MOTION=1 before launching.\nThe simulation remains deterministic and keyboard-only in every mode.\n\n[S/esc] overview\nNEXT: choose a display mode before relaunching, then continue from the campaign overview.", settingStatus("NO_COLOR"), settingStatus("NETRISE_HIGH_CONTRAST"), settingStatus("NETRISE_REDUCED_MOTION"))
+}
+
+func settingStatus(name string) string {
+	if os.Getenv(name) != "" {
+		return "ON"
+	}
+	return "OFF"
+}
+
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE or [x] isolate the highest-value asset during an incursion\n[r] repair the highest-damage asset (1 capital per integrity)\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play. The overview shows the finite NPC incursion budget.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE or [x] isolate the highest-value asset during an incursion\n[r] repair the highest-damage asset (1 capital per integrity)\n[h] progression guide  [l] event archive  [S] settings  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play. The overview shows the finite NPC incursion budget.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
 	}
-	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate  [a] breach\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate  [a] breach\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive  [S] settings\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
 }
 
 func (m Model) tutorialView() string {
