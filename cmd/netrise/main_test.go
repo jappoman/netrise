@@ -43,6 +43,15 @@ func TestValidateTopLevelArgsRejectsUnknownCommands(t *testing.T) {
 	}
 }
 
+func TestHeadlessCommandsRejectTrailingArguments(t *testing.T) {
+	if err := rejectTrailingArgs("simulate", nil); err != nil {
+		t.Fatalf("simulate rejected an empty argument list: %v", err)
+	}
+	if err := rejectTrailingArgs("playtest", []string{"unexpected"}); err == nil {
+		t.Fatal("playtest accepted a positional argument")
+	}
+}
+
 func TestLoadStateUsesInjectedClockForOfflineReconciliation(t *testing.T) {
 	dir := t.TempDir()
 	saved := time.Date(2026, time.November, 6, 10, 0, 0, 0, time.UTC)

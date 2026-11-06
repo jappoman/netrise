@@ -473,6 +473,11 @@ outcome, events and faction-specific progression). It reuses the production
 engine and catalog, giving balance iterations a repeatable comparison point
 without adding telemetry or a second gameplay implementation.
 
+The headless commands now reject unexpected positional arguments instead of
+silently ignoring them. `make playtest` runs both scripted campaign baselines,
+while `make smoke` exercises help, content validation, both playtests and both
+600-tick simulations as a local release smoke flow.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.

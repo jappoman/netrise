@@ -12,6 +12,7 @@ From the repository root:
 go run ./cmd/netrise validate-content
 go run ./cmd/netrise playtest --faction runner --seed 17
 go run ./cmd/netrise playtest --faction corp --seed 17
+make smoke SEED=17 TICKS=600
 go run ./cmd/netrise --data-dir ./tmp/playtest-runner
 go run ./cmd/netrise corp --data-dir ./tmp/playtest-corp
 ```

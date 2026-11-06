@@ -171,6 +171,9 @@ func simulate(args []string) {
 		}
 		fatal(err)
 	}
+	if err := rejectTrailingArgs("simulate", fs.Args()); err != nil {
+		fatal(err)
+	}
 	if *ticks < 0 {
 		fatal(fmt.Errorf("ticks cannot be negative"))
 	}
@@ -208,6 +211,9 @@ func playtestCommand(args []string) {
 		}
 		fatal(err)
 	}
+	if err := rejectTrailingArgs("playtest", fs.Args()); err != nil {
+		fatal(err)
+	}
 	var selected game.Faction
 	switch *faction {
 	case "runner":
@@ -231,6 +237,14 @@ func playtestCommand(args []string) {
 	}
 	fmt.Println(string(b))
 }
+
+func rejectTrailingArgs(command string, args []string) error {
+	if len(args) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s does not accept positional arguments: %q", command, args[0])
+}
+
 func loadCatalog() (content.Catalog, error) {
 	paths := []string{"assets/content/catalog.json"}
 	if executable, err := os.Executable(); err == nil {
