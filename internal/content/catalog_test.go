@@ -43,3 +43,10 @@ func TestValidateRejectsInvalidCorporationResearch(t *testing.T) {
 		t.Fatal("over-cap Corporation research effect accepted")
 	}
 }
+
+func TestValidateRejectsNegativeSecurityCapacityBonus(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_assets":[{"id":"security","name":"Security","integrity":100,"ice_capacity_bonus":-1}]}`))
+	if err == nil {
+		t.Fatal("negative ICE capacity bonus accepted")
+	}
+}

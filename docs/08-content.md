@@ -69,7 +69,7 @@ Balanced (safe default), Stealth (lower heat/attrition with weaker attack), Over
 - Biotech R&D: slow but valuable projects, differentiated research rewards.
 - Private security: profitable ICE products and stronger countermeasures.
 
-Corporate progression includes client demand, operating margin, reputation, information value and defensive exposure. An acquisition is an economic investment, not a magic hack performed by Corp.
+Corporate progression includes client demand, operating margin, reputation, information value and defensive exposure. The Security Desk carries a data-driven ICE capacity bonus, so defensive investment changes the reserve ceiling rather than only adding income. An acquisition is an economic investment, not a magic hack performed by Corp.
 
 ## Event writing style
 Concise industrial noir with minimal forced jokes:

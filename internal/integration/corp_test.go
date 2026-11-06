@@ -36,7 +36,7 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	apply(game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"})
 	apply(game.Command{Kind: game.CorpBuyICE, Quantity: 2})
 	apply(game.Command{Kind: game.CorpEnableMaintenance})
-	if len(s.Corp.Assets) != 3 || s.Corp.ICE != 5 || s.Corp.Capital < 0 {
+	if len(s.Corp.Assets) != 3 || s.Corp.ICECapacity != 8 || s.Corp.ICE != 5 || s.Corp.Capital < 0 {
 		t.Fatalf("corporate investment state invalid: %#v", s.Corp)
 	}
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 9})
@@ -57,7 +57,7 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	if s.Corp.Capital < 0 || s.Corp.ReputationBP < 0 || s.Corp.ReputationBP > 10000 || s.Corp.ExposureBP < 0 || s.Corp.ExposureBP > 10000 {
 		t.Fatalf("corporation meter invariant failed: %#v", s.Corp)
 	}
-	if s.Corp.ICE <= 0 || s.Corp.MaintenanceSpent <= 0 || s.Corp.MaintenanceSpent > s.Corp.MaintenanceBudget {
+	if s.Corp.ICE != 8 || s.Corp.ICECapacity != 8 || s.Corp.MaintenanceSpent <= 0 || s.Corp.MaintenanceSpent > s.Corp.MaintenanceBudget {
 		t.Fatalf("maintenance reserve accounting failed: ice=%d spent=%d budget=%d", s.Corp.ICE, s.Corp.MaintenanceSpent, s.Corp.MaintenanceBudget)
 	}
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 10})

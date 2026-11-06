@@ -134,6 +134,10 @@ progression guide and contextual next-step hint identify the Archive Server as
 the next expansion after security investment, while Runner's `[a]` action
 remains its tutorial breach.
 
+Security Desk now carries a validated `ice_capacity_bonus` from the catalog.
+Building it expands Corporation ICE capacity and, when the maintenance policy
+was filling the previous rack, expands the protected reserve atomically too.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

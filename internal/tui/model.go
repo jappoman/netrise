@@ -832,7 +832,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
@@ -867,7 +867,7 @@ func (m Model) tutorialSteps() []tutorialStep {
 	if m.state.Faction == game.Corporation {
 		return []tutorialStep{
 			{Title: "Build a second client asset", Action: "press [b] to add Transit Hosting", Done: m.state.Corp != nil && len(m.state.Corp.Assets) >= 2},
-			{Title: "Invest in security", Action: "press [s] to install a Security Desk", Done: m.corpHasAsset("security_desk")},
+			{Title: "Invest in security", Action: "press [s] to install a Security Desk (+3 ICE capacity)", Done: m.corpHasAsset("security_desk")},
 			{Title: "Expand the archive business", Action: "press [a] to build an Archive Server", Done: m.corpHasAsset("archive_server")},
 			{Title: "Fill the reserve ICE rack", Action: "press [i] until ICE reaches capacity", Done: m.state.Corp != nil && m.state.Corp.ICE >= m.state.Corp.ICECapacity},
 			{Title: "Survive an active-play incursion", Action: "advance active play and review the battle playback", Done: m.state.LastBattle != nil},

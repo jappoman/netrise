@@ -81,6 +81,8 @@ Corporation R&D converts capital into threshold-based technologies. Network
 Efficiency improves capital flow, while Lean Operations reduces upkeep on
 operational assets. These technologies are data-driven, persist during the
 campaign and reset on Restructuring with the rest of the run state.
+The Security Desk also adds three ICE capacity slots; when maintenance was
+already reserving the previous full rack, the reserve expands with the asset.
 
 ## Anti-exploit rules
 - No negative balances; spending is validated and atomic.

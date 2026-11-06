@@ -415,6 +415,22 @@ func TestCorporationMaintenanceBudgetRestocksOnlyDuringActivePlay(t *testing.T) 
 	}
 }
 
+func TestSecurityAssetExpandsICECapacityAndMaintenanceReserve(t *testing.T) {
+	c := catalog()
+	c.CorpAssets = []content.CorpAssetDefinition{{ID: "security", Name: "Security Desk", CostCapital: 50, Integrity: 100, ICECapacityBonus: 3}}
+	e := New(c, 97)
+	s := NewCorporationState(97)
+	s.Corp.Capital = mathx.New(100)
+	s.Corp.MaintenanceReserve = s.Corp.ICECapacity
+	s, _, err := e.Apply(s, game.Command{Kind: game.CorpBuildAsset, ID: "security"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Corp.ICECapacity != 8 || s.Corp.MaintenanceReserve != 8 || s.Corp.Capital != mathx.New(50) {
+		t.Fatalf("security asset did not expand capacity atomically: %#v", s.Corp)
+	}
+}
+
 func TestCorporationResearchAllocationHonorsBudgetAndComputeReserve(t *testing.T) {
 	e := New(catalog(), 94)
 	s := NewCorporationState(94)

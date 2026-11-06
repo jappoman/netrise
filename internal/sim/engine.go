@@ -307,7 +307,12 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d capital", definition.CostCapital)}
 		}
 		s.Corp.Capital -= mathx.New(definition.CostCapital)
+		previousCapacity := s.Corp.ICECapacity
 		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, Operational: true})
+		s.Corp.ICECapacity += definition.ICECapacityBonus
+		if s.Corp.MaintenanceReserve >= previousCapacity {
+			s.Corp.MaintenanceReserve += definition.ICECapacityBonus
+		}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetBuilt", Message: definition.Name + " commissioned."}}, nil
 	case game.CorpBuyICE:
 		if s.Faction != game.Corporation || s.Corp == nil {

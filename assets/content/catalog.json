@@ -30,7 +30,7 @@
   "corp_assets": [
     {"id":"transit_hosting","name":"Transit Hosting","cost_capital":75,"capital_per_tick":4,"upkeep_per_tick":0,"integrity":100},
     {"id":"archive_server","name":"Archive Server","cost_capital":150,"capital_per_tick":7,"upkeep_per_tick":2,"integrity":140},
-    {"id":"security_desk","name":"Security Desk","cost_capital":90,"capital_per_tick":1,"upkeep_per_tick":1,"integrity":120}
+    {"id":"security_desk","name":"Security Desk","cost_capital":90,"capital_per_tick":1,"upkeep_per_tick":1,"integrity":120,"ice_capacity_bonus":3}
   ],
   "targets": [
     {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90,"recon_cost":10,"recon_ticks":15,"intel_gain":45},
