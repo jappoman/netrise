@@ -138,14 +138,14 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, u := range c.Upgrades {
-		if u.ID == "" || seen[u.ID] || !fitsAmount(u.Cost) || !fitsAmount(u.Effects.ComputePerSecondBonus) || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || !fitsAmount(u.Effects.BotCapacityBonus) || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
+		if u.ID == "" || seen[u.ID] || !fitsAmount(u.Cost) || !fitsAmount(u.Effects.ComputePerSecondBonus) || u.Effects.HeatReductionPercent < 0 || !fitsAmount(u.Effects.StealthAttackBonusPercent) || !fitsAmount(u.Effects.BotCapacityBonus) || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, r := range c.Research {
-		if r.ID == "" || seen[r.ID] || r.Name == "" || !fitsAmount(r.CostData) || r.Effects.ComputePerSecondBonus < 0 || r.Effects.AttackBonusPercent < 0 || r.Effects.StealthHeatReductionPercent < 0 || r.Effects.AutomationIntervalReduction < 0 {
+		if r.ID == "" || seen[r.ID] || r.Name == "" || !fitsAmount(r.CostData) || !fitsAmount(r.Effects.ComputePerSecondBonus) || !fitsAmount(r.Effects.AttackBonusPercent) || !fitsAmount(r.Effects.StealthHeatReductionPercent) || !fitsAmount(r.Effects.AutomationIntervalReduction) {
 			return fmt.Errorf("content: invalid research node %q", r.ID)
 		}
 		seen[r.ID] = true

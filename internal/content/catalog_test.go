@@ -146,6 +146,17 @@ func TestValidateRejectsUnrepresentableCapacityValues(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsUnrepresentableAttackBonuses(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"research":[{"id":"intrusion","name":"Intrusion","effects":{"attack_bonus_percent":9223372036854775807}}]}`))
+	if err == nil {
+		t.Fatal("research attack bonus beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"upgrades":[{"id":"proxy","name":"Proxy","effects":{"stealth_attack_bonus_percent":9223372036854775807}}]}`))
+	if err == nil {
+		t.Fatal("upgrade attack bonus beyond fixed-point range accepted")
+	}
+}
+
 func TestValidateRejectsNegativeAccessDuration(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"access_ticks":-1}]}`))
 	if err == nil {

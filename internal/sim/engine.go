@@ -1011,11 +1011,11 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	case game.Stealth:
 		attackMultiplier, heatMultiplier = 82, 55
 		heatMultiplier -= effects.StealthHeatReductionPercent
-		attackMultiplier += upgradeEffects.StealthAttackBonusPercent
+		attackMultiplier = AddNonNegativeSaturated(attackMultiplier, upgradeEffects.StealthAttackBonusPercent)
 	case game.Overload:
 		attackMultiplier, heatMultiplier = 125, 170
 	}
-	attackMultiplier += effects.AttackBonusPercent
+	attackMultiplier = AddNonNegativeSaturated(attackMultiplier, effects.AttackBonusPercent)
 	heatMultiplier -= upgradeEffects.HeatReductionPercent
 	if heatMultiplier < 0 {
 		heatMultiplier = 0
@@ -1482,15 +1482,16 @@ func (e *Engine) EstimateBattle(s game.State, target content.Target, doctrine ga
 	if commitment <= 0 || len(target.Layers) == 0 {
 		return 0, 0
 	}
-	attack := int64(100) + e.researchEffects(s).AttackBonusPercent
+	attack := AddNonNegativeSaturated(100, e.researchEffects(s).AttackBonusPercent)
 	heat := int64(100)
 	upgrades := e.upgradeEffects(s)
 	switch doctrine {
 	case game.Stealth:
-		attack = 82 + e.researchEffects(s).AttackBonusPercent + upgrades.StealthAttackBonusPercent
+		attack = AddNonNegativeSaturated(82, e.researchEffects(s).AttackBonusPercent)
+		attack = AddNonNegativeSaturated(attack, upgrades.StealthAttackBonusPercent)
 		heat = 55 - e.researchEffects(s).StealthHeatReductionPercent
 	case game.Overload:
-		attack = 125 + e.researchEffects(s).AttackBonusPercent
+		attack = AddNonNegativeSaturated(125, e.researchEffects(s).AttackBonusPercent)
 		heat = 170
 	}
 	heat -= upgrades.HeatReductionPercent

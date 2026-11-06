@@ -371,3 +371,6 @@ purchase attempt.
 Catalog validation now bounds generator, upgrade and Corporation asset
 capacity values to the fixed-point range; capacity mutations and incursion ICE
 composition use saturating additions at runtime as well.
+
+Attack-power bonuses from research and upgrades are now bounded in content and
+combined with saturating arithmetic before combat or preflight multiplication.
