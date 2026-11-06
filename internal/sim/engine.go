@@ -574,6 +574,17 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 		s.Corp.DemandBP = 10000
 	}
 	s.Corp.Capital, _ = s.Corp.Capital.Add(mathx.New(rate))
+	availableCapital := s.Corp.Capital.Units()
+	for i := range s.Corp.Assets {
+		asset := &s.Corp.Assets[i]
+		if asset.Operational || asset.UpkeepPerTick <= 0 || availableCapital < asset.UpkeepPerTick {
+			continue
+		}
+		asset.Operational = true
+		availableCapital -= asset.UpkeepPerTick
+		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AssetReactivated", Message: asset.Name + " returned to operational status."})
+	}
+	upkeep = e.CorporationUpkeepRate(s)
 	if upkeep > 0 && s.Corp.Capital >= mathx.New(upkeep) {
 		s.Corp.Capital -= mathx.New(upkeep)
 	} else if upkeep > 0 {

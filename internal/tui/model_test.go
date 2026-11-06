@@ -75,6 +75,16 @@ func TestCorporationCanBuildArchiveServerFromOverview(t *testing.T) {
 	}
 }
 
+func TestCorporationOverviewShowsDisabledAssetRecoveryHint(t *testing.T) {
+	state := sim.NewCorporationState(15)
+	state.Corp.Assets = append(state.Corp.Assets, game.CorpAsset{ID: "archive", Name: "Archive", UpkeepPerTick: 5, Operational: false})
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 15), "")
+	view := m.corpOverviewView()
+	if !strings.Contains(view, "ASSETS 1/2 operational") || !strings.Contains(view, "capital is recovering") {
+		t.Fatalf("Corporation recovery state was not explained: %s", view)
+	}
+}
+
 func TestNoColorOmitsANSIStyling(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")

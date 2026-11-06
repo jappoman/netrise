@@ -923,7 +923,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpAssetSummary(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
 func (m Model) corpReportView() string {
@@ -1149,6 +1149,11 @@ func (m Model) corpNextHint() string {
 	if m.state.Corp == nil {
 		return "campaign state unavailable"
 	}
+	for _, asset := range m.state.Corp.Assets {
+		if !asset.Operational {
+			return "capital is recovering; keep active play running to reactivate disabled services"
+		}
+	}
 	if len(m.state.Corp.Assets) < 2 {
 		return "press [b] to build Transit Hosting, then invest in security"
 	}
@@ -1162,6 +1167,19 @@ func (m Model) corpNextHint() string {
 		return "restock reserve ICE before the next emergency audit"
 	}
 	return "maintain capital and watch the next active-play intrusion"
+}
+
+func (m Model) corpAssetSummary() string {
+	if m.state.Corp == nil {
+		return "0/0 operational"
+	}
+	operational := 0
+	for _, asset := range m.state.Corp.Assets {
+		if asset.Operational {
+			operational++
+		}
+	}
+	return fmt.Sprintf("%d/%d operational", operational, len(m.state.Corp.Assets))
 }
 
 func hasUpgrade(s game.State, id string) bool {

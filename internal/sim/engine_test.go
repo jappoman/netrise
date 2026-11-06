@@ -431,6 +431,35 @@ func TestSecurityAssetExpandsICECapacityAndMaintenanceReserve(t *testing.T) {
 	}
 }
 
+func TestCorporationReactivatesAssetsAfterUpkeepRecovery(t *testing.T) {
+	e := New(catalog(), 98)
+	s := NewCorporationState(98)
+	s.Corp.Assets = []game.CorpAsset{{ID: "costly", Name: "Costly Service", UpkeepPerTick: 5, Operational: true}}
+	s.Corp.Capital = 0
+	s, events, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Corp.Assets[0].Operational {
+		t.Fatalf("unaffordable asset was not throttled: state=%#v events=%#v err=%v", s.Corp, events, err)
+	}
+	for ticks := 0; ticks < 3 && !s.Corp.Assets[0].Operational; ticks++ {
+		s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !s.Corp.Assets[0].Operational || s.Corp.Capital < 0 {
+		t.Fatalf("asset did not recover after capital accumulation: state=%#v", s.Corp)
+	}
+	found := false
+	for _, event := range events {
+		if event.Type == "AssetReactivated" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("reactivation event missing: %#v", events)
+	}
+}
+
 func TestCorporationResearchAllocationHonorsBudgetAndComputeReserve(t *testing.T) {
 	e := New(catalog(), 94)
 	s := NewCorporationState(94)
