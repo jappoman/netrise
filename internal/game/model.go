@@ -45,6 +45,13 @@ type State struct {
 	Intel            map[string]int64 `json:"intel,omitempty"`
 	Recon            *ReconJob        `json:"recon,omitempty"`
 	CompletedTargets []string         `json:"completed_targets,omitempty"`
+	Automation       Automation       `json:"automation"`
+}
+
+type Automation struct {
+	Contracts     bool   `json:"contracts"`
+	Fabrication   bool   `json:"fabrication"`
+	ReconTargetID string `json:"recon_target_id,omitempty"`
 }
 
 type ReconJob struct {
@@ -97,12 +104,14 @@ const (
 	ReinforceBattle  CommandKind = "reinforce_battle"
 	WithdrawBattle   CommandKind = "withdraw_battle"
 	StartRecon       CommandKind = "start_recon"
+	EnableAutomation CommandKind = "enable_automation"
 )
 
 type Command struct {
 	Kind     CommandKind
 	Ticks    int64
 	ID       string
+	TargetID string
 	Quantity int64
 	Doctrine Doctrine
 }

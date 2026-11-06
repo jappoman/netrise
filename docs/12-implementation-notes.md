@@ -9,10 +9,12 @@ slice now includes five data-driven Corporation targets, bounded seeded damage
 variation, doctrine selection, heat, timeout handling, and one atomic battle
 reinforcement. Runner progression now includes target-scoped intel, timed
 recon, route unlocking after victories, and a tested economy-to-recon-to-battle
-vertical slice.
+vertical slice. The first safe automation policies are now available through
+the Autodialer, Packet Scheduler, and Signal Profiler upgrades; they run on
+fixed ticks with bounded resource checks and no hostile offline actions.
 
-The Corporation campaign, research tree, and deeper automation remain later
-work. The TUI now
+The Corporation campaign, research tree, and prestige remain later work. The
+TUI now
 exposes contract collection, Salvaged Rig purchase, one-bot fabrication,
 three attack doctrines, a 75% default commitment, one reserve-bot
 reinforcement, and persistent save/load. A save records UTC time and

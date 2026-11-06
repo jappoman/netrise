@@ -295,3 +295,32 @@ func TestRunnerVerticalSliceEndToEnd(t *testing.T) {
 		t.Fatalf("victory did not unlock next target: %v", err)
 	}
 }
+
+func TestAutomationPoliciesRunInsideDeterministicTicks(t *testing.T) {
+	e := New(catalog(), 91)
+	s := NewState(91)
+	s.Upgrades = []string{"autodialer", "secondhand_compiler", "packet_scheduler", "street_contacts", "signal_profiler"}
+	s.Resources.Credits = mathx.New(50)
+	s.Resources.Compute = mathx.New(100)
+	s.Resources.BotCapacity = 5
+	apply := func(command game.Command) {
+		var err error
+		s, _, err = e.Apply(s, command)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	apply(game.Command{Kind: game.EnableAutomation, ID: "contracts"})
+	apply(game.Command{Kind: game.EnableAutomation, ID: "fabrication"})
+	apply(game.Command{Kind: game.EnableAutomation, ID: "recon", TargetID: "target"})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 20})
+	if !s.Automation.Contracts || !s.Automation.Fabrication || s.Automation.ReconTargetID != "target" {
+		t.Fatalf("automation policies not enabled: %#v", s.Automation)
+	}
+	if s.Resources.Bots == 0 || s.Intel["target"] == 0 {
+		t.Fatalf("automation did not make progress: bots=%d intel=%v", s.Resources.Bots, s.Intel)
+	}
+	if s.Resources.Credits < 0 || s.Resources.Compute < 0 {
+		t.Fatalf("automation created negative resources: %#v", s.Resources)
+	}
+}

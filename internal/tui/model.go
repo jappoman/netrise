@@ -103,6 +103,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command = game.Command{Kind: game.ReinforceBattle, Quantity: 1}
 		case "w":
 			command = game.Command{Kind: game.WithdrawBattle}
+		case "C":
+			command = game.Command{Kind: game.EnableAutomation, ID: "contracts"}
+		case "F":
+			command = game.Command{Kind: game.EnableAutomation, ID: "fabrication"}
+		case "I":
+			command = game.Command{Kind: game.EnableAutomation, ID: "recon", TargetID: "t_01"}
 		}
 		if command.Kind != "" && !(command.Kind == game.StartBattle && command.Quantity == 0) {
 			m.applyCommand(command)
@@ -144,7 +150,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [C/F/I] automation [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}

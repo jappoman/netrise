@@ -193,6 +193,31 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Resources.Credits -= mathx.New(target.ReconCost)
 		s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: target.ReconTicks}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ReconStarted", Message: "Recon package deployed: " + target.Name}}, nil
+	case game.EnableAutomation:
+		switch c.ID {
+		case "contracts":
+			if !hasUpgrade(s, "autodialer") {
+				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Autodialer first"}
+			}
+			s.Automation.Contracts = true
+		case "fabrication":
+			if !hasUpgrade(s, "packet_scheduler") {
+				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Packet Scheduler first"}
+			}
+			s.Automation.Fabrication = true
+		case "recon":
+			if !hasUpgrade(s, "signal_profiler") {
+				return s, nil, &game.CommandError{Reason: game.ReasonUpgradeLocked, Detail: "buy the Signal Profiler first"}
+			}
+			target, ok := e.target(c.TargetID)
+			if !ok || !e.isReachable(s, target) {
+				return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "recon target is not reachable"}
+			}
+			s.Automation.ReconTargetID = target.ID
+		default:
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown automation policy"}
+		}
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "AutomationEnabled", Message: "Automation policy enabled: " + c.ID}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
@@ -225,6 +250,7 @@ func (e *Engine) advanceEvents(s game.State, ticks int64) (game.State, []game.Ev
 				s.Fabrication = nil
 			}
 		}
+		s, events = e.advanceAutomation(s, events)
 		if s.Recon != nil {
 			s.Recon.RemainingTicks--
 			if s.Recon.RemainingTicks <= 0 {
@@ -243,6 +269,27 @@ func (e *Engine) advanceEvents(s game.State, ticks int64) (game.State, []game.Ev
 		}
 		if s.ActiveBattle != nil {
 			s, events = e.advanceBattle(s, events)
+		}
+	}
+	return s, events
+}
+
+func (e *Engine) advanceAutomation(s game.State, events []game.Event) (game.State, []game.Event) {
+	if s.Automation.Contracts && s.LogicalTick%4 == 0 {
+		s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(10))
+		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationProduced", Message: "Autodialer settled a safe contract.", Amount: 10})
+	}
+	if s.Automation.Fabrication && s.Fabrication == nil && hasUpgrade(s, "secondhand_compiler") && s.Resources.Bots < s.Resources.BotCapacity && s.Resources.Compute >= mathx.New(10) && s.Resources.Credits >= mathx.New(2) {
+		s.Resources.Compute -= mathx.New(10)
+		s.Resources.Credits -= mathx.New(2)
+		s.Fabrication = &game.Fabrication{RemainingTicks: 3, Quantity: 1}
+		events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Packet Scheduler queued one bot."})
+	}
+	if s.Automation.ReconTargetID != "" && s.Recon == nil {
+		if target, ok := e.target(s.Automation.ReconTargetID); ok && e.isReachable(s, target) && s.Intel[target.ID] < 100 && hasUpgrade(s, "street_contacts") && s.Resources.Credits >= mathx.New(target.ReconCost) {
+			s.Resources.Credits -= mathx.New(target.ReconCost)
+			s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: target.ReconTicks}
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AutomationQueued", Message: "Signal Profiler queued recon: " + target.Name})
 		}
 	}
 	return s, events
