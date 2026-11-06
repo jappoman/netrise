@@ -354,3 +354,50 @@ func TestRunnerSixtyMinuteScriptedProgressionRemainsBounded(t *testing.T) {
 		t.Fatal("60-minute script produced no recon progress")
 	}
 }
+
+func TestRunnerTwoDistinctStrategiesCompleteFirstBreach(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	strategies := []struct {
+		name     string
+		doctrine game.Doctrine
+		bots     int64
+		seed     int64
+	}{
+		{name: "stealth conservation", doctrine: game.Stealth, bots: 10, seed: 117},
+		{name: "overload pressure", doctrine: game.Overload, bots: 12, seed: 118},
+	}
+	for _, strategy := range strategies {
+		t.Run(strategy.name, func(t *testing.T) {
+			e := sim.New(catalog, strategy.seed)
+			s := sim.NewState(strategy.seed)
+			s.Upgrades = []string{"secondhand_compiler"}
+			s.Resources.Bots = strategy.bots
+			var commandErr error
+			s, _, commandErr = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "t_01", Quantity: strategy.bots, Doctrine: strategy.doctrine})
+			if commandErr != nil {
+				t.Fatal(commandErr)
+			}
+			for ticks := int64(0); s.ActiveBattle != nil && ticks <= 30; ticks++ {
+				s, _, commandErr = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+				if commandErr != nil {
+					t.Fatal(commandErr)
+				}
+			}
+			if s.ActiveBattle != nil || s.LastBattle == nil || s.LastBattle.Outcome != "victory" {
+				t.Fatalf("%s did not complete first breach: battle=%#v result=%#v", strategy.name, s.ActiveBattle, s.LastBattle)
+			}
+			if s.LastBattle.Doctrine != strategy.doctrine || len(s.CompletedTargets) != 1 || s.CompletedTargets[0] != "t_01" {
+				t.Fatalf("%s did not preserve strategy outcome: result=%#v completed=%v", strategy.name, s.LastBattle, s.CompletedTargets)
+			}
+		})
+	}
+}
