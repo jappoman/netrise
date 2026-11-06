@@ -162,6 +162,12 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		advanced, events := e.advanceEvents(s, c.Ticks, false)
 		return advanced, events, nil
 	}
+	if isRunnerCommand(c.Kind) && s.Faction != game.Runner {
+		return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "Runner campaign required"}
+	}
+	if isCorporationCommand(c.Kind) && s.Faction != game.Corporation {
+		return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "Corporation campaign required"}
+	}
 	// Validate all spending before changing the snapshot.
 	switch c.Kind {
 	case game.CollectContract:
@@ -596,6 +602,28 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		return newState, []game.Event{{Tick: s.LogicalTick, Type: "RestructuringCompleted", Message: fmt.Sprintf("Restructuring complete. %d Patent Shares retained.", newState.Corp.PatentShares), Amount: reward}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
+	}
+}
+
+func isRunnerCommand(kind game.CommandKind) bool {
+	switch kind {
+	case game.CollectContract, game.BuyGenerator, game.QueueFabrication, game.BuyUpgrade,
+		game.StartBattle, game.ReinforceBattle, game.WithdrawBattle, game.StartRecon,
+		game.EnableAutomation, game.BuyResearch, game.IdentityBurn:
+		return true
+	default:
+		return false
+	}
+}
+
+func isCorporationCommand(kind game.CommandKind) bool {
+	switch kind {
+	case game.CorpBuildAsset, game.CorpBuyICE, game.CorpDeployICE, game.CorpIsolateAsset,
+		game.CorpRepairAsset, game.CorpRunResearch, game.CorpExpandMarket,
+		game.CorpEnableMaintenance, game.CorpConfigurePolicy, game.CorpRestructure:
+		return true
+	default:
+		return false
 	}
 }
 

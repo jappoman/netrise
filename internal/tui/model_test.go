@@ -283,6 +283,15 @@ func TestCorporationKeyboardFlowRespondsToIncursionEndToEnd(t *testing.T) {
 	}
 }
 
+func TestCorporationCannotOpenRunnerTargets(t *testing.T) {
+	m := New(sim.NewCorporationState(405), sim.New(content.Catalog{SchemaVersion: 1}, 405), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "t", Code: 't'}))
+	got := updated.(Model)
+	if got.screen != "overview" || !strings.Contains(got.status, "Runner operations") {
+		t.Fatalf("Corporation crossed into Runner targets: screen=%q status=%q", got.screen, got.status)
+	}
+}
+
 func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	state := sim.NewState(20)
 	state.CompletedTargets = []string{"t_01"}

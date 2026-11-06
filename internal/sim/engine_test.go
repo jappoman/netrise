@@ -850,6 +850,29 @@ func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	}
 }
 
+func TestFactionBoundariesRejectCrossCampaignCommandsAtomically(t *testing.T) {
+	e := New(catalog(), 404)
+	corp := NewCorporationState(404)
+	corp.Resources.Credits = mathx.New(100)
+	beforeCorp := corp
+	if _, _, err := e.Apply(corp, game.Command{Kind: game.CollectContract}); err == nil || err.(*game.CommandError).Reason != game.ReasonFactionMismatch {
+		t.Fatalf("Runner contract was accepted by Corporation: err=%v", err)
+	}
+	if corp.Resources != beforeCorp.Resources || corp.LogicalTick != beforeCorp.LogicalTick {
+		t.Fatalf("cross-faction rejection mutated Corporation state: before=%#v after=%#v", beforeCorp.Resources, corp.Resources)
+	}
+
+	runner := NewState(404)
+	runner.Resources.Bots = 1
+	beforeRunner := runner
+	if _, _, err := e.Apply(runner, game.Command{Kind: game.CorpBuyICE, Quantity: 1}); err == nil || err.(*game.CommandError).Reason != game.ReasonFactionMismatch {
+		t.Fatalf("Corporation ICE command was accepted by Runner: err=%v", err)
+	}
+	if runner.Resources != beforeRunner.Resources || runner.LogicalTick != beforeRunner.LogicalTick {
+		t.Fatalf("cross-faction rejection mutated Runner state: before=%#v after=%#v", beforeRunner.Resources, runner.Resources)
+	}
+}
+
 func TestResearchEffectsChangeSimulationThroughCatalogData(t *testing.T) {
 	c := catalog()
 	c.Research[0].Effects.ComputePerSecondBonus = 2

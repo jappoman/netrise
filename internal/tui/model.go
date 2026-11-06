@@ -218,6 +218,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if v.String() == "t" {
+			if m.state.Faction == game.Corporation {
+				m.status = "targets are Runner operations; use [v] report or [A] policy"
+				return m, nil
+			}
 			m.screen = "targets"
 			return m, nil
 		}

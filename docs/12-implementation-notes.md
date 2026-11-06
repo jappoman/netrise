@@ -273,3 +273,8 @@ resolution path.
 Long-run integration coverage now exercises 21,600 active ticks for both
 campaigns with automation enabled, checking six-hour-equivalent resource,
 event-log and progression invariants.
+
+Faction boundaries are now enforced centrally by the command engine: Runner
+operations cannot mutate Corporation state and Corporation operations cannot
+mutate Runner state. The TUI also keeps Corporation navigation out of the
+Runner target browser.
