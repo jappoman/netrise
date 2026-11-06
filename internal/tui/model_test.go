@@ -301,6 +301,31 @@ func TestCorporationCannotOpenRunnerResearch(t *testing.T) {
 	}
 }
 
+func TestSecondaryScreensExplainTheirNextAction(t *testing.T) {
+	runner := New(sim.NewState(407), sim.New(content.Catalog{SchemaVersion: 1}, 407), "")
+	for name, view := range map[string]string{
+		"runner archive":  runner.archiveView(),
+		"runner help":     runner.helpView(),
+		"runner research": runner.researchView(),
+		"runner prestige": runner.prestigeView(),
+	} {
+		if !strings.Contains(view, "NEXT:") {
+			t.Fatalf("%s omitted next-action rail: %s", name, view)
+		}
+	}
+	corp := New(sim.NewCorporationState(408), sim.New(content.Catalog{SchemaVersion: 1}, 408), "")
+	for name, view := range map[string]string{
+		"corp archive":     corp.archiveView(),
+		"corp help":        corp.helpView(),
+		"corp report":      corp.corpReportView(),
+		"corp restructure": corp.restructureView(),
+	} {
+		if !strings.Contains(view, "NEXT:") {
+			t.Fatalf("%s omitted next-action rail: %s", name, view)
+		}
+	}
+}
+
 func TestRunnerGuideExplainsTemporaryAccessWindow(t *testing.T) {
 	state := sim.NewState(20)
 	state.CompletedTargets = []string{"t_01"}

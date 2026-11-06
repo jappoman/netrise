@@ -686,7 +686,7 @@ func (m Model) researchView() string {
 		}
 		lines += fmt.Sprintf("%-22s %-18s %s\n  %s\n", node.Name, node.ID, state, description)
 	}
-	return lines + "\n[enter] buy next available node  [esc] overview"
+	return lines + "\n[enter] buy next available node  [esc] overview\nNEXT: buy an AVAILABLE node when data and prerequisites are ready."
 }
 
 func (m Model) upgradesView() string {
@@ -898,14 +898,14 @@ func (m Model) archiveView() string {
 	if len(m.state.EventLog) == 0 {
 		lines += "No events recorded yet.\n"
 	}
-	return lines + "\n[esc] overview"
+	return lines + "\n[esc] overview\nNEXT: inspect recent events, then return to the campaign overview."
 }
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE or [x] isolate the highest-value asset during an incursion\n[r] repair the highest-damage asset (1 capital per integrity)\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play. The overview shows the finite NPC incursion budget.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE or [x] isolate the highest-value asset during an incursion\n[r] repair the highest-damage asset (1 capital per integrity)\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play. The overview shows the finite NPC incursion budget.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
 	}
-	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate  [a] breach\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate  [a] breach\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return\nNEXT: press [esc] to return to the campaign overview and follow its action rail."
 }
 
 func (m Model) tutorialView() string {
@@ -983,7 +983,7 @@ func (m Model) prestigeView() string {
 	if reward > 0 {
 		status = "READY // [enter] confirms Identity Burn"
 	}
-	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\nSTATUS: %s\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, status, m.status)
+	return fmt.Sprintf("NETRISE // IDENTITY BURN\n\nTHIS RUN DATA: %d\nGHOST KEYS GAINED: %d\nCURRENT GHOST KEYS: %d\nSTATUS: %s\n\nLOST: credits, bots, rigs, intel, heat, research and routes\nKEPT: Ghost Keys and lifetime prestige count\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep building this run.\n%s", m.state.RunExtractedData, reward, m.state.GhostKeys, status, m.status)
 }
 
 func (m Model) corpOverviewView() string {
@@ -1026,7 +1026,7 @@ func (m Model) corpReportView() string {
 		projectedCapital -= 10
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n%s\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, m.corpIncursionSummary(), projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n%s\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration\nNEXT: review the projection, then return to the overview or adjust [A] policy.", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, m.corpIncursionSummary(), projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
 }
 
 func (m Model) offlineLine() string {
@@ -1053,7 +1053,7 @@ func (m Model) restructureView() string {
 	if reward > 0 {
 		status = "READY // [enter] confirms Restructuring"
 	}
-	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\nSTATUS: %s\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\n%s", corpValuation(m.state), reward, patents, status, m.status)
+	return fmt.Sprintf("NETRISE // RESTRUCTURING\n\nCURRENT VALUATION: %d\nPATENT SHARES GAINED: %d\nCURRENT PATENT SHARES: %d\nSTATUS: %s\n\nLOST: capital, current assets, ICE, demand and exposure\nKEPT: Patent Shares and Corporation campaign identity\n\n[enter] confirm reset  [esc] cancel\nNEXT: confirm only when READY; otherwise keep growing the Corporation.\n%s", corpValuation(m.state), reward, patents, status, m.status)
 }
 
 func corpValuation(s game.State) int64 {

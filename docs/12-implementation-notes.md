@@ -278,3 +278,7 @@ Faction boundaries are now enforced centrally by the command engine: Runner
 operations cannot mutate Corporation state and Corporation operations cannot
 mutate Runner state. The TUI also keeps Corporation navigation out of the
 Runner target and research screens.
+
+Secondary TUI screens now all expose an explicit `NEXT:` rail, including Help,
+Archive, Research, prestige confirmation and the Corporation report, so the
+player can always return to an actionable campaign state without guessing.
