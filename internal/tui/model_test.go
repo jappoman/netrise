@@ -126,6 +126,61 @@ func TestPlayerScreensFitStandardTerminalWidth(t *testing.T) {
 	}
 }
 
+func TestShippedCatalogScreensFitStandardTerminal(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	file, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(file)
+	_ = file.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name   string
+		state  game.State
+		screen string
+	}{
+		{name: "runner overview", state: sim.NewState(7), screen: "overview"},
+		{name: "runner targets", state: sim.NewState(7), screen: "targets"},
+		{name: "runner preflight", state: sim.NewState(7), screen: "preflight"},
+		{name: "runner research", state: sim.NewState(7), screen: "research"},
+		{name: "runner upgrades", state: sim.NewState(7), screen: "upgrades"},
+		{name: "runner automation", state: sim.NewState(7), screen: "automation"},
+		{name: "runner archive", state: sim.NewState(7), screen: "archive"},
+		{name: "runner settings", state: sim.NewState(7), screen: "settings"},
+		{name: "runner help", state: sim.NewState(7), screen: "help"},
+		{name: "runner guide", state: sim.NewState(7), screen: "tutorial"},
+		{name: "runner prestige", state: sim.NewState(7), screen: "prestige"},
+		{name: "corporation overview", state: sim.NewCorporationState(7), screen: "overview"},
+		{name: "corporation policy", state: sim.NewCorporationState(7), screen: "automation"},
+		{name: "corporation report", state: sim.NewCorporationState(7), screen: "corp-report"},
+		{name: "corporation archive", state: sim.NewCorporationState(7), screen: "archive"},
+		{name: "corporation settings", state: sim.NewCorporationState(7), screen: "settings"},
+		{name: "corporation help", state: sim.NewCorporationState(7), screen: "help"},
+		{name: "corporation guide", state: sim.NewCorporationState(7), screen: "tutorial"},
+		{name: "corporation restructure", state: sim.NewCorporationState(7), screen: "restructure"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := New(tc.state, sim.New(catalog, 7), "")
+			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+			m = updated.(Model)
+			m.screen = tc.screen
+			lines := strings.Split(strings.TrimSuffix(m.View().Content, "\n"), "\n")
+			if len(lines) > 24 {
+				t.Fatalf("shipped screen exceeds 24 rows (%d): %s", len(lines), m.View().Content)
+			}
+			for _, line := range lines {
+				if len(line) > 80 {
+					t.Fatalf("shipped screen line exceeds 80 columns (%d): %q", len(line), line)
+				}
+			}
+		})
+	}
+}
+
 func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
 	state := sim.NewState(20)
 	state.Resources.Data = mathx.New(7)
