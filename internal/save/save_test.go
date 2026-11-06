@@ -66,11 +66,16 @@ func TestCorruptPrimaryRecoversLastValidBackup(t *testing.T) {
 	if err := Write(d, second); err != nil {
 		t.Fatal(err)
 	}
+	third := second
+	third.LogicalTick = 30
+	if err := Write(d, third); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(Path(d), []byte("{"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	got, err := Read(d)
-	if err != nil || got.LogicalTick != first.LogicalTick {
+	if err != nil || got.LogicalTick != second.LogicalTick {
 		t.Fatalf("backup recovery failed: %#v, %v", got, err)
 	}
 }
