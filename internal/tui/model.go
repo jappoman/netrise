@@ -251,7 +251,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 func (m Model) View() tea.View {
-	if m.compact() && (m.screen == "overview" || m.screen == "battle") {
+	if m.screen == "battle" {
+		if m.compact() {
+			return tea.NewView(m.compactBattleView())
+		}
+		return tea.NewView(m.battleView())
+	}
+	if m.compact() && m.screen == "overview" {
 		return tea.NewView(m.compactView())
 	}
 	titleStyle := lipgloss.NewStyle()
@@ -323,6 +329,78 @@ func compactBattle(s game.State) string {
 		return "NO ACTIVE BATTLE"
 	}
 	return fmt.Sprintf("BATTLE %s | bots %d | integrity %d | ICE %d", s.ActiveBattle.TargetID, s.ActiveBattle.LiveBots, s.ActiveBattle.LayerIntegrity, s.ActiveBattle.DefenderICE)
+}
+
+func (m Model) compactBattleView() string {
+	if m.state.ActiveBattle == nil {
+		return "NETRISE // BATTLE\n\nNo active battle.\n[o] overview"
+	}
+	b := m.state.ActiveBattle
+	controls := "[r] reinforce  [w] withdraw  [q] quit"
+	if m.state.Faction == game.Corporation {
+		controls = "[e] deploy ICE  [q] quit"
+	}
+	return fmt.Sprintf("NETRISE // BATTLE\n%s\nLAYER %d | BOTS %d | INTEGRITY %d\nICE %d | TRACE %d%% | TICK %d/%d\n%s\nNEXT: %s", battleTargetName(m.engine, b.TargetID), b.LayerIndex+1, b.LiveBots, b.LayerIntegrity, b.DefenderICE, b.TraceBP/100, b.ElapsedTicks, b.TimeLimit, controls, m.battleNextHint())
+}
+
+func (m Model) battleView() string {
+	if m.state.ActiveBattle == nil {
+		return "NETRISE // BATTLE PLAYBACK\n\nNo active battle.\n[o] overview"
+	}
+	b := m.state.ActiveBattle
+	target := battleTargetName(m.engine, b.TargetID)
+	layers := 0
+	for _, candidate := range m.engine.Catalog.Targets {
+		if candidate.ID == b.TargetID {
+			layers = len(candidate.Layers)
+			break
+		}
+	}
+	lines := "NETRISE // BATTLE PLAYBACK\n\n"
+	lines += fmt.Sprintf("TARGET: %s\nDOCTRINE: %s\nLAYER: %d/%d\nINTEGRITY: %d\nLIVE BOTS: %d/%d\nDEFENDER ICE: %d\nTRACE: %d%%\nELAPSED: %d/%d ticks\nHEAT: %d%%\n\n", target, b.Doctrine, b.LayerIndex+1, layers, b.LayerIntegrity, b.LiveBots, b.CommittedBots, b.DefenderICE, b.TraceBP/100, b.ElapsedTicks, b.TimeLimit, m.state.HeatBP/100)
+	lines += "RECENT EVENTS:\n"
+	events := recentBattleEvents(m.state.EventLog)
+	if len(events) == 0 {
+		lines += "  Battle counters are resolving.\n"
+	}
+	for _, event := range events {
+		lines += fmt.Sprintf("  [t+%d] %s\n", event.Tick, event.Message)
+	}
+	controls := "[r] reinforce once  [w] withdraw  [q] quit"
+	if m.state.Faction == game.Corporation {
+		controls = "[e] deploy reserve ICE  [q] quit"
+	}
+	return lines + "\n" + controls + "\nNEXT: " + m.battleNextHint()
+}
+
+func battleTargetName(engine *sim.Engine, id string) string {
+	for _, target := range engine.Catalog.Targets {
+		if target.ID == id {
+			return target.Name
+		}
+	}
+	return id
+}
+
+func recentBattleEvents(events []game.Event) []game.Event {
+	filtered := make([]game.Event, 0, 6)
+	for _, event := range events {
+		switch event.Type {
+		case "BattleStarted", "BattleReinforced", "LayerBreached", "BotsLost", "BattleEnded":
+			filtered = append(filtered, event)
+		}
+	}
+	if len(filtered) > 6 {
+		filtered = filtered[len(filtered)-6:]
+	}
+	return filtered
+}
+
+func (m Model) battleNextHint() string {
+	if m.state.Faction == game.Corporation {
+		return "watch exposure and deploy reserve ICE only when the incursion needs it"
+	}
+	return "watch layer integrity; reinforce once if needed or withdraw to save surviving bots"
 }
 
 func (m Model) targetsView() string {

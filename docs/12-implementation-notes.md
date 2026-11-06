@@ -78,5 +78,10 @@ and heat projection, and launches exactly the selected commitment. Active recon
 is surfaced in the overview so the next useful action is visible while intel
 is being collected.
 
+Active battles now use a dedicated playback view instead of falling back to the
+overview. It shows target, doctrine, layer progress, integrity, live/committed
+bots, ICE, trace, heat, elapsed limit and the last six battle events, with
+faction-specific intervention controls for Runner and Corporation.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

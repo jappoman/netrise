@@ -126,3 +126,22 @@ func TestPreflightAdjustsCommitmentAndLaunchesSelectedAmount(t *testing.T) {
 		t.Fatalf("preflight launched wrong commitment: %#v", m.state.ActiveBattle)
 	}
 }
+
+func TestBattlePlaybackShowsCountersAndRecentEvents(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Layers: []content.Layer{{Integrity: 30, ICE: 2}, {Integrity: 20, ICE: 1}}, TimeLimit: 30}},
+	}
+	state := sim.NewState(3)
+	state.ActiveBattle = &game.Battle{TargetID: "target", Doctrine: game.Stealth, CommittedBots: 8, LiveBots: 6, LayerIndex: 0, LayerIntegrity: 21, DefenderICE: 2, TraceBP: 1800, ElapsedTicks: 4, TimeLimit: 30}
+	state.HeatBP = 1200
+	state.EventLog = []game.Event{{Tick: 1, Type: "BattleStarted", Message: "Breach underway."}, {Tick: 4, Type: "BotsLost", Message: "Countermeasure destroyed one bot."}}
+	m := New(state, sim.New(catalog, 3), "")
+	m.screen = "battle"
+	view := m.View().Content
+	for _, expected := range []string{"BATTLE PLAYBACK", "LAYER: 1/2", "LIVE BOTS: 6/8", "TRACE: 18%", "Countermeasure destroyed one bot", "[r] reinforce once", "withdraw"} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("battle playback omitted %q: %s", expected, view)
+		}
+	}
+}
