@@ -147,6 +147,11 @@ atomically with `target_cooldown`, and logical ticks expire the lock. Targets
 and preflight display the remaining cooldown so the next useful action is
 explicit rather than an unexplained failed command.
 
+The integration suite now covers a deterministic 3,600-tick Corporation
+campaign with all starter assets, security, maintenance and automated R&D. It
+checks resource and meter bounds, event archive limits and research progress,
+giving the Corporation loop the same long-run regression coverage as Runner.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

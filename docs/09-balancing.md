@@ -38,6 +38,11 @@ within its time limit, records a valid Runner outcome, preserves bot/heat
 accounting and never produces negative resources. The broader seed 1..100 and
 intel/tech matrix remains a playtest expansion rather than a release gate.
 
+The Corporation integration suite also runs a scripted 3,600-tick campaign
+with all three starter assets, security capacity, maintenance and automated
+R&D enabled. It asserts bounded capital/compute/research/ICE/meters, event-log
+limits and actual strategic progress rather than only survival.
+
 ## Economy experiments
 - Compare optimal and plausible novice strategies; novice should make progress without reading a wiki.
 - Sample buying one generator repeatedly, mixed purchases, saving for milestones and research allocation.

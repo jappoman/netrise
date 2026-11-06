@@ -104,3 +104,45 @@ func TestCorporationResearchTechnologyEndToEnd(t *testing.T) {
 		t.Fatalf("technology effect missing from economic rate: before=%d after=%d", baseRate, e.CorporationGrossRate(s))
 	}
 }
+
+func TestCorporationSixtyMinuteScriptedProgressionRemainsBounded(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 97)
+	s := sim.NewCorporationState(97)
+	s.Corp.Capital = mathx.New(500)
+	s.Corp.Compute = mathx.New(100)
+	apply := func(command game.Command) {
+		var commandErr error
+		s, _, commandErr = e.Apply(s, command)
+		if commandErr != nil {
+			t.Fatal(commandErr)
+		}
+	}
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "transit_hosting"})
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "security_desk"})
+	apply(game.Command{Kind: game.CorpBuildAsset, ID: "archive_server"})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "research", Quantity: 1000})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "compute_reserve", Quantity: 5})
+	apply(game.Command{Kind: game.CorpConfigurePolicy, ID: "maintenance", Quantity: 8})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 3600})
+	if s.LogicalTick != 3600 || len(s.EventLog) > sim.EventLogLimit {
+		t.Fatalf("60-minute Corporation script exceeded bounds: tick=%d events=%d", s.LogicalTick, len(s.EventLog))
+	}
+	if s.Corp == nil || s.Corp.Capital < 0 || s.Corp.Compute < 0 || s.Corp.Research < 0 || s.Corp.Influence < 0 || s.Corp.ICE < 0 || s.Corp.ICE > s.Corp.ICECapacity {
+		t.Fatalf("60-minute Corporation resources violated invariants: %#v", s.Corp)
+	}
+	if len(s.Corp.Assets) != 4 || s.Corp.DemandBP < 0 || s.Corp.DemandBP > 10000 || s.Corp.ReputationBP < 0 || s.Corp.ReputationBP > 10000 || s.Corp.ExposureBP < 0 || s.Corp.ExposureBP > 10000 {
+		t.Fatalf("60-minute Corporation progression violated campaign bounds: %#v", s.Corp)
+	}
+	if s.Corp.Research <= 0 || len(s.Corp.CompletedResearch) == 0 || s.Corp.RunValuation <= 0 {
+		t.Fatalf("60-minute Corporation script produced no strategic progress: %#v", s.Corp)
+	}
+}
