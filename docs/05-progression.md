@@ -42,7 +42,8 @@ Automation must be explicitly purchased and configured, with resource budgets an
 Narrative: abandon compromised identity, retain encrypted know-how.
 - Resets: credits, bots, local rigs, intel snapshots, access tokens, heat and most sector control.
 - Keeps: permanently earned **Ghost Keys**, lifetime achievements, cosmetic unlocks and account settings.
-- Unlocks: starter credit boosts, new intel tactics, more efficient bot economy and alternate approaches.
+- Unlocks: starter credit boosts, +2 Runner bot-capacity slots per Ghost Key,
+  new intel tactics, more efficient bot economy and alternate approaches.
 - Proposed currency: `ghostKeysEarned = floor(sqrt(runExtractedData / 10000))`; award once at reset, then set the next run's extracted-data counter to zero. This is provisional and must be tested against repeated tiny resets.
 - Only cumulative **this-run** data counts for an upcoming reset; keep lifetime and current-run counters separately to avoid inflation and exploits.
 
@@ -50,7 +51,9 @@ Narrative: abandon compromised identity, retain encrypted know-how.
 Narrative: spin off a new enterprise with retained patents.
 - Resets: capital, regular contracts, current assets, stationed ICE, exposure and sector acquisitions.
 - Keeps: **Patent Shares**, unlocked corporate profiles/cosmetics and account settings.
-- Unlocks: starting capital, better early racks, long-term market opportunities and R&D efficiencies.
+- Unlocks: starting capital, +1 starting ICE-capacity slot per two Patent
+  Shares, better early racks, long-term market opportunities and R&D
+  efficiencies.
 - Use an analogous convex/concave reward curve tuned to *this-run corporate valuation*, not extracted Runner data.
 - Neither faction should be obliged to prestige merely to resolve the first hour of progression.
 
