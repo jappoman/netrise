@@ -85,6 +85,17 @@ func TestCorporationOverviewShowsDisabledAssetRecoveryHint(t *testing.T) {
 	}
 }
 
+func TestCorporationOverviewShowsAssetIntegrity(t *testing.T) {
+	state := sim.NewCorporationState(16)
+	state.Corp.Assets[0].Integrity = 60
+	state.Corp.Assets[0].MaxIntegrity = 100
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 16), "")
+	view := m.corpOverviewView()
+	if !strings.Contains(view, "Starter Client 60/100 ON") || !strings.Contains(view, "[r] to repair Starter Client") {
+		t.Fatalf("Corporation overview hid asset integrity/recovery action: %s", view)
+	}
+}
+
 func TestNoColorOmitsANSIStyling(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	m := New(sim.NewState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")

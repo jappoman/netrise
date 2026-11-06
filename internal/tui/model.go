@@ -942,7 +942,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [x] isolate asset [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpAssetSummary(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %s\nDETAIL %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpAssetSummary(), m.corpAssetDetails(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
 func (m Model) corpReportView() string {
@@ -1194,7 +1194,11 @@ func (m Model) corpNextHint() string {
 		}
 	}
 	if target := m.corpRepairTargetID(); target != "" {
-		return fmt.Sprintf("press [r] to repair %s before the next incursion", target)
+		for _, asset := range m.state.Corp.Assets {
+			if asset.ID == target {
+				return fmt.Sprintf("press [r] to repair %s before the next incursion", asset.Name)
+			}
+		}
 	}
 	if len(m.state.Corp.Assets) < 2 {
 		return "press [b] to build Transit Hosting, then invest in security"
@@ -1242,6 +1246,25 @@ func (m Model) corpAssetDamage(asset game.CorpAsset) int64 {
 		return 0
 	}
 	return maxIntegrity - asset.Integrity
+}
+
+func (m Model) corpAssetDetails() string {
+	if m.state.Corp == nil || len(m.state.Corp.Assets) == 0 {
+		return "none"
+	}
+	parts := make([]string, 0, len(m.state.Corp.Assets))
+	for _, asset := range m.state.Corp.Assets {
+		maxIntegrity := asset.MaxIntegrity
+		if maxIntegrity <= 0 {
+			maxIntegrity = asset.Integrity
+		}
+		state := "ON"
+		if !asset.Operational {
+			state = "OFF"
+		}
+		parts = append(parts, fmt.Sprintf("%s %d/%d %s", asset.Name, asset.Integrity, maxIntegrity, state))
+	}
+	return strings.Join(parts, " | ")
 }
 
 func (m Model) corpIsolationTargetID() string {
