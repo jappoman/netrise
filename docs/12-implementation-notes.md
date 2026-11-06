@@ -355,3 +355,7 @@ shortfall before the player presses Enter.
 The Corporation market summary now exposes capital and influence shortfalls
 for the next expansion directly in the overview, before an acquisition key is
 pressed.
+
+Automation budget guards now compare spend and cost without adding first, so
+maximum-size persisted budgets cannot wrap and authorize work beyond their
+configured cap.

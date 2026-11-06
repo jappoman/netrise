@@ -942,6 +942,18 @@ func TestCorporationRatesSaturateExtremeAssets(t *testing.T) {
 	}
 }
 
+func TestAutomationBudgetChecksDoNotOverflow(t *testing.T) {
+	if !budgetWouldExceed(math.MaxInt64-1, 2, math.MaxInt64) {
+		t.Fatal("fabrication budget check allowed an overflowing spend")
+	}
+	if !budgetWouldExceed(math.MaxInt64-199, 200, math.MaxInt64) {
+		t.Fatal("research budget check allowed an overflowing spend")
+	}
+	if budgetWouldExceed(10, 2, math.MaxInt64) {
+		t.Fatal("valid budget spend was rejected")
+	}
+}
+
 func TestPrestigeCountersSaturateAtInt64Maximum(t *testing.T) {
 	e := New(content.Catalog{SchemaVersion: 1}, 36)
 	runner := NewState(36)
