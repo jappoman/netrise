@@ -366,7 +366,11 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
 		}
+		if c.Quantity < 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "maintenance budget cannot be negative"}
+		}
 		s.Corp.MaintenanceAuto = true
+		s.Corp.MaintenanceBudget = configuredBudget(c.Quantity, s.Corp.MaintenanceBudget)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "MaintenanceEnabled", Message: "Automated maintenance budget enabled."}}, nil
 	case game.CorpRestructure:
 		if s.Faction != game.Corporation || s.Corp == nil {
@@ -406,7 +410,9 @@ func (e *Engine) advanceEvents(s game.State, ticks int64, safeOnly bool) (game.S
 		s.RNGState ^= s.RNGState << 7
 		s.RNGState ^= s.RNGState >> 9
 		if s.Faction == game.Corporation && s.Corp != nil {
-			s = e.advanceCorporation(s)
+			var corporationEvents []game.Event
+			s, corporationEvents = e.advanceCorporation(s, safeOnly)
+			events = append(events, corporationEvents...)
 		}
 		if s.Faction != game.Corporation {
 			rate := e.ComputeRate(s)
@@ -518,7 +524,11 @@ func normalizeAutomationBudgets(automation *game.Automation) {
 	}
 }
 
-func (e *Engine) advanceCorporation(s game.State) game.State {
+func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []game.Event) {
+	var events []game.Event
+	if s.Corp.MaintenanceAuto && s.Corp.MaintenanceBudget <= 0 {
+		s.Corp.MaintenanceBudget = DefaultAutomationBudget
+	}
 	rate := int64(2)
 	upkeep := int64(0)
 	for _, asset := range s.Corp.Assets {
@@ -543,7 +553,18 @@ func (e *Engine) advanceCorporation(s game.State) game.State {
 	}
 	s.Corp.RunValuation += rate
 	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
-	return s
+	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.ICECapacity {
+		if s.Corp.MaintenanceSpent+10 > s.Corp.MaintenanceBudget {
+			s.Corp.MaintenanceAuto = false
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceStopped", Message: "Automated maintenance stopped: budget reached."})
+		} else if s.Corp.Capital >= mathx.New(10) {
+			s.Corp.Capital -= mathx.New(10)
+			s.Corp.ICE++
+			s.Corp.MaintenanceSpent += 10
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "MaintenanceRestocked", Message: "Automated maintenance restocked one ICE unit."})
+		}
+	}
+	return s, events
 }
 
 func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (game.State, []game.Event) {

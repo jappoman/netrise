@@ -105,6 +105,22 @@ func TestAutomationScreenConfiguresBudgetAndPolicy(t *testing.T) {
 	}
 }
 
+func TestCorporationMaintenanceScreenConfiguresBudget(t *testing.T) {
+	m := New(sim.NewCorporationState(7), sim.New(content.Catalog{SchemaVersion: 1}, 7), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "A", Code: 'A'}))
+	m = updated.(Model)
+	if m.screen != "automation" || !strings.Contains(m.View().Content, "CORPORATION MAINTENANCE") {
+		t.Fatalf("Corporation maintenance screen did not open: %s", m.View().Content)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "+", Code: '+'}))
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Code: tea.KeyEnter}))
+	m = updated.(Model)
+	if m.state.Corp == nil || !m.state.Corp.MaintenanceAuto || m.state.Corp.MaintenanceBudget != 5000 {
+		t.Fatalf("Corporation maintenance budget did not persist: %#v", m.state.Corp)
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

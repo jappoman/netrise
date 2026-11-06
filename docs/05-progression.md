@@ -32,6 +32,7 @@ Automation must be explicitly purchased and configured, with resource budgets an
 - Runner: automatic low-risk contract collection, bot manufacturing, target intel renewal.
 - Corp: contract renewal, ICE restocking and resource allocation thresholds.
 - Runner automation uses explicit cumulative credit budgets and stops when a cap is reached; the TUI exposes policy, budget and spent totals.
+- Corporation automated ICE maintenance uses the same explicit capital budget, restocks only during active play and stops at its cap.
 - **Never auto-spend scarce resources without a configurable budget.**
 - **No auto-raids during offline time** and no offline enemy attacks in any campaign.
 - Auto-combat on active screens can be unlocked later; avoid autoplay that removes all meaningful decisions.

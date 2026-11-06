@@ -103,5 +103,11 @@ configures its cap; zero retains an existing cap or uses the 1,000-credit
 default. Reaching a cap emits `AutomationStopped` and disables only that policy.
 The TUI `[A]` screen exposes the three policies, preset budgets and spent totals.
 
+Corporation `MaintenanceAuto` now has the same persisted budget semantics. During
+active ticks it safely restocks one reserve ICE unit at a time, emits
+`MaintenanceRestocked`, and stops with `MaintenanceStopped` when the capital
+budget is exhausted. Offline reconciliation never spends that budget; the TUI
+Corporation maintenance panel exposes the cap, usage and reserve state.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

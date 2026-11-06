@@ -385,6 +385,36 @@ func TestAutomationBudgetsStopPoliciesAtConfiguredCaps(t *testing.T) {
 	}
 }
 
+func TestCorporationMaintenanceBudgetRestocksOnlyDuringActivePlay(t *testing.T) {
+	e := New(catalog(), 93)
+	s := NewCorporationState(93)
+	s.Corp.ICE = 0
+	s.Corp.ICECapacity = 2
+	s, _, err := e.Apply(s, game.Command{Kind: game.CorpEnableMaintenance, Quantity: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, events, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Corp.ICE != 1 || s.Corp.MaintenanceSpent != 10 || len(events) == 0 {
+		t.Fatalf("maintenance did not restock during active play: state=%#v events=%#v err=%v", s.Corp, events, err)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || s.Corp.MaintenanceAuto || s.Corp.ICE != 1 || len(events) == 0 || events[len(events)-1].Type != "MaintenanceStopped" {
+		t.Fatalf("maintenance cap did not stop policy: state=%#v events=%#v err=%v", s.Corp, events, err)
+	}
+
+	offline := NewCorporationState(93)
+	offline.Corp.ICE = 0
+	offline, _, err = e.Apply(offline, game.Command{Kind: game.CorpEnableMaintenance, Quantity: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	offline, _ = e.ReconcileOffline(offline, 10)
+	if offline.Corp.ICE != 0 || offline.Corp.MaintenanceSpent != 0 || !offline.Corp.MaintenanceAuto {
+		t.Fatalf("offline reconciliation spent maintenance budget: %#v", offline.Corp)
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

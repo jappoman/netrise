@@ -56,8 +56,8 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	if s.Corp.Capital < 0 || s.Corp.ReputationBP < 0 || s.Corp.ReputationBP > 10000 || s.Corp.ExposureBP < 0 || s.Corp.ExposureBP > 10000 {
 		t.Fatalf("corporation meter invariant failed: %#v", s.Corp)
 	}
-	if s.Corp.ICE != 0 {
-		t.Fatalf("reserve ICE accounting failed: %d", s.Corp.ICE)
+	if s.Corp.ICE <= 0 || s.Corp.MaintenanceSpent <= 0 || s.Corp.MaintenanceSpent > s.Corp.MaintenanceBudget {
+		t.Fatalf("maintenance reserve accounting failed: ice=%d spent=%d budget=%d", s.Corp.ICE, s.Corp.MaintenanceSpent, s.Corp.MaintenanceBudget)
 	}
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 10})
 	apply(game.Command{Kind: game.CorpRunResearch})

@@ -213,7 +213,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = "tutorial"
 			return m, nil
 		}
-		if v.String() == "A" && m.state.Faction == game.Runner {
+		if v.String() == "A" {
 			m.screen = "automation"
 			return m, nil
 		}
@@ -324,6 +324,9 @@ func (m Model) View() tea.View {
 		return tea.NewView(m.upgradesView())
 	}
 	if m.screen == "automation" {
+		if m.state.Faction == game.Corporation {
+			return tea.NewView(m.corpMaintenanceView())
+		}
 		return tea.NewView(m.automationView())
 	}
 	if m.screen == "archive" {
@@ -360,11 +363,11 @@ func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height 
 
 func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
-		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [l] archive [p] restructure [q] quit"
+		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] budget [l] archive [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [q] quit"
 		}
-		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
+		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
 	controls := "[c] contract [b] rig [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
@@ -499,6 +502,13 @@ func (m Model) automationSummary() string {
 	return fmt.Sprintf("AUTOMATION: contracts %d/%d | fabrication %d/%d | recon %d/%d", a.ContractEarned, effectiveBudget(a.ContractBudget), a.FabricationSpent, effectiveBudget(a.FabricationBudget), a.ReconSpent, effectiveBudget(a.ReconBudget))
 }
 
+func (m Model) corpMaintenanceSummary() string {
+	if m.state.Corp == nil {
+		return "MAINTENANCE: unavailable"
+	}
+	return fmt.Sprintf("MAINTENANCE: %s %d/%d capital", automationState(m.state.Corp.MaintenanceAuto), m.state.Corp.MaintenanceSpent, effectiveBudget(m.state.Corp.MaintenanceBudget))
+}
+
 func (m Model) resultView() string {
 	r := m.state.LastBattle
 	if r == nil {
@@ -592,6 +602,13 @@ func (m Model) automationView() string {
 	return lines + fmt.Sprintf("\nSELECTED BUDGET: %d credits\nRECON TARGET: %s\n\n[up/down] policy  [+/- or left/right] budget\n[enter] enable/update  [esc] overview\nNEXT: budgets are cumulative; each policy stops automatically at its cap.", m.automationBudget, target)
 }
 
+func (m Model) corpMaintenanceView() string {
+	if m.state.Corp == nil {
+		return "NETRISE // MAINTENANCE\n\nCorporation state unavailable.\n[esc] overview"
+	}
+	return fmt.Sprintf("NETRISE // CORPORATION MAINTENANCE\n\nPOLICY: %s\nSPENT: %d/%d capital\nICE: %d/%d\n\nSELECTED BUDGET: %d capital\n\n[+/- or left/right] budget\n[enter] enable/update  [esc] overview\nNEXT: maintenance restocks one reserve ICE per active tick and stops at the cap; offline time never spends this budget.", automationState(m.state.Corp.MaintenanceAuto), m.state.Corp.MaintenanceSpent, effectiveBudget(m.state.Corp.MaintenanceBudget), m.state.Corp.ICE, m.state.Corp.ICECapacity, m.automationBudget)
+}
+
 func (m Model) automationPolicyState(policy string) (string, int64, int64) {
 	switch policy {
 	case "contracts":
@@ -604,6 +621,10 @@ func (m Model) automationPolicyState(policy string) (string, int64, int64) {
 }
 
 func (m *Model) enableSelectedAutomation() {
+	if m.state.Faction == game.Corporation {
+		m.applyCommand(game.Command{Kind: game.CorpEnableMaintenance, Quantity: m.automationBudget})
+		return
+	}
 	policy := []string{"contracts", "fabrication", "recon"}[m.automationPolicy]
 	targetID := ""
 	if policy == "recon" {
@@ -709,7 +730,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] maintenance budget\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
@@ -795,11 +816,11 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [l] archive [p] restructure [q] quit"
+	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] budget [l] archive [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
 func (m Model) offlineLine() string {
