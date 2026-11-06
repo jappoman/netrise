@@ -41,6 +41,11 @@ For tick t against current layer L:
 - `liveBots = max(0, liveBots - botLosses)`
 - `trace = clamp(trace + baseTraceBP * doctrineHeatBP / S + triggeredICETrace, 0, traceCap)`
 
+Counterattack attrition uses a deterministic basis-point accumulator over every
+third battle tick: Stealth applies 75% of the baseline loss, Balanced 100%, and
+Overload 130%. Fractional losses carry through the elapsed counter ticks, so
+the doctrine changes attrition without introducing another random outcome.
+
 Starter combat constants: `botAttack=1`, `botArmor=1`, `iceAttack=1`, `iceDefense=1`, `baseTraceBP=100`; layer integrity / resistance / ICE quantities are tuned in data. Compute with checked wide intermediates to avoid overflow. Distinguish basis-point trace from percentage display.
 
 **Important balancing note:** these equations are a baseline, not a proof of good gameplay. Before implementation of more content, run outcome matrix tests (commitment vs defense) and ensure low-tier battles finish in 15–90 ticks. If rates are too fast or too slow, adjust layer parameters in content data first; change formulas only with tests and documented rationale.

@@ -191,6 +191,51 @@ func TestCombatCommitmentMatrixDoesNotRewardLessPower(t *testing.T) {
 	}
 }
 
+func TestDoctrineMatrixPreservesDistinctHeatAndAttrition(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := catalog.Targets[0]
+	doctrines := []game.Doctrine{game.Stealth, game.Balanced, game.Overload}
+	var heat [3]int64
+	var losses [3]int64
+	for seed := int64(1); seed <= 100; seed++ {
+		for i, doctrine := range doctrines {
+			e := sim.New(catalog, seed)
+			s := sim.NewState(seed)
+			s.Upgrades = []string{"secondhand_compiler"}
+			s.Resources.Bots = 20
+			s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: target.ID, Quantity: 20, Doctrine: doctrine})
+			if err != nil {
+				t.Fatalf("start %s seed %d: %v", doctrine, seed, err)
+			}
+			for ticks := int64(0); s.ActiveBattle != nil && ticks <= target.TimeLimit; ticks++ {
+				s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+				if err != nil {
+					t.Fatalf("advance %s seed %d: %v", doctrine, seed, err)
+				}
+			}
+			if s.LastBattle == nil {
+				t.Fatalf("missing %s result for seed %d", doctrine, seed)
+			}
+			heat[i] += s.LastBattle.HeatAddedBP
+			losses[i] += s.LastBattle.BotsLost
+		}
+	}
+	if !(heat[0] < heat[1] && heat[1] < heat[2]) {
+		t.Fatalf("doctrine heat profiles collapsed: stealth=%d balanced=%d overload=%d", heat[0], heat[1], heat[2])
+	}
+	if !(losses[0] < losses[1] && losses[2] >= losses[1]) {
+		t.Fatalf("doctrine attrition profiles collapsed: stealth=%d balanced=%d overload=%d", losses[0], losses[1], losses[2])
+	}
+}
+
 func TestBattleBalanceSweepResolvesEveryTargetAndDoctrine(t *testing.T) {
 	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
 	if err != nil {

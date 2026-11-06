@@ -929,8 +929,21 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		s.HeatBP = 10000
 	}
 	if layer.Counter > 0 && b.ElapsedTicks%3 == 0 && b.LiveBots > 0 {
-		b.LiveBots--
-		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BotsLost", Message: "Countermeasure destroyed one bot."})
+		lossBP := int64(100)
+		switch b.Doctrine {
+		case game.Stealth:
+			lossBP = 75
+		case game.Overload:
+			lossBP = 130
+		}
+		counterTicks := b.ElapsedTicks / 3
+		previousCounterTicks := (b.ElapsedTicks - 1) / 3
+		losses := (counterTicks*lossBP)/100 - (previousCounterTicks*lossBP)/100
+		if losses > 0 {
+			losses = minInt64(losses, b.LiveBots)
+			b.LiveBots -= losses
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BotsLost", Message: fmt.Sprintf("Countermeasure destroyed %d bot(s).", losses), Amount: losses})
+		}
 	}
 	if b.LiveBots <= 0 {
 		setTargetCooldown(&s, target)

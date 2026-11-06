@@ -225,5 +225,10 @@ speed. These controls live entirely in the TUI: each update still advances the
 shared engine through deterministic `AdvanceTicks` commands, and paused playback
 cannot mutate simulation state.
 
+Counterattack attrition now follows the conflict specification's doctrine
+profiles: Stealth 75%, Balanced 100% and Overload 130% of baseline losses,
+accumulated deterministically across counter ticks. A 100-seed integration
+matrix verifies that heat and bot-loss profiles remain distinct.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.
