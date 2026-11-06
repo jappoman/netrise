@@ -27,21 +27,29 @@ type Fabrication struct {
 }
 
 type State struct {
-	SchemaVersion int           `json:"schema_version"`
-	GameVersion   string        `json:"game_version"`
-	CampaignID    string        `json:"campaign_id"`
-	Faction       Faction       `json:"faction"`
-	WorldSeed     int64         `json:"world_seed"`
-	RNGState      uint64        `json:"rng_state"`
-	LogicalTick   int64         `json:"logical_tick"`
-	SavedAtUTC    string        `json:"saved_at_utc"`
-	Resources     Resources     `json:"resources"`
-	Generators    []Generator   `json:"generators"`
-	Upgrades      []string      `json:"upgrades"`
-	Fabrication   *Fabrication  `json:"fabrication,omitempty"`
-	HeatBP        int64         `json:"heat_bp"`
-	ActiveBattle  *Battle       `json:"active_battle,omitempty"`
-	LastBattle    *BattleResult `json:"last_battle,omitempty"`
+	SchemaVersion    int              `json:"schema_version"`
+	GameVersion      string           `json:"game_version"`
+	CampaignID       string           `json:"campaign_id"`
+	Faction          Faction          `json:"faction"`
+	WorldSeed        int64            `json:"world_seed"`
+	RNGState         uint64           `json:"rng_state"`
+	LogicalTick      int64            `json:"logical_tick"`
+	SavedAtUTC       string           `json:"saved_at_utc"`
+	Resources        Resources        `json:"resources"`
+	Generators       []Generator      `json:"generators"`
+	Upgrades         []string         `json:"upgrades"`
+	Fabrication      *Fabrication     `json:"fabrication,omitempty"`
+	HeatBP           int64            `json:"heat_bp"`
+	ActiveBattle     *Battle          `json:"active_battle,omitempty"`
+	LastBattle       *BattleResult    `json:"last_battle,omitempty"`
+	Intel            map[string]int64 `json:"intel,omitempty"`
+	Recon            *ReconJob        `json:"recon,omitempty"`
+	CompletedTargets []string         `json:"completed_targets,omitempty"`
+}
+
+type ReconJob struct {
+	TargetID       string `json:"target_id"`
+	RemainingTicks int64  `json:"remaining_ticks"`
 }
 
 type BattleResult struct {
@@ -88,6 +96,7 @@ const (
 	StartBattle      CommandKind = "start_battle"
 	ReinforceBattle  CommandKind = "reinforce_battle"
 	WithdrawBattle   CommandKind = "withdraw_battle"
+	StartRecon       CommandKind = "start_recon"
 )
 
 type Command struct {
@@ -118,6 +127,8 @@ const (
 	ReasonTargetUnreachable   Reason = "target_unreachable"
 	ReasonBattleActive        Reason = "battle_active"
 	ReasonNoBattle            Reason = "no_battle"
+	ReasonReconActive         Reason = "recon_active"
+	ReasonReconLocked         Reason = "recon_locked"
 )
 
 type CommandError struct {

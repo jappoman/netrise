@@ -9,7 +9,7 @@ import (
 )
 
 func catalog() content.Catalog {
-	return content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", Cost: 50, ComputePerSecond: 1}}, Upgrades: []content.Upgrade{{ID: "u", Cost: 10}, {ID: "secondhand_compiler", Name: "Compiler", Cost: 75}}, Targets: []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1, Counter: 0}, {Integrity: 15, ICE: 1, Counter: 0}}, LootCredits: 5, LootData: 2, TimeLimit: 30}}}
+	return content.Catalog{SchemaVersion: 1, Generators: []content.Generator{{ID: "rig", Name: "Rig", Cost: 50, ComputePerSecond: 1}}, Upgrades: []content.Upgrade{{ID: "u", Cost: 10}, {ID: "secondhand_compiler", Name: "Compiler", Cost: 75}, {ID: "street_contacts", Name: "Contacts", Cost: 150}}, Targets: []content.Target{{ID: "target", Name: "Target", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 1, Counter: 0}, {Integrity: 15, ICE: 1, Counter: 0}}, LootCredits: 5, LootData: 2, TimeLimit: 30, ReconCost: 10, ReconTicks: 15, IntelGain: 50}}}
 }
 func TestDeterministicAdvance(t *testing.T) {
 	a := NewState(17)
@@ -242,5 +242,56 @@ func TestOfflineReconciliationDoesNotResolveBattle(t *testing.T) {
 	}
 	if got.LogicalTick != 600 {
 		t.Fatalf("safe production did not advance: %d", got.LogicalTick)
+	}
+}
+
+func TestRunnerVerticalSliceEndToEnd(t *testing.T) {
+	e := New(catalog(), 42)
+	s := NewState(42)
+	apply := func(command game.Command) {
+		var err error
+		s, _, err = e.Apply(s, command)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 13; i++ {
+		apply(game.Command{Kind: game.CollectContract})
+	}
+	apply(game.Command{Kind: game.BuyUpgrade, ID: "street_contacts"})
+	for i := 0; i < 7; i++ {
+		apply(game.Command{Kind: game.CollectContract})
+	}
+	apply(game.Command{Kind: game.BuyUpgrade, ID: "secondhand_compiler"})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 4})
+	apply(game.Command{Kind: game.CollectContract})
+	apply(game.Command{Kind: game.StartRecon, ID: "target"})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 15})
+	if s.Recon != nil || s.Intel["target"] != 50 {
+		t.Fatalf("recon did not complete: recon=%#v intel=%#v", s.Recon, s.Intel)
+	}
+	apply(game.Command{Kind: game.CollectContract})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 5})
+	apply(game.Command{Kind: game.QueueFabrication, Quantity: 5})
+	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 3})
+	if s.Resources.Bots != 5 {
+		t.Fatalf("fabrication did not produce bots: %d", s.Resources.Bots)
+	}
+	apply(game.Command{Kind: game.StartBattle, ID: "target", Quantity: 5, Doctrine: game.Balanced})
+	for s.ActiveBattle != nil {
+		apply(game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	}
+	if s.LastBattle == nil || s.LastBattle.Outcome != "victory" || !contains(s.CompletedTargets, "target") {
+		t.Fatalf("vertical slice did not finish: result=%#v completed=%v", s.LastBattle, s.CompletedTargets)
+	}
+
+	locked := catalog().Targets[0]
+	locked.ID = "next"
+	locked.RequiresTargetID = "target"
+	locked.Reachable = false
+	other := New(catalog(), 42)
+	other.Catalog.Targets = append(other.Catalog.Targets, locked)
+	if _, _, err := other.Apply(s, game.Command{Kind: game.StartBattle, ID: "next", Quantity: 1, Doctrine: game.Balanced}); err != nil {
+		t.Fatalf("victory did not unlock next target: %v", err)
 	}
 }

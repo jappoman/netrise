@@ -140,7 +140,7 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if !ok {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown target"}
 		}
-		if !target.Reachable {
+		if !e.isReachable(s, target) {
 			return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "target route is not reachable"}
 		}
 		if c.Doctrine != game.Balanced && c.Doctrine != game.Stealth && c.Doctrine != game.Overload {
@@ -173,6 +173,26 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.LastBattle = battleResult(s.ActiveBattle, "withdrawn", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Withdrawal complete. Surviving bots returned."}}, nil
+	case game.StartRecon:
+		if !hasUpgrade(s, "street_contacts") {
+			return s, nil, &game.CommandError{Reason: game.ReasonReconLocked, Detail: "buy Street Contacts first"}
+		}
+		if s.Recon != nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonReconActive, Detail: "recon is already running"}
+		}
+		target, ok := e.target(c.ID)
+		if !ok {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown target"}
+		}
+		if !e.isReachable(s, target) {
+			return s, nil, &game.CommandError{Reason: game.ReasonTargetUnreachable, Detail: "target route is not reachable"}
+		}
+		if s.Resources.Credits < mathx.New(target.ReconCost) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("need %d credits for recon", target.ReconCost)}
+		}
+		s.Resources.Credits -= mathx.New(target.ReconCost)
+		s.Recon = &game.ReconJob{TargetID: target.ID, RemainingTicks: target.ReconTicks}
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "ReconStarted", Message: "Recon package deployed: " + target.Name}}, nil
 	default:
 		return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unsupported command"}
 	}
@@ -203,6 +223,22 @@ func (e *Engine) advanceEvents(s game.State, ticks int64) (game.State, []game.Ev
 			if s.Fabrication.RemainingTicks <= 0 {
 				s.Resources.Bots += s.Fabrication.Quantity
 				s.Fabrication = nil
+			}
+		}
+		if s.Recon != nil {
+			s.Recon.RemainingTicks--
+			if s.Recon.RemainingTicks <= 0 {
+				if s.Intel == nil {
+					s.Intel = map[string]int64{}
+				}
+				if target, ok := e.target(s.Recon.TargetID); ok {
+					s.Intel[target.ID] += target.IntelGain
+					if s.Intel[target.ID] > 100 {
+						s.Intel[target.ID] = 100
+					}
+					events = append(events, game.Event{Tick: s.LogicalTick, Type: "ReconCompleted", Message: fmt.Sprintf("Recon complete: %s intel %d%%.", target.Name, s.Intel[target.ID])})
+				}
+				s.Recon = nil
 			}
 		}
 		if s.ActiveBattle != nil {
@@ -272,6 +308,9 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
 			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
 			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, target.LootData, s.HeatBP)
+			if !contains(s.CompletedTargets, target.ID) {
+				s.CompletedTargets = append(s.CompletedTargets, target.ID)
+			}
 			s.ActiveBattle = nil
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach successful. Loot extracted."})
 			return s, events
@@ -305,6 +344,22 @@ func (e *Engine) target(id string) (content.Target, bool) {
 		}
 	}
 	return content.Target{}, false
+}
+
+func (e *Engine) isReachable(s game.State, target content.Target) bool {
+	if target.Reachable {
+		return true
+	}
+	return target.RequiresTargetID != "" && contains(s.CompletedTargets, target.RequiresTargetID)
+}
+
+func contains(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func hasUpgrade(s game.State, id string) bool {

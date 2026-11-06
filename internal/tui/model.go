@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"fmt"
+	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
@@ -47,6 +48,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			case "enter":
 				m.screen = "preflight"
+			case "i":
+				if len(m.engine.Catalog.Targets) > 0 {
+					m.applyCommand(game.Command{Kind: game.StartRecon, ID: m.engine.Catalog.Targets[m.selectedTarget].ID})
+				}
 			case "esc", "o":
 				m.screen = "overview"
 			}
@@ -155,12 +160,12 @@ func (m Model) targetsView() string {
 			marker = "> "
 		}
 		reach := "LOCKED"
-		if target.Reachable {
+		if targetAvailable(m.state, target) {
 			reach = "REACHABLE"
 		}
 		lines += fmt.Sprintf("%s%-36s %-10s layers:%d\n", marker, target.Name, reach, len(target.Layers))
 	}
-	return lines + "\n[up/down] select  [enter] preflight  [esc] overview"
+	return lines + "\n[up/down] select  [i] recon  [enter] preflight  [esc] overview"
 }
 
 func (m Model) preflightView() string {
@@ -168,7 +173,11 @@ func (m Model) preflightView() string {
 		return "NETRISE // PREFLIGHT\n\nNo targets available.\n[esc] targets"
 	}
 	target := m.engine.Catalog.Targets[m.selectedTarget]
-	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nLAYERS: %d\nCOMMITMENT: %d bots (75%% default)\nDOCTRINE: %s\n\n[1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: ensure the commitment is affordable and review the doctrine.", target.Name, reachability(target.Reachable), len(target.Layers), attackCommitment(m.state.Resources.Bots), m.doctrine)
+	intel := int64(0)
+	if m.state.Intel != nil {
+		intel = m.state.Intel[target.ID]
+	}
+	return fmt.Sprintf("NETRISE // PREFLIGHT\n\nTARGET: %s\nROUTE: %s\nINTEL: %d%%\nLAYERS: %d\nCOMMITMENT: %d bots (75%% default)\nDOCTRINE: %s\n\n[1] balanced  [2] stealth  [3] overload\n[enter] launch  [esc] targets\nNEXT: ensure the commitment is affordable and review the doctrine.", target.Name, reachability(targetAvailable(m.state, target)), intel, len(target.Layers), attackCommitment(m.state.Resources.Bots), m.doctrine)
 }
 
 func (m Model) resultView() string {
@@ -184,6 +193,18 @@ func reachability(reachable bool) string {
 		return "reachable"
 	}
 	return "locked"
+}
+
+func targetAvailable(s game.State, target content.Target) bool {
+	if target.Reachable {
+		return true
+	}
+	for _, id := range s.CompletedTargets {
+		if id == target.RequiresTargetID {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Model) applyCommand(command game.Command) {

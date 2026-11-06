@@ -25,14 +25,18 @@ type Layer struct {
 	Counter   int64 `json:"counter"`
 }
 type Target struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	Corporation string  `json:"corporation"`
-	Reachable   bool    `json:"reachable"`
-	Layers      []Layer `json:"layers"`
-	LootCredits int64   `json:"loot_credits"`
-	LootData    int64   `json:"loot_data"`
-	TimeLimit   int64   `json:"time_limit"`
+	ID               string  `json:"id"`
+	Name             string  `json:"name"`
+	Corporation      string  `json:"corporation"`
+	Reachable        bool    `json:"reachable"`
+	Layers           []Layer `json:"layers"`
+	LootCredits      int64   `json:"loot_credits"`
+	LootData         int64   `json:"loot_data"`
+	TimeLimit        int64   `json:"time_limit"`
+	RequiresTargetID string  `json:"requires_target_id,omitempty"`
+	ReconCost        int64   `json:"recon_cost"`
+	ReconTicks       int64   `json:"recon_ticks"`
+	IntelGain        int64   `json:"intel_gain"`
 }
 type Catalog struct {
 	SchemaVersion int         `json:"schema_version"`
@@ -71,7 +75,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {
-		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 {
+		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 {
 			return fmt.Errorf("content: invalid target %q", t.ID)
 		}
 		seen[t.ID] = true
@@ -79,6 +83,14 @@ func Validate(c Catalog) error {
 			if l.Integrity <= 0 || l.ICE < 0 || l.Counter < 0 {
 				return fmt.Errorf("content: invalid layer in target %q", t.ID)
 			}
+		}
+	}
+	for _, t := range c.Targets {
+		if t.RequiresTargetID != "" && !seen[t.RequiresTargetID] {
+			return fmt.Errorf("content: target %q requires unknown target %q", t.ID, t.RequiresTargetID)
+		}
+		if t.ReconCost > 0 && (t.ReconTicks <= 0 || t.IntelGain <= 0) {
+			return fmt.Errorf("content: target %q has incomplete recon definition", t.ID)
 		}
 	}
 	return nil

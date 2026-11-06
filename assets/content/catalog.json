@@ -11,7 +11,10 @@
     {"id":"street_contacts","name":"Street Contacts","cost":150,"description":"Unlocks reconnaissance."}
   ],
   "targets": [
-    {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90},
-    {"id":"t_02","name":"Holloway Transit / Dispatch Vault","corporation":"Holloway Transit","reachable":false,"layers":[{"integrity":65,"ice":5,"counter":2},{"integrity":45,"ice":3,"counter":2}],"loot_credits":90,"loot_data":25,"time_limit":90}
+    {"id":"t_01","name":"Holloway Transit / Relay 01","corporation":"Holloway Transit","reachable":true,"layers":[{"integrity":30,"ice":2,"counter":1},{"integrity":25,"ice":1,"counter":1}],"loot_credits":40,"loot_data":10,"time_limit":90,"recon_cost":10,"recon_ticks":15,"intel_gain":45},
+    {"id":"t_02","name":"Holloway Transit / Dispatch Vault","corporation":"Holloway Transit","reachable":false,"requires_target_id":"t_01","layers":[{"integrity":65,"ice":5,"counter":2},{"integrity":45,"ice":3,"counter":2}],"loot_credits":90,"loot_data":25,"time_limit":90,"recon_cost":20,"recon_ticks":15,"intel_gain":35},
+    {"id":"t_03","name":"Kuroda Dataworks / Archive 03","corporation":"Kuroda Dataworks","reachable":false,"requires_target_id":"t_02","layers":[{"integrity":90,"ice":8,"counter":2},{"integrity":70,"ice":5,"counter":3}],"loot_credits":150,"loot_data":60,"time_limit":120,"recon_cost":35,"recon_ticks":20,"intel_gain":30},
+    {"id":"t_04","name":"Meridian Civic Systems / Identity Hub","corporation":"Meridian Civic Systems","reachable":false,"requires_target_id":"t_03","layers":[{"integrity":120,"ice":10,"counter":3},{"integrity":85,"ice":8,"counter":4}],"loot_credits":240,"loot_data":90,"time_limit":150,"recon_cost":50,"recon_ticks":20,"intel_gain":25},
+    {"id":"t_05","name":"Obsidian Securities / Black Vault","corporation":"Obsidian Securities","reachable":false,"requires_target_id":"t_04","layers":[{"integrity":180,"ice":15,"counter":4},{"integrity":130,"ice":12,"counter":5},{"integrity":100,"ice":8,"counter":5}],"loot_credits":400,"loot_data":150,"time_limit":180,"recon_cost":75,"recon_ticks":25,"intel_gain":20}
   ]
 }
