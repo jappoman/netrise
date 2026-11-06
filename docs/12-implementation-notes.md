@@ -446,6 +446,11 @@ campaigns. It reports the active `NO_COLOR`, high-contrast and reduced-motion
 modes and explains how to configure them before relaunching, while keeping all
 simulation state and deterministic behavior in the shared engine.
 
+Offline reconciliation is now written immediately at the CLI load boundary with
+an updated UTC timestamp. Reopening a save before the first TUI autosave cannot
+grant the same elapsed interval twice; a regression test covers the full
+load/reopen path.
+
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
 running both faction simulations.

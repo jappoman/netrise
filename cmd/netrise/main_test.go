@@ -73,3 +73,27 @@ func TestLoadStatePersistsOfflineCapWarning(t *testing.T) {
 		t.Fatalf("offline startup did not preserve cap warning: %#v", got.OfflineSummary)
 	}
 }
+
+func TestLoadStatePersistsOfflineReconciliationWithoutDoubleGrant(t *testing.T) {
+	dir := t.TempDir()
+	saved := time.Date(2026, time.November, 6, 10, 0, 0, 0, time.UTC)
+	state := sim.NewState(19)
+	state.SavedAtUTC = saved.Format(time.RFC3339Nano)
+	if err := save.Write(dir, state); err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(content.Catalog{SchemaVersion: 1}, 19)
+	now := saved.Add(90 * time.Second)
+	first := loadStateAt(dir, e, game.Runner, func() time.Time { return now })
+	if first.LogicalTick != 90 || first.SavedAtUTC != now.Format(time.RFC3339Nano) {
+		t.Fatalf("offline reconciliation was not persisted: %#v", first)
+	}
+	persisted, err := save.ReadFaction(dir, game.Runner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second := loadStateAt(dir, e, game.Runner, func() time.Time { return now })
+	if second.LogicalTick != persisted.LogicalTick || second.LogicalTick != 90 {
+		t.Fatalf("reopening at the same timestamp double-granted offline time: persisted=%d reopened=%d", persisted.LogicalTick, second.LogicalTick)
+	}
+}

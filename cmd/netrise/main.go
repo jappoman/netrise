@@ -105,6 +105,10 @@ func loadStateAt(dataDir string, e *sim.Engine, faction game.Faction, now func()
 		return s
 	}
 	reconciled, _ := e.ReconcileOffline(s, elapsed)
+	reconciled.SavedAtUTC = now().UTC().Format(time.RFC3339Nano)
+	if err := save.Write(dataDir, reconciled); err != nil {
+		fatal(fmt.Errorf("persist offline reconciliation: %w", err))
+	}
 	return reconciled
 }
 func simulate(args []string) {
