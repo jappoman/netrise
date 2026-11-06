@@ -900,6 +900,20 @@ func TestPrestigeBonusesClampExtremeRetainedCurrencies(t *testing.T) {
 	}
 }
 
+func TestCorporationValuationSaturatesAtInt64Maximum(t *testing.T) {
+	e := New(content.Catalog{SchemaVersion: 1}, 35)
+	s := NewCorporationState(35)
+	s.Corp.RunValuation = math.MaxInt64
+	s.Corp.Capital = mathx.New(0)
+	advanced, _, err := e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if advanced.Corp == nil || advanced.Corp.RunValuation != math.MaxInt64 {
+		t.Fatalf("Corporation valuation wrapped at its upper bound: %#v", advanced.Corp)
+	}
+}
+
 func TestFactionBoundariesRejectCrossCampaignCommandsAtomically(t *testing.T) {
 	e := New(catalog(), 404)
 	corp := NewCorporationState(404)

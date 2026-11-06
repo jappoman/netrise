@@ -116,8 +116,12 @@ func (e *Engine) aggregateOffline(s game.State, elapsedTicks int64) game.State {
 		}
 		computeGain, _ := mathx.New(2).MulUnits(elapsedTicks)
 		s.Corp.Compute = mathx.AddSaturated(s.Corp.Compute, computeGain)
-		if gross > 0 && elapsedTicks <= (1<<63-1-s.Corp.RunValuation)/gross {
-			s.Corp.RunValuation += gross * elapsedTicks
+		if gross > 0 && elapsedTicks > 0 {
+			if elapsedTicks > math.MaxInt64/gross {
+				s.Corp.RunValuation = math.MaxInt64
+			} else {
+				s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, gross*elapsedTicks)
+			}
 		}
 	}
 	computeProduced, _ := s.Resources.Compute.Add(-beforeCompute)
@@ -530,7 +534,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= cost
 		s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
-		s.Corp.RunValuation += 200
+		s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, 200)
 		events := []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}
 		events = append(events, e.completeCorpResearch(&s)...)
 		return s, events, nil
@@ -555,7 +559,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Corp.Influence = mathx.AddSaturated(s.Corp.Influence, mathx.New(market.InfluenceGain))
 		s.Corp.DemandBP += market.DemandBonusBP
 		s.Corp.MarketTier++
-		s.Corp.RunValuation += market.ValuationGain
+		s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, market.ValuationGain)
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: fmt.Sprintf("%s secured: demand +%d%%.", market.Name, market.DemandBonusBP/100)}}, nil
 	case game.CorpEnableMaintenance:
 		if s.Faction != game.Corporation || s.Corp == nil {
@@ -842,7 +846,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			}
 		}
 	}
-	s.Corp.RunValuation += rate
+	s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, rate)
 	if s.Corp.MaintenanceAuto && !safeOnly && s.Corp.ICE < s.Corp.MaintenanceReserve {
 		if s.Corp.MaintenanceSpent+10 > s.Corp.MaintenanceBudget {
 			s.Corp.MaintenanceAuto = false
@@ -863,7 +867,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			s.Corp.Compute -= mathx.New(1)
 			s.Corp.Research = mathx.AddSaturated(s.Corp.Research, mathx.New(10))
 			s.Corp.ResearchSpent += 200
-			s.Corp.RunValuation += 200
+			s.Corp.RunValuation = addNonNegativeSaturated(s.Corp.RunValuation, 200)
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchAutomated", Message: "Automated R&D completed a systems study."})
 			events = append(events, e.completeCorpResearch(&s)...)
 			if s.Corp.ResearchSpent >= s.Corp.ResearchBudget {
@@ -1298,6 +1302,19 @@ func maxInt64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func addNonNegativeSaturated(value, increment int64) int64 {
+	if value < 0 {
+		value = 0
+	}
+	if increment <= 0 || value >= math.MaxInt64-increment {
+		if increment > 0 {
+			return math.MaxInt64
+		}
+		return value
+	}
+	return value + increment
 }
 
 func minInt64(a, b int64) int64 {
