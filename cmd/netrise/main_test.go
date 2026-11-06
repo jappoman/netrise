@@ -97,3 +97,23 @@ func TestLoadStatePersistsOfflineReconciliationWithoutDoubleGrant(t *testing.T) 
 		t.Fatalf("reopening at the same timestamp double-granted offline time: persisted=%d reopened=%d", persisted.LogicalTick, second.LogicalTick)
 	}
 }
+
+func TestCorporationOfflineReconciliationPersistsWithoutDoubleGrant(t *testing.T) {
+	dir := t.TempDir()
+	saved := time.Date(2026, time.November, 6, 10, 0, 0, 0, time.UTC)
+	state := sim.NewCorporationState(20)
+	state.SavedAtUTC = saved.Format(time.RFC3339Nano)
+	if err := save.Write(dir, state); err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(content.Catalog{SchemaVersion: 1}, 20)
+	now := saved.Add(90 * time.Second)
+	first := loadStateAt(dir, e, game.Corporation, func() time.Time { return now })
+	if first.LogicalTick != 90 || first.SavedAtUTC != now.Format(time.RFC3339Nano) || first.Corp == nil {
+		t.Fatalf("Corporation offline reconciliation was not persisted: %#v", first)
+	}
+	second := loadStateAt(dir, e, game.Corporation, func() time.Time { return now })
+	if second.LogicalTick != 90 || second.Corp == nil || second.Corp.Capital != first.Corp.Capital {
+		t.Fatalf("Corporation reopening double-granted offline time: first=%#v second=%#v", first.Corp, second.Corp)
+	}
+}

@@ -448,8 +448,8 @@ simulation state and deterministic behavior in the shared engine.
 
 Offline reconciliation is now written immediately at the CLI load boundary with
 an updated UTC timestamp. Reopening a save before the first TUI autosave cannot
-grant the same elapsed interval twice; a regression test covers the full
-load/reopen path.
+grant the same elapsed interval twice; regression tests cover the full
+Runner and Corporation load/reopen paths.
 
 The Windows CI smoke matrix now exercises both CMD and PowerShell, and packaged
 release smoke checks cover top-level, Corporation and simulation help before
