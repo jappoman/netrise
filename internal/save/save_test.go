@@ -111,6 +111,16 @@ func TestSemanticallyInvalidSaveIsRejected(t *testing.T) {
 	}
 }
 
+func TestSaveRejectsBotsAboveCapacity(t *testing.T) {
+	d := t.TempDir()
+	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","resources":{"bots":2,"bot_capacity":1}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("impossible bot balance was accepted: %v", err)
+	}
+}
+
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {

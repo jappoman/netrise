@@ -124,7 +124,7 @@ func validateState(s game.State) error {
 	if s.LogicalTick < 0 || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Data < 0 || s.Resources.ComputeRemainder < 0 || int64(s.Resources.ComputeRemainder) >= mathx.Scale {
 		return errors.New("negative tick/resource or invalid compute remainder")
 	}
-	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.Resources.DataCapacity < 0 || s.Resources.Data.Units() > s.Resources.DataCapacity || s.HeatBP < 0 || s.HeatBP > 10000 {
+	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.Resources.Bots > s.Resources.BotCapacity || s.Resources.DataCapacity < 0 || s.Resources.Data.Units() > s.Resources.DataCapacity || s.HeatBP < 0 || s.HeatBP > 10000 {
 		return errors.New("resource, capacity, or heat bounds exceeded")
 	}
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {

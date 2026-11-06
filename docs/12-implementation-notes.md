@@ -382,3 +382,7 @@ returned units cannot exceed the configured bot capacity.
 Battle elapsed time, trace and heat meters, Corporation attack counters and
 incursion totals now saturate at their valid upper bounds; extreme resumed
 states cannot wrap these counters into negative or early-reset values.
+
+The save boundary now rejects Runner snapshots with more reserve bots than the
+configured capacity, preventing semantically impossible balances from entering
+the simulation even when their JSON is syntactically valid.
