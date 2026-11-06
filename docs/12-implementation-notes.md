@@ -251,3 +251,7 @@ The Runner integration suite now proves two distinct first-breach strategies
 end to end: a lower-attrition Stealth commitment and a higher-pressure
 Overload commitment both complete the initial target through the shared
 deterministic battle engine.
+
+CI packaging checks now exercise both factions from the Linux release bundle,
+while Windows jobs also run the player-facing CLI smoke flow through both
+PowerShell's default runner and CMD.
