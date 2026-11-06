@@ -59,11 +59,19 @@ test -s "$verify_dir/${package_name}-bundle/assets/content/catalog.json"
 host_os="$("$go_bin" env GOHOSTOS)"
 host_arch="$("$go_bin" env GOHOSTARCH)"
 if [[ "$goos" == "$host_os" && "$goarch" == "$host_arch" ]]; then
+  "$verified_binary" --version >/dev/null
+  "$verified_binary" --help >/dev/null
+  "$verified_binary" corp --help >/dev/null
   "$verified_binary" validate-content
   "$verified_binary" playtest --faction runner --seed 17 >/dev/null
   "$verified_binary" playtest --faction corp --seed 17 >/dev/null
+  "$verified_binary" balance --seed-from 1 --seed-to 2 >/dev/null
   "$verified_binary" simulate --faction runner --seed 17 --ticks 600 >/dev/null
   "$verified_binary" simulate --faction corp --seed 17 --ticks 600 >/dev/null
+  if "$verified_binary" unknown-command >/dev/null 2>&1; then
+    echo "Packaged unknown command unexpectedly succeeded." >&2
+    exit 1
+  fi
 fi
 
 echo "NETRISE Unix package created and verified: $archive"
