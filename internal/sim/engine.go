@@ -219,7 +219,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.Fabrication != nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "fabrication already queued"}
 		}
-		if s.Resources.Bots+c.Quantity > s.Resources.BotCapacity {
+		if !canFitBots(s.Resources.Bots, c.Quantity, s.Resources.BotCapacity) {
 			return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "bot capacity reached"}
 		}
 		computeCost, err := mathx.New(10).MulUnits(c.Quantity)
@@ -300,7 +300,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.ActiveBattle == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonNoBattle, Detail: "no active battle"}
 		}
-		s.Resources.Bots += s.ActiveBattle.LiveBots
+		returnBattleBots(&s, s.ActiveBattle.LiveBots)
 		if target, ok := e.target(s.ActiveBattle.TargetID); ok {
 			setTargetCooldown(&s, target)
 		}
@@ -1109,7 +1109,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 				events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Emergency audit failed. Sensitive asset exposed."})
 				return s, events
 			}
-			s.Resources.Bots += b.LiveBots
+			returnBattleBots(&s, b.LiveBots)
 			s.Resources.Credits = mathx.AddSaturated(s.Resources.Credits, mathx.New(target.LootCredits))
 			dataLooted := minInt64(target.LootData, maxInt64(0, s.Resources.DataCapacity-s.Resources.Data.Units()))
 			if dataLooted > 0 {
@@ -1143,7 +1143,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Audit timed out. The asset remains secured."})
 			return s, events
 		}
-		s.Resources.Bots += b.LiveBots
+		returnBattleBots(&s, b.LiveBots)
 		setTargetCooldown(&s, target)
 		s.LastBattle = battleResult(b, "timeout", b.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
@@ -1307,6 +1307,23 @@ func hasUpgrade(s game.State, id string) bool {
 		}
 	}
 	return false
+}
+
+func canFitBots(current, additional, capacity int64) bool {
+	if additional <= 0 || current < 0 || capacity < 0 || current > capacity {
+		return false
+	}
+	return additional <= capacity-current
+}
+
+func returnBattleBots(s *game.State, survivors int64) {
+	if s.Resources.BotCapacity <= 0 || survivors <= 0 {
+		if s.Resources.Bots < 0 {
+			s.Resources.Bots = 0
+		}
+		return
+	}
+	s.Resources.Bots = minInt64(s.Resources.BotCapacity, AddNonNegativeSaturated(s.Resources.Bots, survivors))
 }
 
 func maxInt64(a, b int64) int64 {

@@ -215,6 +215,29 @@ func TestWithdrawReturnsSurvivors(t *testing.T) {
 	}
 }
 
+func TestBattleBotReturnsAreCappedAndSaturating(t *testing.T) {
+	e := New(catalog(), 39)
+	s := NewState(39)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.BotCapacity = math.MaxInt64
+	s.Resources.Bots = math.MaxInt64
+	s.ActiveBattle = &game.Battle{TargetID: "target", LiveBots: math.MaxInt64, CommittedBots: math.MaxInt64}
+	returned, _, err := e.Apply(s, game.Command{Kind: game.WithdrawBattle})
+	if err != nil || returned.Resources.Bots != math.MaxInt64 || returned.ActiveBattle != nil {
+		t.Fatalf("extreme survivor return wrapped or escaped state: bots=%d battle=%#v err=%v", returned.Resources.Bots, returned.ActiveBattle, err)
+	}
+
+	s = NewState(40)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.BotCapacity = 5
+	s.Resources.Bots = 4
+	s.ActiveBattle = &game.Battle{TargetID: "target", LiveBots: 3, CommittedBots: 3}
+	returned, _, err = e.Apply(s, game.Command{Kind: game.WithdrawBattle})
+	if err != nil || returned.Resources.Bots != 5 {
+		t.Fatalf("survivor return exceeded bot capacity: bots=%d err=%v", returned.Resources.Bots, err)
+	}
+}
+
 func TestBattleDeterminismIncludesEvents(t *testing.T) {
 	e1, e2 := New(catalog(), 77), New(catalog(), 77)
 	start := NewState(77)

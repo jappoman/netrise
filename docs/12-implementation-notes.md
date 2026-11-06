@@ -374,3 +374,7 @@ composition use saturating additions at runtime as well.
 
 Attack-power bonuses from research and upgrades are now bounded in content and
 combined with saturating arithmetic before combat or preflight multiplication.
+
+Runner battle withdrawals, victories and timeouts now return surviving bots with
+capacity-aware saturating arithmetic; extreme persisted balances cannot wrap and
+returned units cannot exceed the configured bot capacity.
