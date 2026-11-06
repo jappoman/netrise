@@ -101,3 +101,10 @@ func TestValidateRejectsUnrepresentableAmountCosts(t *testing.T) {
 		t.Fatal("target loot beyond fixed-point range accepted")
 	}
 }
+
+func TestValidateRejectsNegativeDataCapacity(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"generators":[{"id":"cache","name":"Cache","data_capacity":-1}]}`))
+	if err == nil {
+		t.Fatal("negative generator data capacity accepted")
+	}
+}

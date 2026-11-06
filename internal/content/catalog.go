@@ -13,6 +13,7 @@ type Generator struct {
 	Cost             int64  `json:"cost"`
 	ComputePerSecond int64  `json:"compute_per_second"`
 	BotCapacity      int64  `json:"bot_capacity"`
+	DataCapacity     int64  `json:"data_capacity"`
 }
 type Upgrade struct {
 	ID          string         `json:"id"`
@@ -123,7 +124,7 @@ func Validate(c Catalog) error {
 	}
 	seen := map[string]bool{}
 	for _, g := range c.Generators {
-		if g.ID == "" || seen[g.ID] || !fitsAmount(g.Cost) || g.ComputePerSecond < 0 || g.BotCapacity < 0 {
+		if g.ID == "" || seen[g.ID] || !fitsAmount(g.Cost) || g.ComputePerSecond < 0 || g.BotCapacity < 0 || g.DataCapacity < 0 {
 			return fmt.Errorf("content: invalid generator %q", g.ID)
 		}
 		seen[g.ID] = true

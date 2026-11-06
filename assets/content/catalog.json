@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "generators": [
-    {"id":"salvaged_rig","name":"Salvaged Rig","cost":50,"compute_per_second":1,"bot_capacity":0},
-    {"id":"rental_compute","name":"Rental Compute","cost":250,"compute_per_second":6,"bot_capacity":0},
-    {"id":"local_data_cache","name":"Local Data Cache","cost":100,"compute_per_second":0,"bot_capacity":100}
+    {"id":"salvaged_rig","name":"Salvaged Rig","cost":50,"compute_per_second":1,"bot_capacity":0,"data_capacity":0},
+    {"id":"rental_compute","name":"Rental Compute","cost":250,"compute_per_second":6,"bot_capacity":0,"data_capacity":0},
+    {"id":"local_data_cache","name":"Local Data Cache","cost":100,"compute_per_second":0,"bot_capacity":0,"data_capacity":100}
   ],
   "upgrades": [
     {"id":"secondhand_compiler","name":"Secondhand Compiler","cost":75,"description":"Unlocks bot fabrication."},

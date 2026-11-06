@@ -128,7 +128,7 @@ func New(c content.Catalog, seed int64) *Engine {
 }
 func (e *Engine) next() uint64 { e.rng ^= e.rng << 7; e.rng ^= e.rng >> 9; return e.rng }
 func NewState(seed int64) game.State {
-	return game.State{SchemaVersion: game.CurrentSchema, GameVersion: "0.1.0", CampaignID: "runner-01", Faction: game.Runner, WorldSeed: seed, RNGState: uint64(seed) + 0x9e3779b97f4a7c15, Resources: game.Resources{Credits: mathx.New(25), Compute: mathx.New(2), BotCapacity: 20}}
+	return game.State{SchemaVersion: game.CurrentSchema, GameVersion: "0.1.0", CampaignID: "runner-01", Faction: game.Runner, WorldSeed: seed, RNGState: uint64(seed) + 0x9e3779b97f4a7c15, Resources: game.Resources{Credits: mathx.New(25), Compute: mathx.New(2), DataCapacity: 100, BotCapacity: 20}}
 }
 
 func NewCorporationState(seed int64) game.State {
@@ -191,6 +191,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Resources.Credits -= mathx.New(cost)
 		upsertGenerator(&s, c.ID)
 		s.Resources.BotCapacity += g.BotCapacity
+		s.Resources.DataCapacity += g.DataCapacity
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "GeneratorPurchased", Message: g.Name + " online."}}, nil
 	case game.QueueFabrication:
 		if !hasUpgrade(s, "secondhand_compiler") {
@@ -992,10 +993,13 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			}
 			s.Resources.Bots += b.LiveBots
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
-			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
-			s.RunExtractedData += target.LootData
+			dataLooted := minInt64(target.LootData, maxInt64(0, s.Resources.DataCapacity-s.Resources.Data.Units()))
+			if dataLooted > 0 {
+				s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(dataLooted))
+			}
+			s.RunExtractedData += dataLooted
 			setTargetCooldown(&s, target)
-			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, target.LootData, s.HeatBP)
+			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, dataLooted, s.HeatBP)
 			if !contains(s.CompletedTargets, target.ID) {
 				s.CompletedTargets = append(s.CompletedTargets, target.ID)
 			}

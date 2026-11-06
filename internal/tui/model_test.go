@@ -19,6 +19,16 @@ func TestCompactResizeDoesNotPanic(t *testing.T) {
 	}
 }
 
+func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
+	state := sim.NewState(20)
+	state.Resources.Data = mathx.New(7)
+	state.Resources.DataCapacity = 100
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 20), "")
+	if !strings.Contains(m.View().Content, "DATA 7/100") {
+		t.Fatalf("Runner overview hid data capacity: %s", m.View().Content)
+	}
+}
+
 func TestQuitPersistsActiveBattleForResume(t *testing.T) {
 	catalog := content.Catalog{
 		SchemaVersion: 1,

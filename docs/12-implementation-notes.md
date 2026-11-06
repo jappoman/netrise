@@ -236,3 +236,8 @@ the legacy `mathx.New` constructor now panics instead of silently wrapping, and
 content validation rejects out-of-range amount costs before simulation.
 `MulUnits` now checks all signed operand directions, including the `MinInt64`
 edge case. Starter balance values remain external JSON hypotheses.
+
+Runner data is now capacity-limited: the starter state has 100 data slots,
+`Local Data Cache` adds 100 catalogued slots, and successful loot records only
+the amount that fits. `DataCapacity` is persisted, legacy saves default it
+safely, and Overview/compact mode show `DATA current/capacity`.

@@ -78,6 +78,9 @@ func ReadFaction(dir string, faction game.Faction) (game.State, error) {
 	if s.SchemaVersion != game.CurrentSchema {
 		return recoverBackup(path, s, fmt.Errorf("unsupported save schema %d", s.SchemaVersion))
 	}
+	if s.Resources.DataCapacity <= 0 {
+		s.Resources.DataCapacity = maxInt64(100, s.Resources.Data.Units())
+	}
 	if err := validateState(s); err != nil {
 		return recoverBackup(path, s, fmt.Errorf("%w: %v", ErrCorrupt, err))
 	}
@@ -107,7 +110,7 @@ func validateState(s game.State) error {
 	if s.LogicalTick < 0 || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Data < 0 || s.Resources.ComputeRemainder < 0 || int64(s.Resources.ComputeRemainder) >= mathx.Scale {
 		return errors.New("negative tick/resource or invalid compute remainder")
 	}
-	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.HeatBP < 0 || s.HeatBP > 10000 {
+	if s.Resources.Bots < 0 || s.Resources.BotCapacity < 0 || s.Resources.DataCapacity < 0 || s.Resources.Data.Units() > s.Resources.DataCapacity || s.HeatBP < 0 || s.HeatBP > 10000 {
 		return errors.New("resource, capacity, or heat bounds exceeded")
 	}
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
@@ -148,6 +151,9 @@ func validateState(s game.State) error {
 
 func migrateV0(s game.State) (game.State, error) {
 	s.SchemaVersion = game.CurrentSchema
+	if s.Resources.DataCapacity <= 0 {
+		s.Resources.DataCapacity = maxInt64(100, s.Resources.Data.Units())
+	}
 	if s.Faction == "" {
 		s.Faction = game.Runner
 	}
@@ -155,4 +161,11 @@ func migrateV0(s game.State) (game.State, error) {
 		return s, fmt.Errorf("%w: %v", ErrCorrupt, err)
 	}
 	return s, nil
+}
+
+func maxInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }

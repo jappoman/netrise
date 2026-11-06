@@ -22,6 +22,36 @@ func TestDeterministicAdvance(t *testing.T) {
 		t.Fatalf("not deterministic: %#v %#v", a, b)
 	}
 }
+
+func TestRunnerDataLootRespectsCapacityAndCacheExpansion(t *testing.T) {
+	c := catalog()
+	c.Generators = append(c.Generators, content.Generator{ID: "cache", Name: "Cache", Cost: 50, DataCapacity: 100})
+	e := New(c, 105)
+	s := NewState(105)
+	s.Resources.Credits = mathx.New(100)
+	s.Resources.DataCapacity = 1
+	s.Resources.Bots = 20
+	s.Upgrades = []string{"secondhand_compiler"}
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 20, Doctrine: game.Balanced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for ticks := int64(0); s.ActiveBattle != nil && ticks <= 30; ticks++ {
+		s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if s.LastBattle == nil || s.LastBattle.Outcome != "victory" || s.LastBattle.DataLooted != 1 || s.Resources.Data.Units() != 1 || s.RunExtractedData != 1 {
+		t.Fatalf("data loot exceeded storage capacity: result=%#v resources=%#v", s.LastBattle, s.Resources)
+	}
+	s.Resources.Credits = mathx.New(100)
+	s, _, err = e.Apply(s, game.Command{Kind: game.BuyGenerator, ID: "cache"})
+	if err != nil || s.Resources.DataCapacity != 101 {
+		t.Fatalf("data cache did not expand capacity: resources=%#v err=%v", s.Resources, err)
+	}
+}
 func TestPurchaseAtomicAndCostScaling(t *testing.T) {
 	e := New(catalog(), 1)
 	s := NewState(1)

@@ -15,6 +15,7 @@ type Resources struct {
 	Credits          mathx.Amount `json:"credits"`
 	Compute          mathx.Amount `json:"compute"`
 	Data             mathx.Amount `json:"data"`
+	DataCapacity     int64        `json:"data_capacity"`
 	Bots             int64        `json:"bots"`
 	BotCapacity      int64        `json:"bot_capacity"`
 	ComputeRemainder mathx.Amount `json:"compute_remainder"`
