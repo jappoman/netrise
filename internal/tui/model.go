@@ -17,15 +17,16 @@ import (
 
 type tickMsg struct{}
 type Model struct {
-	state          game.State
-	engine         *sim.Engine
-	width, height  int
-	dataDir        string
-	status         string
-	saveCounter    int64
-	screen         string
-	selectedTarget int
-	doctrine       game.Doctrine
+	state           game.State
+	engine          *sim.Engine
+	width, height   int
+	dataDir         string
+	status          string
+	saveCounter     int64
+	screen          string
+	selectedTarget  int
+	selectedUpgrade int
+	doctrine        game.Doctrine
 }
 
 func New(s game.State, e *sim.Engine, dataDir string) Model {
@@ -99,6 +100,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
+		if m.screen == "upgrades" {
+			switch v.String() {
+			case "up":
+				if m.selectedUpgrade > 0 {
+					m.selectedUpgrade--
+				}
+			case "down":
+				if m.selectedUpgrade+1 < len(m.engine.Catalog.Upgrades) {
+					m.selectedUpgrade++
+				}
+			case "enter":
+				if len(m.engine.Catalog.Upgrades) > 0 {
+					m.applyCommand(game.Command{Kind: game.BuyUpgrade, ID: m.engine.Catalog.Upgrades[m.selectedUpgrade].ID})
+				}
+			case "esc", "o":
+				m.screen = "overview"
+			}
+			return m, nil
+		}
 		if m.screen == "archive" {
 			if v.String() == "esc" || v.String() == "o" {
 				m.screen = "overview"
@@ -139,6 +159,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if v.String() == "y" {
 			m.screen = "research"
+			return m, nil
+		}
+		if v.String() == "g" && m.state.Faction == game.Runner {
+			m.screen = "upgrades"
 			return m, nil
 		}
 		if v.String() == "l" {
@@ -222,7 +246,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 func (m Model) View() tea.View {
-	if m.compact() {
+	if m.compact() && (m.screen == "overview" || m.screen == "battle") {
 		return tea.NewView(m.compactView())
 	}
 	titleStyle := lipgloss.NewStyle()
@@ -241,6 +265,9 @@ func (m Model) View() tea.View {
 	}
 	if m.screen == "research" {
 		return tea.NewView(m.researchView())
+	}
+	if m.screen == "upgrades" {
+		return tea.NewView(m.upgradesView())
 	}
 	if m.screen == "archive" {
 		return tea.NewView(m.archiveView())
@@ -261,7 +288,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("BATTLE %s | LAYER %d | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LayerIndex+1, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [y] research [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [u] compiler [f] bot [t] targets [g] upgrades [y] research [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
@@ -279,7 +306,7 @@ func (m Model) compactView() string {
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
-	controls := "[c] contract [b] rig [t] targets [y] research [l] archive [p] prestige [q] quit"
+	controls := "[c] contract [b] rig [t] targets [g] upgrades [y] research [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
@@ -348,6 +375,28 @@ func (m Model) researchView() string {
 	return lines + "\n[enter] buy next available node  [esc] overview"
 }
 
+func (m Model) upgradesView() string {
+	lines := "NETRISE // UPGRADES\n\nSelect an upgrade, review its effect and press Enter to purchase.\n"
+	for i, upgrade := range m.engine.Catalog.Upgrades {
+		marker := "  "
+		if i == m.selectedUpgrade {
+			marker = "> "
+		}
+		state := fmt.Sprintf("AVAILABLE (%d CR)", upgrade.Cost)
+		if hasUpgrade(m.state, upgrade.ID) {
+			state = "INSTALLED"
+		} else if m.state.Resources.Credits < mathx.New(upgrade.Cost) {
+			state = fmt.Sprintf("NEED %d CR", upgrade.Cost)
+		}
+		description := upgrade.Description
+		if effects := upgradeEffectText(upgrade.Effects); effects != "" {
+			description += " // " + effects
+		}
+		lines += fmt.Sprintf("%s%-22s %-18s\n  %s\n", marker, upgrade.Name, state, description)
+	}
+	return lines + "\n[up/down] select  [enter] purchase  [esc] overview\nNEXT: install only upgrades you can afford; installed upgrades cannot be repurchased."
+}
+
 func researchEffectText(effects content.ResearchEffects) string {
 	var parts []string
 	if effects.ComputePerSecondBonus > 0 {
@@ -361,6 +410,32 @@ func researchEffectText(effects content.ResearchEffects) string {
 	}
 	if effects.AutomationIntervalReduction > 0 {
 		parts = append(parts, fmt.Sprintf("automation every %ds faster", effects.AutomationIntervalReduction))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func upgradeEffectText(effects content.UpgradeEffects) string {
+	var parts []string
+	if effects.ComputePerSecondBonus > 0 {
+		parts = append(parts, fmt.Sprintf("+%d compute/s", effects.ComputePerSecondBonus))
+	}
+	if effects.HeatReductionPercent > 0 {
+		parts = append(parts, fmt.Sprintf("-%d%% battle heat", effects.HeatReductionPercent))
+	}
+	if effects.StealthAttackBonusPercent > 0 {
+		parts = append(parts, fmt.Sprintf("+%d%% stealth power", effects.StealthAttackBonusPercent))
+	}
+	if effects.BotCapacityBonus > 0 {
+		parts = append(parts, fmt.Sprintf("+%d bot capacity", effects.BotCapacityBonus))
+	}
+	if effects.FabricationTicksReduction > 0 {
+		parts = append(parts, fmt.Sprintf("-%ds fabrication", effects.FabricationTicksReduction))
+	}
+	if effects.ReconTicksReduction > 0 {
+		parts = append(parts, fmt.Sprintf("-%ds recon", effects.ReconTicksReduction))
+	}
+	if effects.ResearchDiscountPercent > 0 {
+		parts = append(parts, fmt.Sprintf("-%d%% research data", effects.ResearchDiscountPercent))
 	}
 	return strings.Join(parts, ", ")
 }
@@ -384,7 +459,7 @@ func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
 		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] enable maintenance\n[e] deploy reserve ICE during an incursion\n[l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
-	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [i] recon  [y] research  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
+	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [i] recon  [y] research  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
 
 func (m Model) prestigeView() string {

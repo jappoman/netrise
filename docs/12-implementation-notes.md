@@ -67,5 +67,10 @@ Signal Profiler shorten safe jobs; Black Archive discounts research. Existing
 upgrade IDs remain the source of unlock predicates, while numeric bonuses are
 aggregated by the engine.
 
+The Runner TUI now has a keyboard-only Upgrade screen (`[g]`) with selection,
+purchase feedback, installed/affordability states, catalog descriptions and
+effect text. Secondary screens remain reachable below 80x24; only the overview
+and active battle use the compact dashboard.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

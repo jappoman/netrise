@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/sim"
 	"strings"
 	"testing"
@@ -73,5 +74,29 @@ func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 		if !strings.Contains(text, expected) {
 			t.Fatalf("research effect text omitted %q: %s", expected, text)
 		}
+	}
+}
+
+func TestUpgradeScreenNavigatesAndPurchases(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Upgrades:      []content.Upgrade{{ID: "clock", Name: "Salvaged Clock", Cost: 10, Description: "Compute discipline.", Effects: content.UpgradeEffects{ComputePerSecondBonus: 1}}},
+	}
+	state := sim.NewState(1)
+	state.Resources.Credits = mathx.New(100)
+	m := New(state, sim.New(catalog, 1), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "g", Code: 'g'}))
+	m = updated.(Model)
+	if m.screen != "upgrades" || !strings.Contains(m.upgradesView(), "Salvaged Clock") || !strings.Contains(m.upgradesView(), "+1 compute/s") {
+		t.Fatalf("upgrade screen did not render selected catalog upgrade: %#v", m)
+	}
+	m.width, m.height = 40, 10
+	if !strings.Contains(m.View().Content, "NETRISE // UPGRADES") {
+		t.Fatal("compact terminal hid the upgrade screen")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Code: tea.KeyEnter}))
+	m = updated.(Model)
+	if !hasUpgrade(m.state, "clock") || m.state.Resources.Credits != mathx.New(90) {
+		t.Fatalf("upgrade screen did not purchase selected upgrade: state=%#v status=%s", m.state, m.status)
 	}
 }
