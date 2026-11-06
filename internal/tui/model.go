@@ -452,7 +452,9 @@ func terminalView(content string) tea.View {
 			return r
 		}, content)
 	}
-	return tea.NewView(content)
+	view := tea.NewView(content)
+	view.AltScreen = true
+	return view
 }
 
 func terminalTitleStyle() lipgloss.Style {

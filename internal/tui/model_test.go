@@ -22,6 +22,13 @@ func TestCompactResizeDoesNotPanic(t *testing.T) {
 	}
 }
 
+func TestPlayerViewUsesFullScreenAlternateBuffer(t *testing.T) {
+	m := New(sim.NewState(2), sim.New(content.Catalog{SchemaVersion: 1}, 2), "")
+	if view := m.View(); !view.AltScreen {
+		t.Fatal("player-facing TUI did not request the terminal alternate screen")
+	}
+}
+
 func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
 	state := sim.NewState(20)
 	state.Resources.Data = mathx.New(7)
