@@ -227,6 +227,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = "automation"
 			return m, nil
 		}
+		if v.String() == "v" && m.state.Faction == game.Corporation {
+			m.screen = "corp-report"
+			return m, nil
+		}
 		if v.String() == "p" {
 			if m.state.Faction == game.Corporation {
 				m.screen = "restructure"
@@ -339,6 +343,9 @@ func (m Model) View() tea.View {
 		}
 		return tea.NewView(m.automationView())
 	}
+	if m.screen == "corp-report" {
+		return tea.NewView(m.corpReportView())
+	}
 	if m.screen == "archive" {
 		return tea.NewView(m.archiveView())
 	}
@@ -373,7 +380,7 @@ func (m Model) compact() bool { return m.width > 0 && (m.width < 80 || m.height 
 
 func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
-		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] budget [l] archive [p] restructure [q] quit"
+		controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [q] quit"
 		}
@@ -786,7 +793,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy budget\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] build hosting  [s] security desk  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
@@ -872,11 +879,38 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		battle = fmt.Sprintf("INCursion %s | BOTS %d | INTEGRITY %d | ICE %d | TRACE %d%%", m.state.ActiveBattle.TargetID, m.state.ActiveBattle.LiveBots, m.state.ActiveBattle.LayerIntegrity, m.state.ActiveBattle.DefenderICE, m.state.ActiveBattle.TraceBP/100)
 	}
-	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] budget [l] archive [p] restructure [q] quit"
+	controls := "[b] hosting [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
 	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+}
+
+func (m Model) corpReportView() string {
+	corp := m.state.Corp
+	if corp == nil {
+		return "NETRISE // CORPORATION REPORT\n\nCorporation state unavailable.\n[esc] overview"
+	}
+	gross := corpGrossRate(corp)
+	upkeep := corpUpkeepRate(corp)
+	net := gross - upkeep
+	if net < 0 {
+		net = 0
+	}
+	projectedCapital := corp.Capital.Units() + gross - upkeep
+	projectedCompute := corp.Compute.Units() + 2
+	projectedRND := "off"
+	if corp.ResearchAuto && corp.ResearchSpent+200 <= effectiveBudget(corp.ResearchBudget) && corp.Capital >= mathx.New(200) && corp.Compute >= mathx.New(corp.ComputeReserve+1) {
+		projectedCapital -= 200
+		projectedCompute--
+		projectedRND = "-200 capital / -1 compute"
+	}
+	projectedMaintenance := "off"
+	if corp.MaintenanceAuto && corp.ICE < corp.MaintenanceReserve && corp.MaintenanceSpent+10 <= effectiveBudget(corp.MaintenanceBudget) && corp.Capital >= mathx.New(10) {
+		projectedCapital -= 10
+		projectedMaintenance = "-10 capital / +1 ICE"
+	}
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nCOMPUTE: %s (+2/tick)\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.Compute, automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
 }
 
 func (m Model) offlineLine() string {
@@ -925,10 +959,28 @@ func integerSqrtPreview(value int64) int64 {
 }
 
 func corpCapitalRate(corp *game.CorpState) int64 {
+	return corpGrossRate(corp)
+}
+
+func corpGrossRate(corp *game.CorpState) int64 {
 	rate := int64(2)
 	for _, asset := range corp.Assets {
 		if asset.Operational {
 			rate += asset.CapitalPerTick
+		}
+	}
+	demand := corp.DemandBP
+	if demand <= 0 {
+		demand = 10000
+	}
+	return rate * demand / 10000
+}
+
+func corpUpkeepRate(corp *game.CorpState) int64 {
+	rate := int64(0)
+	for _, asset := range corp.Assets {
+		if asset.Operational {
+			rate += asset.UpkeepPerTick
 		}
 	}
 	return rate

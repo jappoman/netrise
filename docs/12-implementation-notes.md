@@ -114,5 +114,10 @@ and a compute reserve threshold. R&D spends 200 capital and 1 compute per active
 study, never consumes the protected compute reserve, and emits explicit
 configuration/completion/stop events.
 
+Corporation now also has a derived Economic Report (`[v]`) showing demand-scaled
+gross revenue, active upkeep, operating margin, compute flow, policy states,
+reserve ICE and next-tick capital/compute projections. It stores no duplicate
+economy values and is available only through the shared state/TUI read path.
+
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

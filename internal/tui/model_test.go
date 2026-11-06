@@ -121,6 +121,24 @@ func TestCorporationMaintenanceScreenConfiguresBudget(t *testing.T) {
 	}
 }
 
+func TestCorporationReportShowsDerivedMarginAndProjection(t *testing.T) {
+	state := sim.NewCorporationState(8)
+	state.Corp.DemandBP = 8000
+	state.Corp.MaintenanceAuto = true
+	state.Corp.MaintenanceBudget = 1000
+	state.Corp.MaintenanceReserve = 5
+	state.Corp.ICE = 3
+	m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 8), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "v", Code: 'v'}))
+	m = updated.(Model)
+	view := m.View().Content
+	for _, expected := range []string{"CORPORATION REPORT", "GROSS REVENUE: +3/tick", "UPKEEP: -0/tick", "OPERATING MARGIN: +3/tick", "NEXT TICK PROJECTION", "MAINTENANCE: ON"} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("Corporation report omitted %q: %s", expected, view)
+		}
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,
