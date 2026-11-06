@@ -3,11 +3,13 @@ package integration
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
+	"github.com/jappoman/netrise/internal/save"
 	"github.com/jappoman/netrise/internal/sim"
 )
 
@@ -147,5 +149,52 @@ func TestCorporationSixtyMinuteScriptedProgressionRemainsBounded(t *testing.T) {
 	}
 	if s.Corp.Research <= 0 || len(s.Corp.CompletedResearch) == 0 || s.Corp.RunValuation <= 0 {
 		t.Fatalf("60-minute Corporation script produced no strategic progress: %#v", s.Corp)
+	}
+}
+
+func TestActiveCorporationIncursionSaveReopenResumesIdentically(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 311)
+	original := sim.NewCorporationState(311)
+	original, _, err = e.Apply(original, game.Command{Kind: game.AdvanceTicks, Ticks: 30})
+	if err != nil || original.ActiveBattle == nil {
+		t.Fatalf("catalog incursion did not become resumable: battle=%#v err=%v", original.ActiveBattle, err)
+	}
+
+	dir := t.TempDir()
+	if err := save.Write(dir, original); err != nil {
+		t.Fatal(err)
+	}
+	resumed, err := save.ReadFaction(dir, game.Corporation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var originalEvents, resumedEvents []game.Event
+	for original.ActiveBattle != nil || resumed.ActiveBattle != nil {
+		if original.ActiveBattle == nil || resumed.ActiveBattle == nil {
+			t.Fatalf("Corporation save/reopen diverged on battle lifetime: original=%#v resumed=%#v", original.ActiveBattle, resumed.ActiveBattle)
+		}
+		var events []game.Event
+		original, events, err = e.Apply(original, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		originalEvents = append(originalEvents, events...)
+		resumed, events, err = e.Apply(resumed, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resumedEvents = append(resumedEvents, events...)
+	}
+	if !reflect.DeepEqual(original, resumed) || !reflect.DeepEqual(originalEvents, resumedEvents) {
+		t.Fatalf("Corporation save/reopen changed deterministic result:\noriginal=%#v\nresumed=%#v\noriginal events=%#v\nresumed events=%#v", original, resumed, originalEvents, resumedEvents)
 	}
 }

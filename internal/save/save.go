@@ -92,7 +92,7 @@ func ReadFaction(dir string, faction game.Faction) (game.State, error) {
 	if s.SchemaVersion != game.CurrentSchema {
 		return recoverBackup(path, s, fmt.Errorf("unsupported save schema %d", s.SchemaVersion))
 	}
-	if s.Resources.DataCapacity <= 0 {
+	if s.Faction == game.Runner && s.Resources.DataCapacity <= 0 {
 		s.Resources.DataCapacity = maxInt64(100, s.Resources.Data.Units())
 	}
 	if err := validateState(s); err != nil {

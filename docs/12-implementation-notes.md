@@ -265,3 +265,7 @@ the player-facing outcome and next-action rail.
 It also covers the Corporation keyboard loop on the shipped catalog: security
 investment, active NPC incursion, emergency asset isolation and the resulting
 player-facing resolution screen.
+
+Corporation active-incursion saves now round-trip without importing Runner-only
+data capacity, and deterministic resume is covered through the complete battle
+resolution path.
