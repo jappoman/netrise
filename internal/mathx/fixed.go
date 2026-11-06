@@ -35,9 +35,25 @@ func (a Amount) Add(b Amount) (Amount, error) {
 	return Amount(c), nil
 }
 func (a Amount) MulUnits(n int64) (Amount, error) {
-	if n != 0 && (int64(a) > 0 && n > (1<<63-1)/int64(a) || int64(a) < 0 && n < (-1<<63)/int64(a)) {
+	left := int64(a)
+	const maxInt64 = int64(^uint64(0) >> 1)
+	const minInt64 = -maxInt64 - 1
+	if left == 0 || n == 0 {
+		return 0, nil
+	}
+	if (left == minInt64 && n == -1) || (n == minInt64 && left == -1) {
 		return 0, ErrOverflow
 	}
-	return Amount(int64(a) * n), nil
+	switch {
+	case left > 0 && n > 0 && left > maxInt64/n:
+		return 0, ErrOverflow
+	case left > 0 && n < 0 && n < minInt64/left:
+		return 0, ErrOverflow
+	case left < 0 && n > 0 && left < minInt64/n:
+		return 0, ErrOverflow
+	case left < 0 && n < 0 && n < maxInt64/left:
+		return 0, ErrOverflow
+	}
+	return Amount(left * n), nil
 }
 func (a Amount) String() string { return strconv.FormatInt(a.Units(), 10) }

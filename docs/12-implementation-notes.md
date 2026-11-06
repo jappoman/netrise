@@ -233,5 +233,6 @@ matrix verifies that heat and bot-loss profiles remain distinct.
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. `mathx.NewChecked` rejects unit values that cannot be represented;
 the legacy `mathx.New` constructor now panics instead of silently wrapping, and
-content validation rejects out-of-range amount costs before simulation. Starter
-balance values remain external JSON hypotheses.
+content validation rejects out-of-range amount costs before simulation.
+`MulUnits` now checks all signed operand directions, including the `MinInt64`
+edge case. Starter balance values remain external JSON hypotheses.
