@@ -133,3 +133,37 @@ func TestCombatCommitmentMatrixDoesNotRewardLessPower(t *testing.T) {
 		t.Fatalf("more committed bots reduced wins: low=%d high=%d", low, high)
 	}
 }
+
+func TestRunnerSixtyMinuteScriptedProgressionRemainsBounded(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 61)
+	s := sim.NewState(61)
+	s.Resources.Credits = mathx.New(1000)
+	s.Resources.Compute = mathx.New(1000)
+	s.Resources.BotCapacity = 20
+	s.Upgrades = []string{"secondhand_compiler", "street_contacts", "autodialer", "packet_scheduler", "signal_profiler"}
+	s.Automation = game.Automation{Contracts: true, Fabrication: true, ReconTargetID: "t_01"}
+	var commandErr error
+	s, _, commandErr = e.Apply(s, game.Command{Kind: game.StartRecon, ID: "t_01"})
+	if commandErr != nil {
+		t.Fatal(commandErr)
+	}
+	s, _, commandErr = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 3600})
+	if commandErr != nil {
+		t.Fatal(commandErr)
+	}
+	if s.LogicalTick != 3600 || len(s.EventLog) > sim.EventLogLimit || s.Resources.Credits < 0 || s.Resources.Compute < 0 || s.Resources.Bots < 0 {
+		t.Fatalf("60-minute script violated bounded progression: tick=%d events=%d resources=%#v", s.LogicalTick, len(s.EventLog), s.Resources)
+	}
+	if s.Intel["t_01"] == 0 {
+		t.Fatal("60-minute script produced no recon progress")
+	}
+}

@@ -45,6 +45,9 @@ checksums. Headless reports support both campaigns through
 `simulate --faction runner|corp`, with deterministic output verified for each.
 Player-facing events are retained in a bounded 200-entry archive, persisted in
 saves and available from the TUI with `[l] archive`.
+The content validator rejects missing links and cyclic research prerequisites;
+an integration script exercises 3,600 Runner ticks with automation enabled and
+asserts bounded resources, event history and recon progress.
 
 Runtime amounts use a scale of 1,000 fixed units, with no floating-point
 accountancy. Starter balance values remain external JSON hypotheses.

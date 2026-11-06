@@ -104,6 +104,34 @@ func Validate(c Catalog) error {
 			}
 		}
 	}
+	prerequisites := make(map[string][]string, len(c.Research))
+	for _, r := range c.Research {
+		prerequisites[r.ID] = r.Prerequisites
+	}
+	visited, active := map[string]bool{}, map[string]bool{}
+	var visit func(string) bool
+	visit = func(id string) bool {
+		if active[id] {
+			return false
+		}
+		if visited[id] {
+			return true
+		}
+		active[id] = true
+		for _, prerequisite := range prerequisites[id] {
+			if !visit(prerequisite) {
+				return false
+			}
+		}
+		active[id] = false
+		visited[id] = true
+		return true
+	}
+	for _, r := range c.Research {
+		if !visit(r.ID) {
+			return fmt.Errorf("content: research prerequisites contain a cycle at %q", r.ID)
+		}
+	}
 	seen = map[string]bool{}
 	for _, a := range c.CorpAssets {
 		if a.ID == "" || seen[a.ID] || a.Name == "" || a.CostCapital < 0 || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 {
