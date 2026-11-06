@@ -111,7 +111,12 @@ func TestPlayerScreensFitStandardTerminalWidth(t *testing.T) {
 			updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 			m = updated.(Model)
 			m.screen = tc.screen
-			for _, line := range strings.Split(m.View().Content, "\n") {
+			content := m.View().Content
+			lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+			if len(lines) > 24 {
+				t.Fatalf("screen exceeds 24 rows (%d): %s", len(lines), content)
+			}
+			for _, line := range lines {
 				if len(line) > 80 {
 					t.Fatalf("line exceeds 80 columns (%d): %q", len(line), line)
 				}

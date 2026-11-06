@@ -494,3 +494,6 @@ faction-specific keyboard actions visible instead of clipping the right side.
 The final terminal rendering boundary also wraps long target estimates, help,
 settings and progression guidance, so secondary screens remain readable at
 80 columns without changing their underlying state or command flow.
+The Corporation Report uses a concise market tier label at 80x24 so its
+projection and `NEXT:` rail remain visible together with the full economic
+metrics.

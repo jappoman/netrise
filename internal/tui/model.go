@@ -1173,7 +1173,18 @@ func (m Model) corpReportView() string {
 		projectedCapital = subtractNonNegative(projectedCapital, 10)
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n%s\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration\nNEXT: review the projection, then return to the overview or adjust [A] policy.", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, m.corpIncursionSummary(), projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n%s\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n[v/esc] overview  [A] policy configuration\nNEXT: review projection, then return or adjust [A] policy.", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpReportMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, m.corpIncursionSummary(), projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+}
+
+func (m Model) corpReportMarketSummary() string {
+	if m.state.Corp == nil || len(m.engine.Catalog.CorpMarkets) == 0 {
+		return "no catalogued tiers"
+	}
+	if m.state.Corp.MarketTier >= int64(len(m.engine.Catalog.CorpMarkets)) {
+		return fmt.Sprintf("%d/%d complete", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets))
+	}
+	next := m.engine.Catalog.CorpMarkets[m.state.Corp.MarketTier]
+	return fmt.Sprintf("%d/%d -> %s", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name)
 }
 
 func subtractNonNegative(value, decrement int64) int64 {
