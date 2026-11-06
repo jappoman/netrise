@@ -64,6 +64,9 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	apply(game.Command{Kind: game.CorpRunResearch})
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 25})
 	apply(game.Command{Kind: game.CorpExpandMarket})
+	if s.Corp.MarketTier != 1 || s.Corp.DemandBP != 11000 || s.Corp.Influence <= 0 {
+		t.Fatalf("catalogued market expansion did not create strategic growth: %#v", s.Corp)
+	}
 	apply(game.Command{Kind: game.AdvanceTicks, Ticks: 50})
 	if s.Corp.Research <= 0 || s.Corp.Influence <= 0 || s.Corp.DemandBP <= 8000 || s.Corp.RunValuation < 1000 {
 		t.Fatalf("corporate growth systems did not progress: %#v", s.Corp)

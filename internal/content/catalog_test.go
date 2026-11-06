@@ -75,3 +75,14 @@ func TestValidateRejectsNegativeAssetDamage(t *testing.T) {
 		t.Fatal("negative asset damage accepted")
 	}
 }
+
+func TestValidateRejectsInvalidCorporationMarketExpansion(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_markets":[{"id":"metro","name":"Metro","cost_capital":0,"demand_bonus_bp":1000}]}`))
+	if err == nil {
+		t.Fatal("zero-cost Corporation market expansion accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_markets":[{"id":"metro","name":"Metro","cost_capital":10,"demand_bonus_bp":-1}]}`))
+	if err == nil {
+		t.Fatal("negative Corporation market demand bonus accepted")
+	}
+}

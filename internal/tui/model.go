@@ -429,7 +429,7 @@ func (m Model) compactView() string {
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [x] isolate asset [q] quit"
 		}
-		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
+		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\nREP %d%%  EXPOSURE %d%%\nMARKET %s\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.corpMarketSummary(), m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
 	controls := "[c] contract [b] rig [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
@@ -947,7 +947,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [x] isolate asset [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %s\nDETAIL %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpAssetSummary(), m.corpAssetDetails(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nMARKET %s\nASSETS %s\nDETAIL %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpMarketSummary(), m.corpAssetSummary(), m.corpAssetDetails(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
 func (m Model) corpReportView() string {
@@ -974,7 +974,7 @@ func (m Model) corpReportView() string {
 		projectedCapital -= 10
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nREPUTATION: %d%%  EXPOSURE: %d%%\nREVENUE FACTOR: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nMARKET: %s\nASSET STATUS: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.ReputationBP/100, corp.ExposureBP/100, m.engine.CorporationRevenueFactor(m.state), corp.Compute, corp.Research, m.corpTechnologySummary(), m.corpMarketSummary(), m.corpAssetDetails(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
 }
 
 func (m Model) offlineLine() string {
@@ -1220,7 +1220,31 @@ func (m Model) corpNextHint() string {
 	if m.state.Corp.ICE < m.state.Corp.ICECapacity {
 		return "restock reserve ICE before the next emergency audit"
 	}
+	if market := m.corpMarketNext(); market != nil {
+		return fmt.Sprintf("press [m] to secure %s for %d capital", market.Name, market.CostCapital)
+	}
 	return "maintain capital and watch the next active-play intrusion"
+}
+
+func (m Model) corpMarketNext() *content.CorpMarketExpansion {
+	if m.state.Corp == nil || m.state.Corp.MarketTier < 0 || m.state.Corp.MarketTier >= int64(len(m.engine.Catalog.CorpMarkets)) {
+		return nil
+	}
+	return &m.engine.Catalog.CorpMarkets[m.state.Corp.MarketTier]
+}
+
+func (m Model) corpMarketSummary() string {
+	if m.state.Corp == nil {
+		return "0/0"
+	}
+	if len(m.engine.Catalog.CorpMarkets) == 0 {
+		return "0/0 catalogued"
+	}
+	if m.state.Corp.MarketTier >= int64(len(m.engine.Catalog.CorpMarkets)) {
+		return fmt.Sprintf("%d/%d complete", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets))
+	}
+	next := m.corpMarketNext()
+	return fmt.Sprintf("%d/%d | next %s (%d capital, +%d%% demand)", m.state.Corp.MarketTier, len(m.engine.Catalog.CorpMarkets), next.Name, next.CostCapital, next.DemandBonusBP/100)
 }
 
 func (m Model) corpAssetSummary() string {

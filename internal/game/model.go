@@ -59,6 +59,7 @@ type CorpState struct {
 	ComputeReserve     int64        `json:"compute_reserve"`
 	RunValuation       int64        `json:"run_valuation"`
 	PatentShares       int64        `json:"patent_shares"`
+	MarketTier         int64        `json:"market_tier"`
 }
 type Fabrication struct {
 	RemainingTicks int64 `json:"remaining_ticks"`

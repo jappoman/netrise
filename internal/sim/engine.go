@@ -524,15 +524,20 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
 		}
-		cost := mathx.New(150)
+		if s.Corp.MarketTier >= int64(len(e.Catalog.CorpMarkets)) {
+			return s, nil, &game.CommandError{Reason: game.ReasonCapacityReached, Detail: "all catalogued market expansions are secured"}
+		}
+		market := e.Catalog.CorpMarkets[s.Corp.MarketTier]
+		cost := mathx.New(market.CostCapital)
 		if s.Corp.Capital < cost {
-			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: "market expansion requires 150 capital"}
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("%s requires %d capital", market.Name, market.CostCapital)}
 		}
 		s.Corp.Capital -= cost
-		s.Corp.Influence, _ = s.Corp.Influence.Add(mathx.New(10))
-		s.Corp.DemandBP = minInt64(10000, s.Corp.DemandBP+1000)
-		s.Corp.RunValuation += 150
-		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: "New service demand secured."}}, nil
+		s.Corp.Influence, _ = s.Corp.Influence.Add(mathx.New(market.InfluenceGain))
+		s.Corp.DemandBP += market.DemandBonusBP
+		s.Corp.MarketTier++
+		s.Corp.RunValuation += market.ValuationGain
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "MarketExpanded", Message: fmt.Sprintf("%s secured: demand +%d%%.", market.Name, market.DemandBonusBP/100)}}, nil
 	case game.CorpEnableMaintenance:
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}

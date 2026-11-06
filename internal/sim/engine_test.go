@@ -5,6 +5,7 @@ import (
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
 	"github.com/jappoman/netrise/internal/mathx"
+	"reflect"
 	"testing"
 )
 
@@ -871,5 +872,47 @@ func TestEventArchiveIsBoundedAndRejectsFailedCommands(t *testing.T) {
 	}
 	if len(s.EventLog) != before {
 		t.Fatal("failed command changed event archive")
+	}
+}
+
+func TestCorporationMarketExpansionUsesCatalogTiersAndIsAtomic(t *testing.T) {
+	c := catalog()
+	c.CorpMarkets = []content.CorpMarketExpansion{
+		{ID: "metro", Name: "Metro Contracts", CostCapital: 150, DemandBonusBP: 1000, InfluenceGain: 10, ValuationGain: 150},
+		{ID: "regional", Name: "Regional Exchange", CostCapital: 300, DemandBonusBP: 1000, InfluenceGain: 20, ValuationGain: 300},
+	}
+	e := New(c, 104)
+	s := NewCorporationState(104)
+	s.Corp.Capital = mathx.New(149)
+	before := s
+	before.Corp = &*s.Corp
+	before.Corp.Assets = append([]game.CorpAsset(nil), s.Corp.Assets...)
+	if _, _, err := e.Apply(s, game.Command{Kind: game.CorpExpandMarket}); err == nil {
+		t.Fatal("unaffordable first market tier was accepted")
+	}
+	if s.Corp.MarketTier != 0 || s.Corp.DemandBP != 10000 {
+		t.Fatalf("failed command mutated market state: %#v", s.Corp)
+	}
+	s.Corp.Capital = mathx.New(150)
+	got, events, err := e.Apply(s, game.Command{Kind: game.CorpExpandMarket})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Corp.MarketTier != 1 || got.Corp.DemandBP != 11000 || got.Corp.Influence != mathx.New(10) || got.Corp.RunValuation != 150 || got.Corp.Capital != mathx.New(0) || !hasEvent(events, "MarketExpanded") {
+		t.Fatalf("first market tier was not applied from catalog: state=%#v events=%#v", got.Corp, events)
+	}
+	if !reflect.DeepEqual(before, s) {
+		t.Fatalf("failed market command was not atomic: before=%#v after=%#v", before, s)
+	}
+	if _, _, err := e.Apply(got, game.Command{Kind: game.CorpExpandMarket}); err == nil {
+		t.Fatal("unaffordable next market tier was accepted")
+	}
+	got.Corp.Capital = mathx.New(300)
+	got, _, err = e.Apply(got, game.Command{Kind: game.CorpExpandMarket})
+	if err != nil || got.Corp.MarketTier != 2 || got.Corp.DemandBP != 12000 || got.Corp.Influence != mathx.New(30) {
+		t.Fatalf("second market tier was not applied: state=%#v err=%v", got.Corp, err)
+	}
+	if _, _, err := e.Apply(got, game.Command{Kind: game.CorpExpandMarket}); err == nil {
+		t.Fatal("market expanded beyond catalog tiers")
 	}
 }

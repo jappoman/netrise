@@ -134,7 +134,7 @@ func validateState(s game.State) error {
 	}
 	if s.Corp != nil {
 		c := s.Corp
-		if c.Capital < 0 || c.Compute < 0 || c.Research < 0 || c.Influence < 0 || c.ICE < 0 || c.ICECapacity < 0 || c.ICE > c.ICECapacity || c.ReputationBP < 0 || c.ReputationBP > 10000 || c.ExposureBP < 0 || c.ExposureBP > 10000 || c.DemandBP < 0 || c.DemandBP > 10000 || c.AttackCounter < 0 || c.MaintenanceBudget < 0 || c.MaintenanceSpent < 0 || c.ResearchBudget < 0 || c.ResearchSpent < 0 || c.ComputeReserve < 0 || c.RunValuation < 0 || c.PatentShares < 0 {
+		if c.Capital < 0 || c.Compute < 0 || c.Research < 0 || c.Influence < 0 || c.ICE < 0 || c.ICECapacity < 0 || c.ICE > c.ICECapacity || c.ReputationBP < 0 || c.ReputationBP > 10000 || c.ExposureBP < 0 || c.ExposureBP > 10000 || c.DemandBP < 0 || c.DemandBP > 20000 || c.AttackCounter < 0 || c.MaintenanceBudget < 0 || c.MaintenanceSpent < 0 || c.ResearchBudget < 0 || c.ResearchSpent < 0 || c.ComputeReserve < 0 || c.RunValuation < 0 || c.PatentShares < 0 || c.MarketTier < 0 {
 			return errors.New("corporation bounds exceeded")
 		}
 		for _, asset := range c.Assets {

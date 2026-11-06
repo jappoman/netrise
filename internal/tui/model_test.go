@@ -264,6 +264,28 @@ func TestCorporationReportShowsCompletedTechnology(t *testing.T) {
 	}
 }
 
+func TestCorporationMarketStatusAndNextActionAreVisible(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		CorpMarkets:   []content.CorpMarketExpansion{{ID: "metro", Name: "Metro Contracts", CostCapital: 150, DemandBonusBP: 1000}},
+	}
+	m := New(sim.NewCorporationState(10), sim.New(catalog, 10), "")
+	m.state.Corp.Assets = append(m.state.Corp.Assets,
+		game.CorpAsset{ID: "security_desk", Name: "Security Desk", Operational: true, Integrity: 100, MaxIntegrity: 100},
+		game.CorpAsset{ID: "archive_server", Name: "Archive Server", Operational: true, Integrity: 100, MaxIntegrity: 100},
+	)
+	m.state.Corp.ICE = m.state.Corp.ICECapacity
+	view := m.corpOverviewView()
+	if !strings.Contains(view, "MARKET 0/1 | next Metro Contracts (150 capital, +10% demand)") || !strings.Contains(view, "press [m] to secure Metro Contracts") {
+		t.Fatalf("Corporation market state was not self-explanatory: %s", view)
+	}
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "m", Code: 'm'}))
+	m = updated.(Model)
+	if m.state.Corp.MarketTier != 0 || !strings.Contains(m.status, "requires 150 capital") {
+		t.Fatalf("unaffordable market expansion was not explained atomically: state=%#v status=%q", m.state.Corp, m.status)
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

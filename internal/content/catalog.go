@@ -65,6 +65,14 @@ type CorpAssetDefinition struct {
 	IsolationCost    int64  `json:"isolation_cost_capital"`
 	IsolationTicks   int64  `json:"isolation_ticks"`
 }
+type CorpMarketExpansion struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	CostCapital   int64  `json:"cost_capital"`
+	DemandBonusBP int64  `json:"demand_bonus_bp"`
+	InfluenceGain int64  `json:"influence_gain"`
+	ValuationGain int64  `json:"valuation_gain"`
+}
 type Layer struct {
 	Integrity int64 `json:"integrity"`
 	ICE       int64 `json:"ice"`
@@ -93,6 +101,7 @@ type Catalog struct {
 	Research      []ResearchNode        `json:"research"`
 	CorpResearch  []CorpResearchNode    `json:"corp_research"`
 	CorpAssets    []CorpAssetDefinition `json:"corp_assets"`
+	CorpMarkets   []CorpMarketExpansion `json:"corp_markets"`
 	Targets       []Target              `json:"targets"`
 }
 
@@ -183,6 +192,13 @@ func Validate(c Catalog) error {
 			return fmt.Errorf("content: invalid corporation asset %q", a.ID)
 		}
 		seen[a.ID] = true
+	}
+	seen = map[string]bool{}
+	for _, m := range c.CorpMarkets {
+		if m.ID == "" || seen[m.ID] || m.Name == "" || m.CostCapital <= 0 || m.DemandBonusBP <= 0 || m.InfluenceGain < 0 || m.ValuationGain < 0 {
+			return fmt.Errorf("content: invalid corporation market expansion %q", m.ID)
+		}
+		seen[m.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {
