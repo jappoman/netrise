@@ -60,7 +60,9 @@ Seed fuzz harnesses cover arbitrary save payloads and unknown command kinds,
 checking that malformed inputs cannot panic or partially mutate a snapshot.
 Corporation emergency actions issued from the TUI now transition directly from
 Battle to Result when they resolve an incursion; keyboard tests cover isolation
-and repair through the same engine command path used in play.
+and repair through the same engine command path used in play. The Result screen
+also explains `isolated` as a successful containment outcome and points to
+asset recovery rather than presenting an unknown battle result.
 The catalog loader first checks the working directory and then the executable
 bundle, so packaged binaries can run from any current directory. Release
 artifacts include `assets/content/catalog.json` beside the binary.

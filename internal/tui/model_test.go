@@ -426,3 +426,17 @@ func TestBattleResultShowsReasonAndEconomySummary(t *testing.T) {
 		}
 	}
 }
+
+func TestBattleResultExplainsCorporationIsolation(t *testing.T) {
+	catalog := content.Catalog{SchemaVersion: 1, Targets: []content.Target{{ID: "target", Name: "Relay"}}}
+	state := sim.NewCorporationState(19)
+	state.LastBattle = &game.BattleResult{TargetID: "target", Outcome: "isolated", CommittedBots: 8, Survivors: 8, ElapsedTicks: 4}
+	m := New(state, sim.New(catalog, 19), "")
+	m.screen = "result"
+	view := m.View().Content
+	for _, expected := range []string{"OUTCOME: isolated", "REASON: the Corporation isolated the asset", "repair it when integrity"} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("isolated result omitted %q: %s", expected, view)
+		}
+	}
+}

@@ -606,6 +606,8 @@ func battleOutcomeReason(outcome string) string {
 		return "the Corporation kept the asset secured"
 	case "breach":
 		return "the Corporation asset was exposed"
+	case "isolated":
+		return "the Corporation isolated the asset and contained the incursion"
 	default:
 		return "battle resolution completed"
 	}
@@ -614,6 +616,9 @@ func battleOutcomeReason(outcome string) string {
 func resultNextHint(outcome string) string {
 	if outcome == "victory" {
 		return "review the archive, then inspect the next reachable target"
+	}
+	if outcome == "isolated" {
+		return "review the isolated asset and repair it when integrity or revenue needs recovery"
 	}
 	return "review the result, recover resources and prepare the next attempt"
 }
