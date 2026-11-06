@@ -130,6 +130,9 @@ func validateState(s game.State) error {
 	if s.RunExtractedData < 0 || s.GhostKeys < 0 || s.PrestigeCount < 0 {
 		return errors.New("negative progression value")
 	}
+	if s.OfflineSummary != nil && (s.OfflineSummary.Ticks < 0 || s.OfflineSummary.ComputeProduced < 0 || s.OfflineSummary.CapitalProduced < 0) {
+		return errors.New("invalid offline summary")
+	}
 	if s.Automation.ContractBudget < 0 || s.Automation.ContractEarned < 0 || s.Automation.FabricationBudget < 0 || s.Automation.FabricationSpent < 0 || s.Automation.ReconBudget < 0 || s.Automation.ReconSpent < 0 {
 		return errors.New("negative Runner automation budget or usage")
 	}

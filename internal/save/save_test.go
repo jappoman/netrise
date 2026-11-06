@@ -168,6 +168,17 @@ func TestSaveRejectsInvalidBattleAndJobSnapshots(t *testing.T) {
 	}
 }
 
+func TestSaveRejectsNegativeOfflineSummary(t *testing.T) {
+	d := t.TempDir()
+	payload := `{"schema_version":1,"faction":"runner","offline_summary":{"ticks":10,"compute_produced":-1}}`
+	if err := os.WriteFile(Path(d), []byte(payload), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("negative offline summary was accepted: %v", err)
+	}
+}
+
 func TestInvalidGeneratorStateIsRejected(t *testing.T) {
 	d := t.TempDir()
 	if err := os.WriteFile(Path(d), []byte(`{"schema_version":1,"faction":"runner","generators":[{"id":"rig","count":-1}]}`), 0600); err != nil {

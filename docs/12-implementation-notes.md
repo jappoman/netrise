@@ -413,3 +413,7 @@ meters and logical timestamps before they are resumed by the TUI.
 Active Runner battles now validate their committed units against reserve capacity
 and starting heat, while persisted fabrication quantities must fit remaining bot
 capacity before a save can be reopened.
+
+Offline reconciliation summaries are also checked for non-negative ticks and
+resource deltas, so the Overview cannot display fabricated offline gains after a
+corrupted save.
