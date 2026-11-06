@@ -52,6 +52,26 @@ func TestUpgradeMenuFitsAtStandardTerminalHeight(t *testing.T) {
 	}
 }
 
+func TestOverviewActionRailsFitStandardTerminalWidth(t *testing.T) {
+	for _, faction := range []game.Faction{game.Runner, game.Corporation} {
+		state := sim.NewState(4)
+		if faction == game.Corporation {
+			state = sim.NewCorporationState(4)
+		}
+		m := New(state, sim.New(content.Catalog{SchemaVersion: 1}, 4), "")
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+		view := updated.(Model).View().Content
+		for _, line := range strings.Split(view, "\n") {
+			if len(line) > 80 {
+				t.Fatalf("%s overview line exceeds 80 columns (%d): %q", faction, len(line), line)
+			}
+		}
+		if !strings.Contains(view, "[q] quit") || !strings.Contains(view, "NEXT:") {
+			t.Fatalf("%s overview lost its action rail: %s", faction, view)
+		}
+	}
+}
+
 func TestRunnerOverviewShowsDataCapacity(t *testing.T) {
 	state := sim.NewState(20)
 	state.Resources.Data = mathx.New(7)

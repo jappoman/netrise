@@ -76,8 +76,9 @@ NETRISE_ASCII=1
 At 80×24, confirm the action rail, current objective, unavailable-action
 reason and `NEXT:` hint remain visible. Open Upgrades and move through the
 full list with `[up/down]`; the visible window should scroll without hiding
-the action rail. At a smaller size, confirm the compact view remains usable
-and quitting still writes a valid save.
+the action rail. Confirm the full overview action rail wraps onto a second
+line rather than clipping keys on the right. At a smaller size, confirm the
+compact view remains usable and quitting still writes a valid save.
 
 ## Feedback to record
 

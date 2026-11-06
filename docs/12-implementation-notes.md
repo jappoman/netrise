@@ -489,3 +489,5 @@ previous terminal contents when the program exits.
 Long Runner catalog menus now use a height-aware scrolling window. At the
 standard 80x24 size the Upgrades screen keeps the selection, action rail and
 `NEXT:` guidance visible while `[up/down]` moves through the complete catalog.
+Overview action rails also wrap at a safe terminal width, keeping all
+faction-specific keyboard actions visible instead of clipping the right side.

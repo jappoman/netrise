@@ -439,6 +439,7 @@ func (m Model) View() tea.View {
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce once [w] withdraw [q] quit"
 	}
+	controls = wrapActionRail(controls)
 	body := fmt.Sprintf("CREDITS %s\nCOMPUTE %s (+%d/s)\nDATA %s/%d\nBOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\n%s\n%s\n\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.engine.ComputeRate(m.state), m.state.Resources.Data, m.state.Resources.DataCapacity, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, battle, m.reconLine(), m.automationSummary(), m.offlineLine(), controls, m.nextHint(), m.status)
 	return terminalView(title + "\n\n" + body + "\n")
 }
@@ -476,12 +477,14 @@ func (m Model) compactView() string {
 		if m.state.ActiveBattle != nil {
 			controls = "[e] deploy ICE [x] isolate asset [q] quit"
 		}
+		controls = wrapActionRail(controls)
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\n%s\nREP %d%%  EXPOSURE %d%%\nMARKET %s\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.corpIncursionSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.corpMarketSummary(), m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
 	controls := "[c] contract [b] rig [a] breach [t] targets [g] upgrades [A] automation [y] research [h] guide [l] archive [S] settings [p] prestige [q] quit"
 	if m.state.ActiveBattle != nil {
 		controls = "[r] reinforce [w] withdraw [q] quit"
 	}
+	controls = wrapActionRail(controls)
 	return fmt.Sprintf("NETRISE // RUNNER (COMPACT)\nCREDITS %s  COMPUTE %s\nDATA %s/%d  BOTS %d/%d\nHEAT %d%%\nTICK %d\n%s\n%s\nNEXT: %s\n%s", m.state.Resources.Credits, m.state.Resources.Compute, m.state.Resources.Data, m.state.Resources.DataCapacity, m.state.Resources.Bots, m.state.Resources.BotCapacity, m.state.HeatBP/100, m.state.LogicalTick, compactBattle(m.state), m.reconLine(), m.nextHint(), controls)
 }
 
@@ -1090,7 +1093,26 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [x] isolate asset [q] quit"
 	}
+	controls = wrapActionRail(controls)
 	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nMARKET %s\nASSETS %s\nDETAIL %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), m.corpIncursionSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpMarketSummary(), m.corpAssetSummary(), m.corpAssetDetails(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+}
+
+func wrapActionRail(value string) string {
+	const width = 76
+	words := strings.Fields(value)
+	if len(words) == 0 {
+		return ""
+	}
+	lines := []string{words[0]}
+	for _, word := range words[1:] {
+		last := len(lines) - 1
+		if len(lines[last])+1+len(word) <= width {
+			lines[last] += " " + word
+			continue
+		}
+		lines = append(lines, word)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (m Model) corpReportView() string {
