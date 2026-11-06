@@ -51,6 +51,17 @@ func TestValidateRejectsNegativeSecurityCapacityBonus(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsNegativeIsolationPolicy(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_assets":[{"id":"archive","name":"Archive","integrity":100,"isolation_cost_capital":-1}]}`))
+	if err == nil {
+		t.Fatal("negative isolation cost accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_assets":[{"id":"archive","name":"Archive","integrity":100,"isolation_ticks":-1}]}`))
+	if err == nil {
+		t.Fatal("negative isolation duration accepted")
+	}
+}
+
 func TestValidateRejectsNegativeTargetCooldown(t *testing.T) {
 	_, err := Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"cooldown_ticks":-1}]}`))
 	if err == nil {

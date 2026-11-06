@@ -123,7 +123,7 @@ func TestHelpViewExplainsBothCampaigns(t *testing.T) {
 		t.Fatal("Runner help omitted objective")
 	}
 	corp := New(sim.NewCorporationState(1), sim.New(content.Catalog{SchemaVersion: 1}, 1), "")
-	if !strings.Contains(corp.helpView(), "information business") || !strings.Contains(corp.helpView(), "[a] archive") {
+	if !strings.Contains(corp.helpView(), "information business") || !strings.Contains(corp.helpView(), "[a] archive") || !strings.Contains(corp.helpView(), "[x] isolate") {
 		t.Fatal("Corporation help omitted objective")
 	}
 }

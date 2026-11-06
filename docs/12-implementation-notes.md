@@ -165,6 +165,12 @@ operating-risk tradeoff without floating-point accountancy.
 The report now prints reputation, exposure and the effective revenue factor so
 the penalty is explainable to the player rather than hidden in the rate.
 
+Corporation incursions now support the second specified emergency response:
+`[x] isolate asset`. The selected highest-value operational asset is suspended
+for its data-driven catalog duration, capital is charged atomically, the
+incursion ends as `isolated`, and an `AssetIsolationEnded` event marks automatic
+recovery. Reserve ICE and isolation share the single intervention budget.
+
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It
 checks time-limit resolution, valid outcomes, bot/heat accounting and

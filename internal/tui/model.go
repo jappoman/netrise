@@ -283,6 +283,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command = game.Command{Kind: game.CorpBuyICE, Quantity: 1}
 		case "e":
 			command = game.Command{Kind: game.CorpDeployICE, Quantity: 1}
+		case "x":
+			if m.state.Faction == game.Corporation {
+				command = game.Command{Kind: game.CorpIsolateAsset, ID: m.corpIsolationTargetID()}
+			}
 		case "d":
 			command = game.Command{Kind: game.CorpRunResearch}
 		case "m":
@@ -419,7 +423,7 @@ func (m Model) compactView() string {
 	if m.state.Faction == game.Corporation && m.state.Corp != nil {
 		controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 		if m.state.ActiveBattle != nil {
-			controls = "[e] deploy ICE [q] quit"
+			controls = "[e] deploy ICE [x] isolate asset [q] quit"
 		}
 		return fmt.Sprintf("NETRISE // CORPORATION (COMPACT)\nCAPITAL %s  ICE %d/%d\n%s\nREP %d%%  EXPOSURE %d%%\nTICK %d\n%s\nNEXT: %s\n%s", m.state.Corp.Capital, m.state.Corp.ICE, m.state.Corp.ICECapacity, m.corpMaintenanceSummary(), m.state.Corp.ReputationBP/100, m.state.Corp.ExposureBP/100, m.state.LogicalTick, compactBattle(m.state), m.corpNextHint(), controls)
 	}
@@ -444,7 +448,7 @@ func (m Model) compactBattleView() string {
 	b := m.state.ActiveBattle
 	controls := "[space] pause  [1/2/4] speed  [r] reinforce  [w] withdraw  [q] quit"
 	if m.state.Faction == game.Corporation {
-		controls = "[space] pause  [1/2/4] speed  [e] deploy ICE  [q] quit"
+		controls = "[space] pause  [1/2/4] speed  [e] deploy ICE  [x] isolate asset  [q] quit"
 	}
 	return fmt.Sprintf("NETRISE // BATTLE\n%s\nLAYER %d | BOTS %d | INTEGRITY %d\nICE %d | TRACE %d%% | TICK %d/%d\nPLAYBACK: %s\n%s\nNEXT: %s", battleTargetName(m.engine, b.TargetID), b.LayerIndex+1, b.LiveBots, b.LayerIntegrity, b.DefenderICE, b.TraceBP/100, b.ElapsedTicks, b.TimeLimit, m.playbackStatus(), controls, m.battleNextHint())
 }
@@ -492,7 +496,7 @@ func recentBattleEvents(events []game.Event) []game.Event {
 	filtered := make([]game.Event, 0, 6)
 	for _, event := range events {
 		switch event.Type {
-		case "BattleStarted", "BattleReinforced", "LayerBreached", "BotsLost", "BattleEnded":
+		case "BattleStarted", "BattleReinforced", "LayerBreached", "BotsLost", "AssetIsolated", "BattleEnded":
 			filtered = append(filtered, event)
 		}
 	}
@@ -507,7 +511,7 @@ func (m Model) battleNextHint() string {
 		return "playback paused; press [space] to resume"
 	}
 	if m.state.Faction == game.Corporation {
-		return "watch exposure and deploy reserve ICE only when the incursion needs it"
+		return "watch exposure; press [e] for reserve ICE or [x] to isolate the highest-value asset"
 	}
 	return "watch layer integrity; reinforce once if needed or withdraw to save surviving bots"
 }
@@ -843,7 +847,7 @@ func (m Model) archiveView() string {
 
 func (m Model) helpView() string {
 	if m.state.Faction == game.Corporation {
-		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
+		return "NETRISE // HELP\n\nOBJECTIVE: grow a resilient information business.\n[b] hosting  [a] archive  [s] security desk (+3 ICE capacity)  [i] buy ICE\n[d] R&D  [m] expand market  [M] upkeep  [A] policy  [v] report\n[e] deploy reserve ICE or [x] isolate the highest-value asset during an incursion\n[h] progression guide  [l] event archive  [p] restructuring  [q] save and quit\n\nRevenue and incursions advance only during active play.\n[esc] return"
 	}
 	return "NETRISE // HELP\n\nOBJECTIVE: prepare, breach, extract and automate.\n[c] contract  [b] rig  [u] compiler  [f] fabricate  [a] breach\n[t] targets  [g] upgrades  [A] automation  [i] recon  [y] research  [h] guide  [l] archive\n[p] Identity Burn  [r] reinforce  [w] withdraw\n[q] save and quit\n\nBattles are deterministic and resolve on 1-second ticks.\n[esc] return"
 }
@@ -932,7 +936,7 @@ func (m Model) corpOverviewView() string {
 	}
 	controls := "[b] hosting [a] archive [s] security [i] ICE [d] R&D [m] market [M] upkeep [A] policy [v] report [l] archive [p] restructure [q] quit"
 	if m.state.ActiveBattle != nil {
-		controls = "[e] deploy reserve ICE [q] quit"
+		controls = "[e] deploy reserve ICE [x] isolate asset [q] quit"
 	}
 	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %s\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, m.corpAssetSummary(), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
@@ -1169,12 +1173,15 @@ func (m Model) nextHint() string {
 
 func (m Model) corpNextHint() string {
 	if m.state.ActiveBattle != nil {
-		return "review the intrusion and deploy reserve ICE only when needed"
+		return "review the intrusion; press [e] for reserve ICE or [x] to isolate the highest-value asset"
 	}
 	if m.state.Corp == nil {
 		return "campaign state unavailable"
 	}
 	for _, asset := range m.state.Corp.Assets {
+		if asset.IsolatedUntilTick > m.state.LogicalTick {
+			return fmt.Sprintf("%s is isolated; resume in %d ticks", asset.Name, asset.IsolatedUntilTick-m.state.LogicalTick)
+		}
 		if !asset.Operational {
 			return "capital is recovering; keep active play running to reactivate disabled services"
 		}
@@ -1205,6 +1212,21 @@ func (m Model) corpAssetSummary() string {
 		}
 	}
 	return fmt.Sprintf("%d/%d operational", operational, len(m.state.Corp.Assets))
+}
+
+func (m Model) corpIsolationTargetID() string {
+	if m.state.Corp == nil {
+		return ""
+	}
+	selected := ""
+	bestRate := int64(-1)
+	for _, asset := range m.state.Corp.Assets {
+		if asset.Operational && asset.IsolatedUntilTick <= m.state.LogicalTick && asset.CapitalPerTick > bestRate {
+			selected = asset.ID
+			bestRate = asset.CapitalPerTick
+		}
+	}
+	return selected
 }
 
 func hasUpgrade(s game.State, id string) bool {

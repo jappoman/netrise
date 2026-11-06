@@ -62,6 +62,8 @@ type CorpAssetDefinition struct {
 	UpkeepPerTick    int64  `json:"upkeep_per_tick"`
 	Integrity        int64  `json:"integrity"`
 	ICECapacityBonus int64  `json:"ice_capacity_bonus"`
+	IsolationCost    int64  `json:"isolation_cost_capital"`
+	IsolationTicks   int64  `json:"isolation_ticks"`
 }
 type Layer struct {
 	Integrity int64 `json:"integrity"`
@@ -176,7 +178,7 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, a := range c.CorpAssets {
-		if a.ID == "" || seen[a.ID] || a.Name == "" || a.CostCapital < 0 || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 || a.ICECapacityBonus < 0 {
+		if a.ID == "" || seen[a.ID] || a.Name == "" || a.CostCapital < 0 || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 || a.ICECapacityBonus < 0 || a.IsolationCost < 0 || a.IsolationTicks < 0 {
 			return fmt.Errorf("content: invalid corporation asset %q", a.ID)
 		}
 		seen[a.ID] = true

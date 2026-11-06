@@ -317,7 +317,7 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		}
 		s.Corp.Capital -= mathx.New(definition.CostCapital)
 		previousCapacity := s.Corp.ICECapacity
-		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, Operational: true})
+		s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: definition.ID, Name: definition.Name, CapitalPerTick: definition.CapitalPerTick, UpkeepPerTick: definition.UpkeepPerTick, Integrity: definition.Integrity, Operational: true, IsolationCostCapital: definition.IsolationCost, IsolationTicks: definition.IsolationTicks})
 		s.Corp.ICECapacity += definition.ICECapacityBonus
 		if s.Corp.MaintenanceReserve >= previousCapacity {
 			s.Corp.MaintenanceReserve += definition.ICECapacityBonus
@@ -351,6 +351,45 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.ActiveBattle.DefenderICE += c.Quantity
 		s.ActiveBattle.InterventionUsed = true
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "ICEDeployed", Message: fmt.Sprintf("%d reserve ICE deployed.", c.Quantity)}}, nil
+	case game.CorpIsolateAsset:
+		if s.Faction != game.Corporation || s.Corp == nil || s.ActiveBattle == nil {
+			return s, nil, &game.CommandError{Reason: game.ReasonNoBattle, Detail: "no active Corporation incursion"}
+		}
+		if s.ActiveBattle.InterventionUsed {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "emergency response already used"}
+		}
+		assetIndex := -1
+		for i := range s.Corp.Assets {
+			if s.Corp.Assets[i].ID == c.ID {
+				assetIndex = i
+				break
+			}
+		}
+		if assetIndex < 0 {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown corporation asset"}
+		}
+		asset := &s.Corp.Assets[assetIndex]
+		if !asset.Operational || asset.IsolatedUntilTick > s.LogicalTick {
+			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "asset is not operational"}
+		}
+		cost := asset.IsolationCostCapital
+		duration := asset.IsolationTicks
+		if cost <= 0 {
+			cost = 25
+		}
+		if duration <= 0 {
+			duration = 30
+		}
+		if s.Corp.Capital < mathx.New(cost) {
+			return s, nil, &game.CommandError{Reason: game.ReasonInsufficientCredits, Detail: fmt.Sprintf("asset isolation requires %d capital", cost)}
+		}
+		s.Corp.Capital -= mathx.New(cost)
+		asset.Operational = false
+		asset.IsolatedUntilTick = s.LogicalTick + duration
+		s.ActiveBattle.InterventionUsed = true
+		s.LastBattle = battleResult(s.ActiveBattle, "isolated", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
+		s.ActiveBattle = nil
+		return s, []game.Event{{Tick: s.LogicalTick, Type: "AssetIsolated", Message: fmt.Sprintf("%s isolated for %d ticks; %d capital committed.", asset.Name, duration, cost)}, {Tick: s.LogicalTick, Type: "BattleEnded", Message: "Incursion contained by isolating the asset."}}, nil
 	case game.CorpRunResearch:
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
@@ -575,6 +614,14 @@ func normalizeAutomationBudgets(automation *game.Automation) {
 
 func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []game.Event) {
 	var events []game.Event
+	for i := range s.Corp.Assets {
+		asset := &s.Corp.Assets[i]
+		if asset.IsolatedUntilTick > 0 && asset.IsolatedUntilTick <= s.LogicalTick {
+			asset.IsolatedUntilTick = 0
+			asset.Operational = true
+			events = append(events, game.Event{Tick: s.LogicalTick, Type: "AssetIsolationEnded", Message: asset.Name + " returned after isolation."})
+		}
+	}
 	if s.Corp.MaintenanceAuto && s.Corp.MaintenanceBudget <= 0 {
 		s.Corp.MaintenanceBudget = DefaultAutomationBudget
 	}
@@ -593,6 +640,9 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	availableCapital := s.Corp.Capital.Units()
 	for i := range s.Corp.Assets {
 		asset := &s.Corp.Assets[i]
+		if asset.IsolatedUntilTick > s.LogicalTick {
+			continue
+		}
 		if asset.Operational || asset.UpkeepPerTick <= 0 || availableCapital < asset.UpkeepPerTick {
 			continue
 		}
@@ -942,7 +992,7 @@ func (e *Engine) CorporationGrossRate(s game.State) int64 {
 	effects := e.corpResearchEffects(s)
 	rate := int64(2) + effects.CapitalPerTickBonus
 	for _, asset := range s.Corp.Assets {
-		if asset.Operational {
+		if asset.Operational && asset.IsolatedUntilTick <= s.LogicalTick {
 			rate += asset.CapitalPerTick
 		}
 	}
@@ -1000,7 +1050,7 @@ func (e *Engine) CorporationUpkeepRate(s game.State) int64 {
 	}
 	upkeep := int64(0)
 	for _, asset := range s.Corp.Assets {
-		if asset.Operational {
+		if asset.Operational && asset.IsolatedUntilTick <= s.LogicalTick {
 			upkeep += asset.UpkeepPerTick
 		}
 	}

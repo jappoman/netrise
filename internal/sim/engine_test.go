@@ -593,6 +593,49 @@ func TestCorporationReputationAndExposureBoundRevenue(t *testing.T) {
 	}
 }
 
+func TestCorporationCanIsolateAssetDuringIncursion(t *testing.T) {
+	c := catalog()
+	c.Targets = append(c.Targets, content.Target{ID: "t_01", Name: "Audit Target", Layers: []content.Layer{{Integrity: 30, ICE: 1, Counter: 1}}, TimeLimit: 30})
+	e := New(c, 101)
+	s := NewCorporationState(101)
+	s.Corp.Capital = mathx.New(500)
+	s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: "archive_server", Name: "Archive Server", CapitalPerTick: 7, UpkeepPerTick: 2, Integrity: 140, Operational: true, IsolationCostCapital: 25, IsolationTicks: 3})
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 30})
+	if err != nil || s.ActiveBattle == nil {
+		t.Fatalf("incursion did not start: state=%#v err=%v", s, err)
+	}
+	beforeCapital := s.Corp.Capital
+	s, events, err := e.Apply(s, game.Command{Kind: game.CorpIsolateAsset, ID: "archive_server"})
+	if err != nil || s.ActiveBattle != nil || s.LastBattle == nil || s.LastBattle.Outcome != "isolated" {
+		t.Fatalf("asset isolation did not end incursion: state=%#v events=%#v err=%v", s, events, err)
+	}
+	asset := s.Corp.Assets[len(s.Corp.Assets)-1]
+	if asset.Operational || asset.IsolatedUntilTick != s.LogicalTick+3 || s.Corp.Capital != beforeCapital-mathx.New(25) {
+		t.Fatalf("isolation state/cost incorrect: asset=%#v capital=%s", asset, s.Corp.Capital)
+	}
+	if len(events) != 2 || events[0].Type != "AssetIsolated" || events[1].Type != "BattleEnded" {
+		t.Fatalf("isolation events incorrect: %#v", events)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 2})
+	if err != nil || s.Corp.Assets[len(s.Corp.Assets)-1].Operational {
+		t.Fatalf("isolated asset returned too early: state=%#v events=%#v err=%v", s.Corp.Assets[len(s.Corp.Assets)-1], events, err)
+	}
+	s, events, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+	if err != nil || !s.Corp.Assets[len(s.Corp.Assets)-1].Operational {
+		t.Fatalf("isolated asset did not recover: state=%#v events=%#v err=%v", s.Corp.Assets[len(s.Corp.Assets)-1], events, err)
+	}
+	found := false
+	for _, event := range events {
+		if event.Type == "AssetIsolationEnded" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("isolation recovery event missing: %#v", events)
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

@@ -138,7 +138,7 @@ func validateState(s game.State) error {
 			return errors.New("corporation bounds exceeded")
 		}
 		for _, asset := range c.Assets {
-			if asset.ID == "" || asset.Integrity < 0 || asset.CapitalPerTick < 0 || asset.UpkeepPerTick < 0 {
+			if asset.ID == "" || asset.Integrity < 0 || asset.CapitalPerTick < 0 || asset.UpkeepPerTick < 0 || asset.IsolationCostCapital < 0 || asset.IsolationTicks < 0 || asset.IsolatedUntilTick < 0 {
 				return errors.New("invalid corporation asset")
 			}
 		}

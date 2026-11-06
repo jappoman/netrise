@@ -58,7 +58,7 @@ On layer integrity reaching zero, emit `LayerBreached`, optionally release trapp
 At most **one optional intervention** per fight in MVP:
 - `Reinforce(n)`: once, append up to available uncommitted bots, atomic reserve. Extra heat +5 percentage points.
 - `Withdraw`: always available; ends engagement immediately.
-A Corp player can later `DeployReserveICE(n)` or `IsolateAsset`; these have shared costed action rules. No repeated rapid-click buffs.
+A Corp player can later `DeployReserveICE(n)` or `IsolateAsset`; these have shared costed action rules. In the initial catalog, isolation costs 10–25 capital depending on the asset, suspends its revenue for 15–30 ticks, ends the incursion immediately, and consumes the one intervention. No repeated rapid-click buffs.
 
 ## Reward logic
 A victory earns credits and data bounded by the target's actual **loot pool**. Repeated raids cannot conjure unlimited cash: each target has a data-driven cooldown/refill window and temporarily locks down after a resolution. Win unlocks time-limited access to adjacent assets. High-tier corp archives may give unique data once per run. Failure loses destroyed bots, increases heat, advances the same bounded cooldown. Recovery always remains possible.

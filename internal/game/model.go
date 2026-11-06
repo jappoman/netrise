@@ -25,12 +25,15 @@ type Generator struct {
 	Count int64  `json:"count"`
 }
 type CorpAsset struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	CapitalPerTick int64  `json:"capital_per_tick"`
-	UpkeepPerTick  int64  `json:"upkeep_per_tick"`
-	Integrity      int64  `json:"integrity"`
-	Operational    bool   `json:"operational"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	CapitalPerTick       int64  `json:"capital_per_tick"`
+	UpkeepPerTick        int64  `json:"upkeep_per_tick"`
+	Integrity            int64  `json:"integrity"`
+	Operational          bool   `json:"operational"`
+	IsolationCostCapital int64  `json:"isolation_cost_capital,omitempty"`
+	IsolationTicks       int64  `json:"isolation_ticks,omitempty"`
+	IsolatedUntilTick    int64  `json:"isolated_until_tick,omitempty"`
 }
 type CorpState struct {
 	Capital            mathx.Amount `json:"capital"`
@@ -172,6 +175,7 @@ const (
 	CorpBuildAsset        CommandKind = "corp_build_asset"
 	CorpBuyICE            CommandKind = "corp_buy_ice"
 	CorpDeployICE         CommandKind = "corp_deploy_ice"
+	CorpIsolateAsset      CommandKind = "corp_isolate_asset"
 	CorpRunResearch       CommandKind = "corp_run_research"
 	CorpExpandMarket      CommandKind = "corp_expand_market"
 	CorpEnableMaintenance CommandKind = "corp_enable_maintenance"
