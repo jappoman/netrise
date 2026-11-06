@@ -405,3 +405,7 @@ values without changing the underlying simulation.
 Runner automation budgets and cumulative usage counters are now validated at the
 save boundary, matching Corporation policy validation and rejecting negative
 state before a policy can resume.
+
+Persisted fabrication jobs, battle results and event archive entries now also
+have semantic checks for positive timers, coherent bot accounting, bounded
+meters and logical timestamps before they are resumed by the TUI.

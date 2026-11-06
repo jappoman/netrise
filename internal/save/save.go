@@ -161,10 +161,24 @@ func validateState(s game.State) error {
 	if s.Recon != nil && (s.Recon.TargetID == "" || s.Recon.RemainingTicks < 0) {
 		return errors.New("invalid recon job")
 	}
+	if s.Fabrication != nil && (s.Fabrication.Quantity <= 0 || s.Fabrication.RemainingTicks <= 0) {
+		return errors.New("invalid fabrication job")
+	}
 	if s.ActiveBattle != nil {
 		b := s.ActiveBattle
 		if b.TargetID == "" || b.CommittedBots < 0 || b.LiveBots < 0 || b.LiveBots > b.CommittedBots || b.LayerIndex < 0 || b.LayerIntegrity < 0 || b.DefenderICE < 0 || b.TraceBP < 0 || b.TraceBP > 10000 || b.ElapsedTicks < 0 || b.TimeLimit <= 0 || b.ElapsedTicks > b.TimeLimit {
 			return errors.New("invalid active battle")
+		}
+	}
+	if s.LastBattle != nil {
+		result := s.LastBattle
+		if result.TargetID == "" || result.Outcome == "" || result.CommittedBots < 0 || result.Survivors < 0 || result.Survivors > result.CommittedBots || result.BotsLost < 0 || result.BotsLost > result.CommittedBots || result.BotsLost != result.CommittedBots-result.Survivors || result.CreditsLooted < 0 || result.DataLooted < 0 || result.TraceBP < 0 || result.TraceBP > 10000 || result.HeatBeforeBP < 0 || result.HeatBeforeBP > 10000 || result.HeatAfterBP < 0 || result.HeatAfterBP > 10000 || result.HeatAddedBP < 0 || result.HeatAddedBP > 10000 || result.ElapsedTicks < 0 {
+			return errors.New("invalid battle result")
+		}
+	}
+	for _, event := range s.EventLog {
+		if event.Tick < 0 || event.Tick > s.LogicalTick || event.Type == "" {
+			return errors.New("invalid event log")
 		}
 	}
 	if s.Corp != nil {

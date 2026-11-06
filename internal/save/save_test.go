@@ -27,7 +27,7 @@ func TestRoundTripAndCorruption(t *testing.T) {
 
 func TestRoundTripPreservesProgressionState(t *testing.T) {
 	d := t.TempDir()
-	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, Research: []string{"hardware_01"}, RunExtractedData: 120, GhostKeys: 2, Automation: game.Automation{Contracts: true}, Intel: map[string]int64{"t_01": 45}, EventLog: []game.Event{{Tick: 4, Type: "ResourceProduced", Message: "saved"}}}
+	s := game.State{SchemaVersion: game.CurrentSchema, Faction: game.Runner, LogicalTick: 4, Research: []string{"hardware_01"}, RunExtractedData: 120, GhostKeys: 2, Automation: game.Automation{Contracts: true}, Intel: map[string]int64{"t_01": 45}, EventLog: []game.Event{{Tick: 4, Type: "ResourceProduced", Message: "saved"}}}
 	if err := Write(d, s); err != nil {
 		t.Fatal(err)
 	}
@@ -140,6 +140,24 @@ func TestSaveRejectsNegativeRunnerAutomationCounters(t *testing.T) {
 	}
 	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
 		t.Fatalf("negative Runner automation usage was accepted: %v", err)
+	}
+}
+
+func TestSaveRejectsInvalidBattleAndJobSnapshots(t *testing.T) {
+	d := t.TempDir()
+	invalidBattle := `{"schema_version":1,"faction":"runner","logical_tick":4,"last_battle":{"target_id":"t_01","outcome":"victory","committed_bots":2,"survivors":3,"bots_lost":0}}`
+	if err := os.WriteFile(Path(d), []byte(invalidBattle), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("invalid battle result was accepted: %v", err)
+	}
+	invalidJob := `{"schema_version":1,"faction":"runner","logical_tick":4,"fabrication":{"remaining_ticks":0,"quantity":1}}`
+	if err := os.WriteFile(Path(d), []byte(invalidJob), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Read(d); err == nil || !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("invalid fabrication job was accepted: %v", err)
 	}
 }
 
