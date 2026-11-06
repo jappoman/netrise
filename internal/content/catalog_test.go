@@ -90,3 +90,14 @@ func TestValidateRejectsInvalidCorporationMarketExpansion(t *testing.T) {
 		t.Fatal("negative Corporation market influence cost accepted")
 	}
 }
+
+func TestValidateRejectsUnrepresentableAmountCosts(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"generators":[{"id":"rig","cost":9223372036854775807}]}`))
+	if err == nil {
+		t.Fatal("generator cost beyond fixed-point range accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"targets":[{"id":"target","name":"Target","layers":[{"integrity":1}],"time_limit":1,"loot_credits":9223372036854775807}]}`))
+	if err == nil {
+		t.Fatal("target loot beyond fixed-point range accepted")
+	}
+}

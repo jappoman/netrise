@@ -7,11 +7,25 @@ import (
 
 const Scale int64 = 1000
 
+const MaxUnits int64 = int64(^uint64(0)>>1) / Scale
+
 var ErrOverflow = errors.New("fixed-point arithmetic overflow")
 
 type Amount int64
 
-func New(units int64) Amount  { return Amount(units * Scale) }
+func NewChecked(units int64) (Amount, error) {
+	if units > MaxUnits || units < -MaxUnits {
+		return 0, ErrOverflow
+	}
+	return Amount(units * Scale), nil
+}
+func New(units int64) Amount {
+	amount, err := NewChecked(units)
+	if err != nil {
+		panic(err)
+	}
+	return amount
+}
 func (a Amount) Units() int64 { return int64(a) / Scale }
 func (a Amount) Add(b Amount) (Amount, error) {
 	c := int64(a) + int64(b)

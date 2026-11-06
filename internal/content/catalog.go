@@ -3,6 +3,7 @@ package content
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jappoman/netrise/internal/mathx"
 	"io"
 )
 
@@ -122,21 +123,21 @@ func Validate(c Catalog) error {
 	}
 	seen := map[string]bool{}
 	for _, g := range c.Generators {
-		if g.ID == "" || seen[g.ID] || g.Cost < 0 || g.ComputePerSecond < 0 || g.BotCapacity < 0 {
+		if g.ID == "" || seen[g.ID] || !fitsAmount(g.Cost) || g.ComputePerSecond < 0 || g.BotCapacity < 0 {
 			return fmt.Errorf("content: invalid generator %q", g.ID)
 		}
 		seen[g.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, u := range c.Upgrades {
-		if u.ID == "" || seen[u.ID] || u.Cost < 0 || u.Effects.ComputePerSecondBonus < 0 || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || u.Effects.BotCapacityBonus < 0 || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
+		if u.ID == "" || seen[u.ID] || !fitsAmount(u.Cost) || u.Effects.ComputePerSecondBonus < 0 || u.Effects.HeatReductionPercent < 0 || u.Effects.StealthAttackBonusPercent < 0 || u.Effects.BotCapacityBonus < 0 || u.Effects.FabricationTicksReduction < 0 || u.Effects.ReconTicksReduction < 0 || u.Effects.ResearchDiscountPercent < 0 || u.Effects.HeatReductionPercent > 100 || u.Effects.ResearchDiscountPercent > 100 {
 			return fmt.Errorf("content: invalid upgrade %q", u.ID)
 		}
 		seen[u.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, r := range c.Research {
-		if r.ID == "" || seen[r.ID] || r.Name == "" || r.CostData < 0 || r.Effects.ComputePerSecondBonus < 0 || r.Effects.AttackBonusPercent < 0 || r.Effects.StealthHeatReductionPercent < 0 || r.Effects.AutomationIntervalReduction < 0 {
+		if r.ID == "" || seen[r.ID] || r.Name == "" || !fitsAmount(r.CostData) || r.Effects.ComputePerSecondBonus < 0 || r.Effects.AttackBonusPercent < 0 || r.Effects.StealthHeatReductionPercent < 0 || r.Effects.AutomationIntervalReduction < 0 {
 			return fmt.Errorf("content: invalid research node %q", r.ID)
 		}
 		seen[r.ID] = true
@@ -189,21 +190,21 @@ func Validate(c Catalog) error {
 	}
 	seen = map[string]bool{}
 	for _, a := range c.CorpAssets {
-		if a.ID == "" || seen[a.ID] || a.Name == "" || a.CostCapital < 0 || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 || a.ICECapacityBonus < 0 || a.IsolationCost < 0 || a.IsolationTicks < 0 {
+		if a.ID == "" || seen[a.ID] || a.Name == "" || !fitsAmount(a.CostCapital) || a.CapitalPerTick < 0 || a.UpkeepPerTick < 0 || a.Integrity <= 0 || a.ICECapacityBonus < 0 || a.IsolationCost < 0 || a.IsolationTicks < 0 {
 			return fmt.Errorf("content: invalid corporation asset %q", a.ID)
 		}
 		seen[a.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, m := range c.CorpMarkets {
-		if m.ID == "" || seen[m.ID] || m.Name == "" || m.CostCapital <= 0 || m.DemandBonusBP <= 0 || m.InfluenceCost < 0 || m.InfluenceGain < 0 || m.ValuationGain < 0 {
+		if m.ID == "" || seen[m.ID] || m.Name == "" || m.CostCapital <= 0 || !fitsAmount(m.CostCapital) || m.DemandBonusBP <= 0 || !fitsAmount(m.InfluenceCost) || !fitsAmount(m.InfluenceGain) || m.ValuationGain < 0 {
 			return fmt.Errorf("content: invalid corporation market expansion %q", m.ID)
 		}
 		seen[m.ID] = true
 	}
 	seen = map[string]bool{}
 	for _, t := range c.Targets {
-		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || t.LootCredits < 0 || t.LootData < 0 || t.CooldownTicks < 0 || t.ReconCost < 0 || t.ReconTicks < 0 || t.IntelGain < 0 || t.AssetDamage < 0 {
+		if t.ID == "" || seen[t.ID] || t.Name == "" || len(t.Layers) == 0 || t.TimeLimit <= 0 || !fitsAmount(t.LootCredits) || !fitsAmount(t.LootData) || t.CooldownTicks < 0 || !fitsAmount(t.ReconCost) || t.ReconTicks < 0 || t.IntelGain < 0 || t.AssetDamage < 0 {
 			return fmt.Errorf("content: invalid target %q", t.ID)
 		}
 		seen[t.ID] = true
@@ -223,3 +224,5 @@ func Validate(c Catalog) error {
 	}
 	return nil
 }
+
+func fitsAmount(units int64) bool { return units >= 0 && units <= mathx.MaxUnits }
