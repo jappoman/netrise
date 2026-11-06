@@ -43,6 +43,17 @@ type ResearchEffects struct {
 	StealthHeatReductionPercent int64 `json:"stealth_heat_reduction_percent"`
 	AutomationIntervalReduction int64 `json:"automation_interval_reduction"`
 }
+type CorpResearchNode struct {
+	ID          string              `json:"id"`
+	Name        string              `json:"name"`
+	Threshold   int64               `json:"threshold"`
+	Description string              `json:"description"`
+	Effects     CorpResearchEffects `json:"effects"`
+}
+type CorpResearchEffects struct {
+	CapitalPerTickBonus    int64 `json:"capital_per_tick_bonus"`
+	UpkeepReductionPercent int64 `json:"upkeep_reduction_percent"`
+}
 type CorpAssetDefinition struct {
 	ID             string `json:"id"`
 	Name           string `json:"name"`
@@ -75,6 +86,7 @@ type Catalog struct {
 	Generators    []Generator           `json:"generators"`
 	Upgrades      []Upgrade             `json:"upgrades"`
 	Research      []ResearchNode        `json:"research"`
+	CorpResearch  []CorpResearchNode    `json:"corp_research"`
 	CorpAssets    []CorpAssetDefinition `json:"corp_assets"`
 	Targets       []Target              `json:"targets"`
 }
@@ -112,6 +124,17 @@ func Validate(c Catalog) error {
 		if r.ID == "" || seen[r.ID] || r.Name == "" || r.CostData < 0 || r.Effects.ComputePerSecondBonus < 0 || r.Effects.AttackBonusPercent < 0 || r.Effects.StealthHeatReductionPercent < 0 || r.Effects.AutomationIntervalReduction < 0 {
 			return fmt.Errorf("content: invalid research node %q", r.ID)
 		}
+		seen[r.ID] = true
+	}
+	corpSeen := map[string]bool{}
+	for _, r := range c.CorpResearch {
+		if r.ID == "" || corpSeen[r.ID] || r.Name == "" || r.Threshold <= 0 || r.Effects.CapitalPerTickBonus < 0 || r.Effects.UpkeepReductionPercent < 0 || r.Effects.UpkeepReductionPercent > 100 {
+			return fmt.Errorf("content: invalid corporation research node %q", r.ID)
+		}
+		corpSeen[r.ID] = true
+	}
+	seen = map[string]bool{}
+	for _, r := range c.Research {
 		seen[r.ID] = true
 	}
 	for _, r := range c.Research {

@@ -17,8 +17,7 @@ prerequisites, a data-funded research command and TUI panel, plus the
 transactional Runner `Identity Burn` prestige reset with Ghost Keys and
 run-scoped extracted-data accounting.
 
-The Corporation campaign, broader research effects, and richer prestige
-confirmation remain later work. The TUI now
+Richer prestige confirmation remains later work. The TUI now
 exposes contract collection, Salvaged Rig purchase, one-bot fabrication,
 three attack doctrines, a 75% default commitment, one reserve-bot
 reinforcement, and persistent save/load. A save records UTC time and
@@ -122,6 +121,12 @@ Corporation now also has a derived Economic Report (`[v]`) showing demand-scaled
 gross revenue, active upkeep, operating margin, compute flow, policy states,
 reserve ICE and next-tick capital/compute projections. It stores no duplicate
 economy values and is available only through the shared state/TUI read path.
+
+Corporation R&D now completes validated threshold technologies from the
+`corp_research` catalog. Network Efficiency adds capital per tick and Lean
+Operations reduces operational upkeep; completed IDs are persisted, displayed
+in the Corporation report and reset by Restructuring. Rate calculations are
+exposed by the shared engine so the TUI cannot drift from simulation rules.
 
 The integration suite now runs a deterministic combat-balance smoke sweep across
 all five targets, three doctrines, four commitment levels and seeds 1..10. It

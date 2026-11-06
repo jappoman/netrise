@@ -47,11 +47,17 @@ exact before/after effect.
 ## Initial research branches
 Runner: **Hardware**, **Intrusion**, **Anonymity**, **Automation**.
 Corp: **Infrastructure**, **Monetization**, **Security**, **Intelligence**.
-Research nodes have stable IDs, costs, prerequisite lists, a validated effect DSL
+Runner research nodes have stable IDs, costs, prerequisite lists, a validated effect DSL
 (`compute_per_second_bonus`, `attack_bonus_percent`,
 `stealth_heat_reduction_percent`, and `automation_interval_reduction`) and
 descriptive text. Effects are aggregated by the simulation only after a node is
 completed.
+
+Corporation R&D uses a separate threshold catalog (`corp_research`) rather than
+sharing Runner prerequisites. Completed technology IDs are persisted on the
+Corporation state; the current seed includes Network Efficiency (capital per
+tick) and Lean Operations (asset upkeep reduction). Effects are aggregated by
+the engine, so the report and active economy use the same source of truth.
 
 ## Three doctrines
 Balanced (safe default), Stealth (lower heat/attrition with weaker attack), Overload (faster power with extra trace and losses). Each receives a distinct short textual description and color-neutral icon/text cue.

@@ -166,6 +166,24 @@ func TestCorporationReportShowsDerivedMarginAndProjection(t *testing.T) {
 	}
 }
 
+func TestCorporationReportShowsCompletedTechnology(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		CorpResearch:  []content.CorpResearchNode{{ID: "efficiency", Name: "Network Efficiency", Threshold: 20}},
+	}
+	state := sim.NewCorporationState(9)
+	state.Corp.Research = mathx.New(20)
+	state.Corp.CompletedResearch = []string{"efficiency"}
+	m := New(state, sim.New(catalog, 9), "")
+	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "v", Code: 'v'}))
+	view := updated.(Model).View().Content
+	for _, expected := range []string{"RESEARCH: 20", "TECHNOLOGIES: Network Efficiency"} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("Corporation report omitted %q: %s", expected, view)
+		}
+	}
+}
+
 func TestResearchEffectTextIsPlayerReadable(t *testing.T) {
 	text := researchEffectText(content.ResearchEffects{
 		ComputePerSecondBonus:       1,

@@ -36,6 +36,7 @@ type CorpState struct {
 	Capital            mathx.Amount `json:"capital"`
 	Compute            mathx.Amount `json:"compute"`
 	Research           mathx.Amount `json:"research"`
+	CompletedResearch  []string     `json:"completed_research,omitempty"`
 	Influence          mathx.Amount `json:"influence"`
 	ICE                int64        `json:"ice"`
 	ICECapacity        int64        `json:"ice_capacity"`

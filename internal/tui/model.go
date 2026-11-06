@@ -918,7 +918,7 @@ func (m Model) corpOverviewView() string {
 	if m.state.ActiveBattle != nil {
 		controls = "[e] deploy reserve ICE [q] quit"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, corpCapitalRate(corp), corp.Compute, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
+	return fmt.Sprintf("NETRISE // CORPORATION\n\nCAPITAL %s (+%d/tick)\nCOMPUTE %s\nRESEARCH %s\nICE %d/%d\n%s\nREPUTATION %d%%\nEXPOSURE %d%%\nASSETS %d\nTICK %d\n%s\n%s\n\n%s\nNEXT: %s\n%s", corp.Capital, m.engine.CorporationGrossRate(m.state), corp.Compute, corp.Research, corp.ICE, corp.ICECapacity, m.corpMaintenanceSummary(), corp.ReputationBP/100, corp.ExposureBP/100, len(corp.Assets), m.state.LogicalTick, battle, m.offlineLine(), controls, m.corpNextHint(), m.status)
 }
 
 func (m Model) corpReportView() string {
@@ -926,8 +926,8 @@ func (m Model) corpReportView() string {
 	if corp == nil {
 		return "NETRISE // CORPORATION REPORT\n\nCorporation state unavailable.\n[esc] overview"
 	}
-	gross := corpGrossRate(corp)
-	upkeep := corpUpkeepRate(corp)
+	gross := m.engine.CorporationGrossRate(m.state)
+	upkeep := m.engine.CorporationUpkeepRate(m.state)
 	net := gross - upkeep
 	if net < 0 {
 		net = 0
@@ -945,7 +945,7 @@ func (m Model) corpReportView() string {
 		projectedCapital -= 10
 		projectedMaintenance = "-10 capital / +1 ICE"
 	}
-	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nCOMPUTE: %s (+2/tick)\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.Compute, automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
+	return fmt.Sprintf("NETRISE // CORPORATION REPORT\n\nCAPITAL: %s\nGROSS REVENUE: +%d/tick\nUPKEEP: -%d/tick\nOPERATING MARGIN: +%d/tick\nDEMAND: %d%%\nCOMPUTE: %s (+2/tick)\nRESEARCH: %s\nTECHNOLOGIES: %s\nR&D POLICY: %s\nMAINTENANCE: %s\nICE RESERVE: %d/%d\n\nNEXT TICK PROJECTION\nCAPITAL: %d\nCOMPUTE: %d\nR&D: %s\nMAINTENANCE: %s\n\n[v/esc] overview  [A] policy configuration", corp.Capital, gross, upkeep, net, corp.DemandBP/100, corp.Compute, corp.Research, m.corpTechnologySummary(), automationState(corp.ResearchAuto), automationState(corp.MaintenanceAuto), corp.ICE, corp.MaintenanceReserve, projectedCapital, projectedCompute, projectedRND, projectedMaintenance)
 }
 
 func (m Model) offlineLine() string {
@@ -993,32 +993,22 @@ func integerSqrtPreview(value int64) int64 {
 	return high
 }
 
-func corpCapitalRate(corp *game.CorpState) int64 {
-	return corpGrossRate(corp)
-}
-
-func corpGrossRate(corp *game.CorpState) int64 {
-	rate := int64(2)
-	for _, asset := range corp.Assets {
-		if asset.Operational {
-			rate += asset.CapitalPerTick
+func (m Model) corpTechnologySummary() string {
+	if m.state.Corp == nil || len(m.state.Corp.CompletedResearch) == 0 {
+		return "none"
+	}
+	names := make([]string, 0, len(m.state.Corp.CompletedResearch))
+	for _, id := range m.state.Corp.CompletedResearch {
+		name := id
+		for _, node := range m.engine.Catalog.CorpResearch {
+			if node.ID == id {
+				name = node.Name
+				break
+			}
 		}
+		names = append(names, name)
 	}
-	demand := corp.DemandBP
-	if demand <= 0 {
-		demand = 10000
-	}
-	return rate * demand / 10000
-}
-
-func corpUpkeepRate(corp *game.CorpState) int64 {
-	rate := int64(0)
-	for _, asset := range corp.Assets {
-		if asset.Operational {
-			rate += asset.UpkeepPerTick
-		}
-	}
-	return rate
+	return strings.Join(names, ", ")
 }
 
 func (m Model) nextResearchID() string {

@@ -65,7 +65,7 @@ Initial wallet 25 credits, initial compute capacity 2/s from starter machine, 20
 - Recon uses time and credits but improves estimate of enemy defense and rewards.
 - Heat may temporarily raise contract friction or recon cost; never terminate the run.
 
-## Starter Corp content (planned follow-up)
+## Starter Corp content
 | Generator / action | Initial cost | Output / effect |
 | --- | --- | --- |
 | Starter client contract | free | +2 capital/s while serviced |
@@ -76,6 +76,11 @@ Initial wallet 25 credits, initial compute capacity 2/s from starter machine, 20
 | Research department | 200 capital | +1 research/s, consumes 1 compute/s |
 
 Corp economics must include **market demand** and marginal operating costs in later tiers; not only bigger income multipliers. Every successful expansion exposes additional value, incentivizing better security.
+
+Corporation R&D converts capital into threshold-based technologies. Network
+Efficiency improves capital flow, while Lean Operations reduces upkeep on
+operational assets. These technologies are data-driven, persist during the
+campaign and reset on Restructuring with the rest of the run state.
 
 ## Anti-exploit rules
 - No negative balances; spending is validated and atomic.

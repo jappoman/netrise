@@ -7,6 +7,7 @@ import (
 
 	"github.com/jappoman/netrise/internal/content"
 	"github.com/jappoman/netrise/internal/game"
+	"github.com/jappoman/netrise/internal/mathx"
 	"github.com/jappoman/netrise/internal/sim"
 )
 
@@ -70,5 +71,36 @@ func TestFreshCorporationCampaignEndToEnd(t *testing.T) {
 	apply(game.Command{Kind: game.CorpRestructure})
 	if s.PrestigeCount != 1 || s.Corp.PatentShares != 1 || len(s.Corp.Assets) != 1 || s.Corp.ExposureBP != 0 {
 		t.Fatalf("restructuring did not reset/retain correctly: state=%#v", s)
+	}
+}
+
+func TestCorporationResearchTechnologyEndToEnd(t *testing.T) {
+	f, err := os.Open(filepath.Join("..", "..", "assets", "content", "catalog.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := content.Load(f)
+	_ = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := sim.New(catalog, 96)
+	s := sim.NewCorporationState(96)
+	s.Corp.Capital = mathx.New(500)
+	apply := func(command game.Command) {
+		var commandErr error
+		s, _, commandErr = e.Apply(s, command)
+		if commandErr != nil {
+			t.Fatal(commandErr)
+		}
+	}
+	baseRate := e.CorporationGrossRate(s)
+	apply(game.Command{Kind: game.CorpRunResearch})
+	apply(game.Command{Kind: game.CorpRunResearch})
+	if len(s.Corp.CompletedResearch) != 1 || s.Corp.CompletedResearch[0] != "network_efficiency" {
+		t.Fatalf("technology did not unlock through R&D commands: %#v", s.Corp)
+	}
+	if e.CorporationGrossRate(s) != baseRate+1 {
+		t.Fatalf("technology effect missing from economic rate: before=%d after=%d", baseRate, e.CorporationGrossRate(s))
 	}
 }

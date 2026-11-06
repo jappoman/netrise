@@ -42,7 +42,7 @@ Use stable IDs, typed enums and explicit versioning, not ad-hoc dynamic maps for
 
 ## Commands and events
 Commands (examples): `CollectContract`, `BuyGenerator`, `QueueFabrication`, `StartRecon`, `StartBattle`, `ReinforceBattle`, `WithdrawBattle`, `SetAutomationPolicy`, `AllocateCompute`, `Prestige`, `AdvanceTicks`.
-Events: `ResourceProduced`, `ResourceSpent`, `UpgradePurchased`, `ReconCompleted`, `BattleStarted`, `LayerBreached`, `BotsLost`, `BattleEnded`, `AutomationProduced`, `AutomationQueued`, `AutomationStopped`, `MaintenanceRestocked`, `MaintenanceStopped`, `CorpPolicyConfigured`, `CorpResearchAutomated`, `CorpResearchStopped`, `AccessGranted`, `PrestigeCompleted`, `OfflineReconciled`.
+Events: `ResourceProduced`, `ResourceSpent`, `UpgradePurchased`, `ReconCompleted`, `BattleStarted`, `LayerBreached`, `BotsLost`, `BattleEnded`, `AutomationProduced`, `AutomationQueued`, `AutomationStopped`, `MaintenanceRestocked`, `MaintenanceStopped`, `CorpPolicyConfigured`, `CorpResearch`, `CorpResearchAutomated`, `CorpResearchStopped`, `CorpTechnologyCompleted`, `AccessGranted`, `PrestigeCompleted`, `OfflineReconciled`.
 Each command validates before mutation; return typed error/reason, e.g. `ErrInsufficientBots`, `ErrTargetUnreachable`.
 
 ## Tick order and RNG

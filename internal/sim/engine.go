@@ -348,7 +348,9 @@ func (e *Engine) apply(s game.State, c game.Command) (game.State, []game.Event, 
 		s.Corp.Capital -= cost
 		s.Corp.Research, _ = s.Corp.Research.Add(mathx.New(10))
 		s.Corp.RunValuation += 200
-		return s, []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}, nil
+		events := []game.Event{{Tick: s.LogicalTick, Type: "CorpResearch", Message: "R&D department completed a systems study."}}
+		events = append(events, e.completeCorpResearch(&s)...)
+		return s, events, nil
 	case game.CorpExpandMarket:
 		if s.Faction != game.Corporation || s.Corp == nil {
 			return s, nil, &game.CommandError{Reason: game.ReasonFactionMismatch, Detail: "corporation campaign required"}
@@ -561,18 +563,11 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	if s.Corp.ResearchAuto && s.Corp.ResearchBudget <= 0 {
 		s.Corp.ResearchBudget = DefaultAutomationBudget
 	}
-	rate := int64(2)
-	upkeep := int64(0)
-	for _, asset := range s.Corp.Assets {
-		if asset.Operational {
-			rate += asset.CapitalPerTick
-			upkeep += asset.UpkeepPerTick
-		}
-	}
+	rate := e.CorporationGrossRate(s)
+	upkeep := e.CorporationUpkeepRate(s)
 	if s.Corp.DemandBP <= 0 {
 		s.Corp.DemandBP = 10000
 	}
-	rate = rate * s.Corp.DemandBP / 10000
 	s.Corp.Capital, _ = s.Corp.Capital.Add(mathx.New(rate))
 	if upkeep > 0 && s.Corp.Capital >= mathx.New(upkeep) {
 		s.Corp.Capital -= mathx.New(upkeep)
@@ -606,6 +601,7 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 			s.Corp.ResearchSpent += 200
 			s.Corp.RunValuation += 200
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchAutomated", Message: "Automated R&D completed a systems study."})
+			events = append(events, e.completeCorpResearch(&s)...)
 			if s.Corp.ResearchSpent >= s.Corp.ResearchBudget {
 				s.Corp.ResearchAuto = false
 				events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpResearchStopped", Message: "Automated R&D stopped: budget reached."})
@@ -614,6 +610,40 @@ func (e *Engine) advanceCorporation(s game.State, safeOnly bool) (game.State, []
 	}
 	s.Corp.Compute, _ = s.Corp.Compute.Add(mathx.New(2))
 	return s, events
+}
+
+func (e *Engine) completeCorpResearch(s *game.State) []game.Event {
+	if s.Corp == nil {
+		return nil
+	}
+	var events []game.Event
+	researchUnits := s.Corp.Research.Units()
+	for _, node := range e.Catalog.CorpResearch {
+		if researchUnits < node.Threshold || contains(s.Corp.CompletedResearch, node.ID) {
+			continue
+		}
+		s.Corp.CompletedResearch = append(s.Corp.CompletedResearch, node.ID)
+		events = append(events, game.Event{Tick: s.LogicalTick, Type: "CorpTechnologyCompleted", Message: node.Name + " technology completed."})
+	}
+	return events
+}
+
+func (e *Engine) corpResearchEffects(s game.State) content.CorpResearchEffects {
+	var effects content.CorpResearchEffects
+	if s.Corp == nil {
+		return effects
+	}
+	for _, node := range e.Catalog.CorpResearch {
+		if !contains(s.Corp.CompletedResearch, node.ID) {
+			continue
+		}
+		effects.CapitalPerTickBonus += node.Effects.CapitalPerTickBonus
+		effects.UpkeepReductionPercent += node.Effects.UpkeepReductionPercent
+	}
+	if effects.UpkeepReductionPercent > 100 {
+		effects.UpkeepReductionPercent = 100
+	}
+	return effects
 }
 
 func (e *Engine) startCorporationIncursion(s game.State, events []game.Event) (game.State, []game.Event) {
@@ -856,6 +886,42 @@ func (e *Engine) ComputeRate(s game.State) int64 {
 		}
 	}
 	return rate + e.researchEffects(s).ComputePerSecondBonus + e.upgradeEffects(s).ComputePerSecondBonus
+}
+
+// CorporationGrossRate returns demand-adjusted capital production for the
+// current Corporation state, including completed R&D effects.
+func (e *Engine) CorporationGrossRate(s game.State) int64 {
+	if s.Corp == nil {
+		return 0
+	}
+	effects := e.corpResearchEffects(s)
+	rate := int64(2) + effects.CapitalPerTickBonus
+	for _, asset := range s.Corp.Assets {
+		if asset.Operational {
+			rate += asset.CapitalPerTick
+		}
+	}
+	demand := s.Corp.DemandBP
+	if demand <= 0 {
+		demand = 10000
+	}
+	return rate * demand / 10000
+}
+
+// CorporationUpkeepRate returns current operational upkeep after completed
+// Corporation R&D reductions.
+func (e *Engine) CorporationUpkeepRate(s game.State) int64 {
+	if s.Corp == nil {
+		return 0
+	}
+	upkeep := int64(0)
+	for _, asset := range s.Corp.Assets {
+		if asset.Operational {
+			upkeep += asset.UpkeepPerTick
+		}
+	}
+	reduction := e.corpResearchEffects(s).UpkeepReductionPercent
+	return upkeep * (100 - reduction) / 100
 }
 
 // EstimateBattle provides a deterministic, intentionally conservative preflight

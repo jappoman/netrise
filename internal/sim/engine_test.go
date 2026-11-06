@@ -449,6 +449,43 @@ func TestCorporationResearchAllocationHonorsBudgetAndComputeReserve(t *testing.T
 	}
 }
 
+func TestCorporationResearchCompletesDataDrivenTechnology(t *testing.T) {
+	c := catalog()
+	c.CorpResearch = []content.CorpResearchNode{{
+		ID: "efficiency", Name: "Efficiency", Threshold: 20,
+		Effects: content.CorpResearchEffects{CapitalPerTickBonus: 3, UpkeepReductionPercent: 25},
+	}}
+	e := New(c, 95)
+	s := NewCorporationState(95)
+	s.Corp.Assets = append(s.Corp.Assets, game.CorpAsset{ID: "costly", Name: "Costly", UpkeepPerTick: 4, Operational: true})
+	s.Corp.Capital = mathx.New(500)
+	baseRate := e.CorporationGrossRate(s)
+	baseUpkeep := e.CorporationUpkeepRate(s)
+	s, _, err := e.Apply(s, game.Command{Kind: game.CorpRunResearch})
+	if err != nil || len(s.Corp.CompletedResearch) != 0 {
+		t.Fatalf("technology completed before threshold: state=%#v err=%v", s.Corp, err)
+	}
+	s, events, err := e.Apply(s, game.Command{Kind: game.CorpRunResearch})
+	if err != nil || len(s.Corp.CompletedResearch) != 1 || s.Corp.CompletedResearch[0] != "efficiency" {
+		t.Fatalf("technology did not complete at threshold: state=%#v events=%#v err=%v", s.Corp, events, err)
+	}
+	if e.CorporationGrossRate(s) != baseRate+3 {
+		t.Fatalf("technology effect did not change gross rate: before=%d after=%d", baseRate, e.CorporationGrossRate(s))
+	}
+	if e.CorporationUpkeepRate(s) != baseUpkeep*75/100 {
+		t.Fatalf("technology effect did not reduce upkeep: before=%d after=%d", baseUpkeep, e.CorporationUpkeepRate(s))
+	}
+	found := false
+	for _, event := range events {
+		if event.Type == "CorpTechnologyCompleted" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("technology completion event missing: %#v", events)
+	}
+}
+
 func TestResearchPrerequisitesAndIdentityBurnAreAtomic(t *testing.T) {
 	e := New(catalog(), 33)
 	s := NewState(33)

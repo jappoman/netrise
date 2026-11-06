@@ -32,3 +32,14 @@ func TestValidateRejectsInvalidUpgradeEffects(t *testing.T) {
 		t.Fatal("invalid upgrade effect accepted")
 	}
 }
+
+func TestValidateRejectsInvalidCorporationResearch(t *testing.T) {
+	_, err := Load(strings.NewReader(`{"schema_version":1,"corp_research":[{"id":"efficiency","name":"Efficiency","threshold":0}]}`))
+	if err == nil {
+		t.Fatal("zero-threshold Corporation research accepted")
+	}
+	_, err = Load(strings.NewReader(`{"schema_version":1,"corp_research":[{"id":"lean","name":"Lean","threshold":10,"effects":{"upkeep_reduction_percent":101}}]}`))
+	if err == nil {
+		t.Fatal("over-cap Corporation research effect accepted")
+	}
+}

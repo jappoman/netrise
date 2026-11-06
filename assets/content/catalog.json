@@ -23,6 +23,10 @@
     {"id":"anonymity_01","name":"Quiet Relay","cost_data":20,"prerequisites":["hardware_01"],"description":"Improves stealth doctrine.","effects":{"stealth_heat_reduction_percent":15}},
     {"id":"automation_01","name":"Routine Scripting","cost_data":30,"prerequisites":["intrusion_01"],"description":"Improves safe automation budgets.","effects":{"automation_interval_reduction":1}}
   ],
+  "corp_research": [
+    {"id":"network_efficiency","name":"Network Efficiency","threshold":20,"description":"Streamlines service routing and adds one capital per tick.","effects":{"capital_per_tick_bonus":1}},
+    {"id":"lean_operations","name":"Lean Operations","threshold":40,"description":"Reduces the upkeep burden of operational assets.","effects":{"upkeep_reduction_percent":25}}
+  ],
   "corp_assets": [
     {"id":"transit_hosting","name":"Transit Hosting","cost_capital":75,"capital_per_tick":4,"upkeep_per_tick":0,"integrity":100},
     {"id":"archive_server","name":"Archive Server","cost_capital":150,"capital_per_tick":7,"upkeep_per_tick":2,"integrity":140},
