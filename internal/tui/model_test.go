@@ -646,7 +646,7 @@ func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 	m := New(state, sim.New(catalog, 5), "")
 	updated, _ := m.Update(tea.KeyPressMsg(tea.Key{Text: "t", Code: 't'}))
 	m = updated.(Model)
-	if !strings.Contains(m.targetsView(), "intel:0% (unknown)") || !strings.Contains(m.targetsView(), "recon ready: 10 CR / 5 ticks [i]") {
+	if !strings.Contains(m.targetsView(), "intel:0% (unknown)") || !strings.Contains(m.targetsView(), "ICE:1-2") || !strings.Contains(m.targetsView(), "recon ready: 10 CR / 5 ticks [i]") {
 		t.Fatalf("target screen omitted recon guidance: %s", m.targetsView())
 	}
 	updated, _ = m.Update(tea.KeyPressMsg(tea.Key{Text: "i", Code: 'i'}))
@@ -658,6 +658,23 @@ func TestTargetScreenExplainsIntelAndStartsRecon(t *testing.T) {
 	m.state.TargetCooldowns = map[string]int64{"target": 7}
 	if !strings.Contains(m.targetsView(), "COOLDOWN") || !strings.Contains(m.targetsView(), "cooldown active: 7 ticks") {
 		t.Fatalf("target screen omitted cooldown guidance: %s", m.targetsView())
+	}
+}
+
+func TestPreflightShowsIntelDrivenICESummary(t *testing.T) {
+	catalog := content.Catalog{
+		SchemaVersion: 1,
+		Targets:       []content.Target{{ID: "target", Name: "Relay", Reachable: true, Layers: []content.Layer{{Integrity: 20, ICE: 2}, {Integrity: 10, ICE: 3}}, TimeLimit: 30}},
+	}
+	state := sim.NewState(5)
+	state.Intel = map[string]int64{"target": 100}
+	state.Resources.Bots = 8
+	state.Resources.BotCapacity = 8
+	m := New(state, sim.New(catalog, 5), "")
+	m.screen = "preflight"
+	view := m.preflightView()
+	if !strings.Contains(view, "ESTIMATED ICE: 5") {
+		t.Fatalf("preflight omitted exact intel-driven ICE estimate: %s", view)
 	}
 }
 

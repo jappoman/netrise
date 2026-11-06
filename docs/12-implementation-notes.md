@@ -304,3 +304,8 @@ missing links, preventing catalog-authored progression softlocks.
 Active play now recovers Runner heat and Corporation exposure by 25 basis
 points per safe tick when no battle is running. Hostile/offline reconciliation
 does not add a new adverse action or resolve a battle while closed.
+
+Target lists and Runner preflight now show a deterministic ICE estimate range
+derived from target layers and current intel. The range narrows to the exact
+catalog value at 100% intel, keeping uncertainty visible without exposing
+hidden defense values prematurely.
