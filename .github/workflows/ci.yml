@@ -32,6 +32,20 @@ jobs:
         run: go test -race ./...
       - name: Build
         run: go build ./cmd/netrise
+      - name: Packaged bundle smoke flow
+        shell: bash
+        run: |
+          bundle="$RUNNER_TEMP/netrise-bundle-smoke"
+          rm -rf "$bundle"
+          mkdir -p "$bundle/assets/content"
+          if [ "${{ runner.os }}" = "Windows" ]; then exe="netrise.exe"; else exe="netrise"; fi
+          go build -trimpath -o "$bundle/$exe" ./cmd/netrise
+          cp assets/content/catalog.json "$bundle/assets/content/catalog.json"
+          cd "$RUNNER_TEMP"
+          "$bundle/$exe" --version
+          "$bundle/$exe" validate-content
+          "$bundle/$exe" simulate --faction runner --seed 17 --ticks 600
+          "$bundle/$exe" simulate --faction corp --seed 17 --ticks 600
       - name: CLI smoke flow
         run: |
           go run ./cmd/netrise --version
