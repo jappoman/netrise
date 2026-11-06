@@ -26,6 +26,7 @@ type Report struct {
 type StrategyTargetSummary struct {
 	TargetID             string        `json:"target_id"`
 	Doctrine             game.Doctrine `json:"doctrine"`
+	Commitment           int64         `json:"commitment"`
 	Attempts             int64         `json:"attempts"`
 	Victories            int64         `json:"victories"`
 	Defeats              int64         `json:"defeats"`
@@ -46,9 +47,9 @@ func Run(catalog content.Catalog, seedFrom, seedTo int64) (Report, error) {
 	report := Report{SeedFrom: seedFrom, SeedTo: seedTo}
 	for _, target := range accessible.Targets {
 		for _, doctrine := range doctrines {
-			summary := StrategyTargetSummary{TargetID: target.ID, Doctrine: doctrine}
-			for seed := seedFrom; ; seed++ {
-				for _, commitment := range commitments {
+			for _, commitment := range commitments {
+				summary := StrategyTargetSummary{TargetID: target.ID, Doctrine: doctrine, Commitment: commitment}
+				for seed := seedFrom; ; seed++ {
 					result, err := resolve(accessible, target.ID, seed, commitment, doctrine)
 					if err != nil {
 						return Report{}, err
@@ -68,15 +69,15 @@ func Run(catalog content.Catalog, seedFrom, seedTo int64) (Report, error) {
 					default:
 						return Report{}, fmt.Errorf("target %s produced unknown outcome %q", target.ID, result.Outcome)
 					}
+					if seed == seedTo {
+						break
+					}
 				}
-				if seed == seedTo {
-					break
-				}
+				summary.AverageDurationTicks /= summary.Attempts
+				summary.AverageBotsLost /= summary.Attempts
+				summary.AverageHeatAddedBP /= summary.Attempts
+				report.Results = append(report.Results, summary)
 			}
-			summary.AverageDurationTicks /= summary.Attempts
-			summary.AverageBotsLost /= summary.Attempts
-			summary.AverageHeatAddedBP /= summary.Attempts
-			report.Results = append(report.Results, summary)
 		}
 	}
 	return report, nil

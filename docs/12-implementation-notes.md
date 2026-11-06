@@ -499,5 +499,5 @@ projection and `NEXT:` rail remain visible together with the full economic
 metrics.
 
 The headless balance report now reuses the production combat engine for a
-deterministic target/doctrine/commitment matrix, emitting aggregate outcomes,
-duration, attrition and heat metrics for local catalog iteration.
+deterministic target/doctrine/commitment matrix, emitting outcomes, duration,
+attrition and heat per commitment for local catalog iteration.

@@ -26,11 +26,11 @@ func TestRunProducesDeterministicStrategyMatrix(t *testing.T) {
 	if !reflect.DeepEqual(first, second) {
 		t.Fatalf("balance report was not deterministic:\nfirst=%#v\nsecond=%#v", first, second)
 	}
-	if first.Attempts != 36 || len(first.Results) != 3 {
+	if first.Attempts != 36 || len(first.Results) != 12 {
 		t.Fatalf("unexpected matrix size: %#v", first)
 	}
 	for _, result := range first.Results {
-		if result.Attempts != 12 || result.Victories+result.Defeats+result.Timeouts != result.Attempts || result.AverageDurationTicks <= 0 {
+		if result.Attempts != 3 || result.Commitment <= 0 || result.Victories+result.Defeats+result.Timeouts != result.Attempts || result.AverageDurationTicks <= 0 {
 			t.Fatalf("invalid strategy summary: %#v", result)
 		}
 	}
