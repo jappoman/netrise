@@ -17,8 +17,9 @@ go run ./cmd/netrise corp --data-dir ./tmp/playtest-corp
 ```
 
 The `playtest` reports are deterministic JSON baselines for the scripted first
-loop. Use them to compare catalog changes before and after a manual session;
-they are not a replacement for observing the player-facing TUI.
+loop, including recon and battle checkpoint ticks. Use them to compare catalog
+changes before and after a manual session; they are not a replacement for
+observing the player-facing TUI.
 
 Use separate data directories for the two factions. Delete those temporary
 directories between fresh-run sessions; keep one copy when testing reopen and

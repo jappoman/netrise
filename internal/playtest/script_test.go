@@ -40,5 +40,11 @@ func TestRunnerAndCorporationPlaytestScriptsAreDeterministic(t *testing.T) {
 		if first.Events == 0 || first.LogicalTick <= 0 {
 			t.Fatalf("%s playtest made no progress: %#v", faction, first)
 		}
+		if first.BattleStartedAt <= 0 || first.BattleEndedAt < first.BattleStartedAt {
+			t.Fatalf("%s playtest did not expose ordered battle timing: %#v", faction, first)
+		}
+		if faction == game.Runner && first.ReconCompletedAt <= 0 {
+			t.Fatalf("Runner playtest did not expose recon timing: %#v", first)
+		}
 	}
 }

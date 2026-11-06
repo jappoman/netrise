@@ -13,6 +13,9 @@ type Report struct {
 	LogicalTick      int64        `json:"logical_tick"`
 	Events           int          `json:"events"`
 	FirstBattle      string       `json:"first_battle,omitempty"`
+	ReconCompletedAt int64        `json:"recon_completed_at,omitempty"`
+	BattleStartedAt  int64        `json:"battle_started_at,omitempty"`
+	BattleEndedAt    int64        `json:"battle_ended_at,omitempty"`
 	CompletedTargets []string     `json:"completed_targets,omitempty"`
 	RunnerCredits    int64        `json:"runner_credits_units,omitempty"`
 	RunnerBots       int64        `json:"runner_bots,omitempty"`
@@ -46,6 +49,22 @@ func Run(catalog content.Catalog, faction game.Faction, seed int64) (Report, err
 	}
 
 	report := Report{Seed: seed, Faction: faction, LogicalTick: state.LogicalTick, Events: len(state.EventLog), FirstBattle: battleOutcome(state), CompletedTargets: append([]string(nil), state.CompletedTargets...)}
+	for _, event := range state.EventLog {
+		switch event.Type {
+		case "ReconCompleted":
+			if report.ReconCompletedAt == 0 {
+				report.ReconCompletedAt = event.Tick
+			}
+		case "BattleStarted":
+			if report.BattleStartedAt == 0 {
+				report.BattleStartedAt = event.Tick
+			}
+		case "BattleEnded":
+			if report.BattleEndedAt == 0 {
+				report.BattleEndedAt = event.Tick
+			}
+		}
+	}
 	if faction == game.Runner {
 		report.RunnerCredits = state.Resources.Credits.Units()
 		report.RunnerBots = state.Resources.Bots
