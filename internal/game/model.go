@@ -41,6 +41,18 @@ type State struct {
 	Fabrication   *Fabrication `json:"fabrication,omitempty"`
 	HeatBP        int64        `json:"heat_bp"`
 	ActiveBattle  *Battle      `json:"active_battle,omitempty"`
+	LastBattle    *BattleResult `json:"last_battle,omitempty"`
+}
+
+type BattleResult struct {
+	TargetID      string `json:"target_id"`
+	Outcome       string `json:"outcome"`
+	Survivors     int64  `json:"survivors"`
+	BotsLost      int64  `json:"bots_lost"`
+	CreditsLooted int64  `json:"credits_looted"`
+	DataLooted    int64  `json:"data_looted"`
+	HeatAddedBP   int64  `json:"heat_added_bp"`
+	ElapsedTicks  int64  `json:"elapsed_ticks"`
 }
 
 type Doctrine string

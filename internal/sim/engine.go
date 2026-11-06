@@ -139,6 +139,7 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonInvalidCommand, Detail: "unknown doctrine"}
 		}
 		s.Resources.Bots -= c.Quantity
+		s.LastBattle = nil
 		s.ActiveBattle = &game.Battle{TargetID: c.ID, Doctrine: c.Doctrine, CommittedBots: c.Quantity, LiveBots: c.Quantity, LayerIntegrity: target.Layers[0].Integrity, DefenderICE: target.Layers[0].ICE, TimeLimit: target.TimeLimit}
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleStarted", Message: "Breach underway: " + target.Name}}, nil
 	case game.ReinforceBattle:
@@ -161,6 +162,7 @@ func (e *Engine) Apply(s game.State, c game.Command) (game.State, []game.Event, 
 			return s, nil, &game.CommandError{Reason: game.ReasonNoBattle, Detail: "no active battle"}
 		}
 		s.Resources.Bots += s.ActiveBattle.LiveBots
+		s.LastBattle = battleResult(s.ActiveBattle, "withdrawn", s.ActiveBattle.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		return s, []game.Event{{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Withdrawal complete. Surviving bots returned."}}, nil
 	default:
@@ -249,6 +251,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BotsLost", Message: "Countermeasure destroyed one bot."})
 	}
 	if b.LiveBots <= 0 {
+		s.LastBattle = battleResult(b, "defeat", 0, 0, 0, s.HeatBP)
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach failed. The committed bots were lost."})
 		s.ActiveBattle = nil
 		return s, events
@@ -260,6 +263,7 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 			s.Resources.Bots += b.LiveBots
 			s.Resources.Credits, _ = s.Resources.Credits.Add(mathx.New(target.LootCredits))
 			s.Resources.Data, _ = s.Resources.Data.Add(mathx.New(target.LootData))
+			s.LastBattle = battleResult(b, "victory", b.LiveBots, target.LootCredits, target.LootData, s.HeatBP)
 			s.ActiveBattle = nil
 			events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach successful. Loot extracted."})
 			return s, events
@@ -269,12 +273,21 @@ func (e *Engine) advanceBattle(s game.State, events []game.Event) (game.State, [
 	}
 	if b.ElapsedTicks >= b.TimeLimit {
 		s.Resources.Bots += b.LiveBots
+		s.LastBattle = battleResult(b, "timeout", b.LiveBots, 0, 0, s.HeatBP)
 		s.ActiveBattle = nil
 		events = append(events, game.Event{Tick: s.LogicalTick, Type: "BattleEnded", Message: "Breach timed out. Surviving bots returned."})
 		return s, events
 	}
 	s.ActiveBattle = b
 	return s, events
+}
+
+func battleResult(b *game.Battle, outcome string, survivors, credits, data, heatBP int64) *game.BattleResult {
+	return &game.BattleResult{
+		TargetID: b.TargetID, Outcome: outcome, Survivors: survivors,
+		BotsLost: b.CommittedBots - survivors, CreditsLooted: credits,
+		DataLooted: data, HeatAddedBP: heatBP, ElapsedTicks: b.ElapsedTicks,
+	}
 }
 
 func (e *Engine) target(id string) (content.Target, bool) {

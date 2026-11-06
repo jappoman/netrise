@@ -122,9 +122,13 @@ func TestBattleDeterminismIncludesEvents(t *testing.T) {
 	for a.ActiveBattle != nil || b.ActiveBattle != nil {
 		var ea, eb []game.Event
 		a, ea, err = e1.Apply(a, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		b, eb, err = e2.Apply(b, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
-		if err != nil { t.Fatal(err) }
+		if err != nil {
+			t.Fatal(err)
+		}
 		eventsA, eventsB = append(eventsA, ea...), append(eventsB, eb...)
 	}
 	aa, _ := json.Marshal(a)
@@ -144,7 +148,9 @@ func TestReinforceIsAtomicAndSingleUse(t *testing.T) {
 	s.Resources.Bots = 5
 	var err error
 	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 3, Doctrine: game.Balanced})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	before := s.Resources.Bots
 	s, _, err = e.Apply(s, game.Command{Kind: game.ReinforceBattle, Quantity: 2})
 	if err != nil || s.Resources.Bots != 0 || s.ActiveBattle.CommittedBots != 5 {
@@ -167,10 +173,34 @@ func TestBattleTimeoutReturnsSurvivorsWithoutLoot(t *testing.T) {
 	s.Upgrades = []string{"secondhand_compiler"}
 	s.Resources.Bots = 3
 	s, _, err := e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 2, Doctrine: game.Stealth})
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
 	if err != nil || s.ActiveBattle != nil || s.Resources.Bots != 3 || s.Resources.Credits != mathx.New(25) {
 		t.Fatalf("timeout invariant failed: %#v, %v", s, err)
+	}
+}
+
+func TestBattleResultIsPersistedOnce(t *testing.T) {
+	e := New(catalog(), 9)
+	s := NewState(9)
+	s.Upgrades = []string{"secondhand_compiler"}
+	s.Resources.Bots = 10
+	var err error
+	s, _, err = e.Apply(s, game.Command{Kind: game.StartBattle, ID: "target", Quantity: 8, Doctrine: game.Balanced})
+	if err != nil { t.Fatal(err) }
+	for s.ActiveBattle != nil {
+		s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 1})
+		if err != nil { t.Fatal(err) }
+	}
+	if s.LastBattle == nil || s.LastBattle.Outcome != "victory" || s.LastBattle.CreditsLooted != 5 {
+		t.Fatalf("missing or invalid result: %#v", s.LastBattle)
+	}
+	result := *s.LastBattle
+	s, _, err = e.Apply(s, game.Command{Kind: game.AdvanceTicks, Ticks: 10})
+	if err != nil || *s.LastBattle != result {
+		t.Fatalf("result changed after finalization: %#v, %v", s.LastBattle, err)
 	}
 }
 
